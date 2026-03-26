@@ -72,6 +72,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 0;transition:al
 nav .container{display:flex;align-items:center;justify-content:space-between}
 .nav-logo{display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:22px;font-weight:700}
 .nav-logo img{width:36px;height:36px;border-radius:8px}
+.nav-logo-text{display:flex;flex-direction:column;line-height:1;gap:0}
+.nav-logo-castigat{font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--gold)}
+.nav-logo-academy{font-size:20px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text)}
 .nav-links{display:flex;align-items:center;gap:28px}
 .nav-links a{font-size:14px;font-weight:500;color:var(--text-2);transition:color .3s}.nav-links a:hover{color:var(--gold)}
 .nav-cta{padding:10px 24px;font-size:13px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;font-weight:700;transition:all .25s;box-shadow:0 4px 16px rgba(212,168,67,.2)}.nav-cta:hover{box-shadow:0 6px 24px rgba(212,168,67,.35);transform:translateY(-1px)}
@@ -82,7 +85,16 @@ nav .container{display:flex;align-items:center;justify-content:space-between}
 .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(212,168,67,.06) 0%,transparent 60%),radial-gradient(ellipse at 70% 50%,rgba(167,139,250,.05) 0%,transparent 60%);pointer-events:none}
 .hero-content{position:relative;z-index:1;text-align:center;max-width:800px;margin:0 auto}
 .hero-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:50px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);font-size:12px;font-weight:600;color:var(--violet);margin-bottom:32px;letter-spacing:.05em}
+.footer-brand{display:flex;align-items:center;gap:10px}
+.footer-brand .nav-logo-text{display:flex;flex-direction:column;line-height:1;gap:0}
 .hero h1{font-family:var(--font-heading);font-size:clamp(40px,7vw,72px);font-weight:700;line-height:1.08;margin-bottom:24px}
+.hero-brand{text-align:center;margin-bottom:32px}
+.hero-brand-castigat{font-family:var(--font-heading);font-size:clamp(18px,3vw,28px);font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+.hero-brand-castigat sup{font-size:50%;vertical-align:super}
+.hero-brand-academy{font-family:var(--font-heading);font-size:clamp(56px,10vw,110px);font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text);line-height:1}
+.hero-brand-line{width:80px;height:3px;background:var(--gold);margin:12px auto 0;border-radius:2px}
+.hero-tagline{font-family:var(--font-heading);font-size:clamp(22px,3.5vw,36px);font-weight:700;text-transform:uppercase;letter-spacing:.08em;line-height:1.4;margin-bottom:24px;text-align:center}
+.hero-tagline .gold{display:block;font-size:clamp(26px,4vw,42px)}
 .hero p{font-size:clamp(16px,2.2vw,21px);color:var(--text-2);max-width:560px;margin:0 auto 40px;line-height:1.7}
 .hero-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
 .hero-stats{display:flex;gap:48px;justify-content:center;margin-top:56px}
@@ -190,7 +202,7 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
   <div class="container">
     <a href="#" class="nav-logo">
       <img src="icons/icon-192x192.png" alt="Castigat">
-      <span>Castigat Academy</span>
+      <span class="nav-logo-text"><span class="nav-logo-castigat">Castigat®</span><span class="nav-logo-academy">Academy</span></span>
     </a>
     <div class="nav-links">
       <a href="#features">Fonctionnalités</a>
@@ -207,17 +219,26 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
   <div class="sphere-bg right"></div>
   <div class="container">
     <div class="hero-content">
-      <div class="hero-badge"><span class="emoji">🎭</span> La première école de théâtre gamifiée</div>
-      <h1>Apprenez le <span class="gold">théâtre</span> comme un <span class="violet">jeu</span></h1>
+      <div class="hero-brand">
+        <div class="hero-brand-castigat">Castigat<sup>®</sup></div>
+        <div class="hero-brand-academy">Academy</div>
+        <div class="hero-brand-line"></div>
+      </div>
+      <div class="hero-tagline">
+        <span>L'école de</span>
+        <span class="gold">théâtre</span>
+        <span>dans votre poche</span>
+      </div>
       <p>Diction, improvisation, interprétation, culture théâtrale — progressez à votre rythme avec un parcours personnalisé, des challenges quotidiens et un coach dédié.</p>
       <div class="hero-buttons">
-        <a href="castigat-academy.html" class="btn btn-gold">Commencer gratuitement</a>
+        <a href="castigat-academy.html" class="btn btn-gold" style="flex-direction:column;padding:20px 48px"><span style="font-size:13px;font-weight:500;text-transform:lowercase;letter-spacing:.02em">entrer en scène</span><span style="font-size:20px;font-weight:800;letter-spacing:.1em;text-transform:uppercase">Maintenant</span></a>
         <a href="#features" class="btn btn-outline">Découvrir</a>
       </div>
-      <div class="hero-stats">
-        <div class="hero-stat"><div class="num">12</div><div class="label">Niveaux</div></div>
-        <div class="hero-stat"><div class="num">200+</div><div class="label">Exercices</div></div>
-        <div class="hero-stat"><div class="num">50+</div><div class="label">Challenges</div></div>
+      <p style="font-size:13px;color:var(--text-3);margin-top:16px;font-style:italic">Créé par des professionnels du théâtre</p>
+      <div class="hero-badges" style="display:flex;gap:24px;justify-content:center;margin-top:40px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block"></span> À votre rythme</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--violet);display:inline-block"></span> Où vous voulez</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--violet);display:inline-block"></span> Vrai coaching</span>
       </div>
     </div>
   </div>
@@ -452,7 +473,7 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
   <div class="container">
     <div class="footer-brand">
       <img src="icons/icon-192x192.png" alt="Castigat">
-      Castigat Academy
+      <span class="nav-logo-text"><span class="nav-logo-castigat">Castigat®</span><span class="nav-logo-academy">Academy</span></span>
     </div>
     <div class="footer-links">
       <a href="#features">Fonctionnalités</a>
