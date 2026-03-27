@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Castigat Academy — Dashboard Coach</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#0a0a0f;--bg-card:#12121a;--bg-raised:#1a1a25;--gold:#c8a44e;--gold-dim:rgba(200,164,78,.25);--violet:#a78bfa;--emerald:#4ade80;--coral:#e8745a;--text:#f0ece4;--text-2:#a8a29e;--text-3:#6b6560;--line:rgba(255,255,255,.06)}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  .container{max-width:900px;margin:0 auto;padding:20px}
+  h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;margin-bottom:8px}
+  .subtitle{font-size:13px;color:var(--text-2);margin-bottom:32px}
+  .login-box{max-width:400px;margin:80px auto;padding:40px;background:var(--bg-card);border-radius:16px;border:1px solid var(--line)}
+  .login-box h2{font-family:'Cormorant Garamond',serif;font-size:24px;margin-bottom:20px;text-align:center}
+  .input-field{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg-raised);color:var(--text);font-size:13px;margin-bottom:12px;outline:none}
+  .input-field:focus{border-color:var(--gold)}
+  .btn-gold{width:100%;padding:14px;border-radius:12px;background:var(--gold);color:#1a1a2e;font-size:13px;font-weight:700;letter-spacing:.05em;border:none;cursor:pointer;text-transform:uppercase}
+  .btn-gold:hover{opacity:.9}
+  .btn-outline{padding:8px 16px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--text-2);font-size:11px;cursor:pointer}
+  .btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
+  .stat-card{padding:16px;background:var(--bg-card);border-radius:12px;border:1px solid var(--line);text-align:center}
+  .stat-num{font-size:28px;font-weight:800;color:var(--gold)}
+  .stat-label{font-size:10px;color:var(--text-3);margin-top:4px;text-transform:uppercase;letter-spacing:.08em}
+  .filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .filter-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--text-2);font-size:11px;cursor:pointer;font-weight:600}
+  .filter-btn.active{background:rgba(200,164,78,.1);border-color:var(--gold);color:var(--gold)}
+  .video-card{padding:20px;background:var(--bg-card);border-radius:14px;border:1px solid var(--line);margin-bottom:14px;transition:border-color .2s}
+  .video-card:hover{border-color:var(--gold-dim)}
+  .video-card .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+  .video-card .student{font-size:14px;font-weight:700}
+  .video-card .mono{font-size:12px;color:var(--violet);margin-top:2px}
+  .video-card .date{font-size:10px;color:var(--text-3)}
+  .video-card .status{font-size:9px;font-weight:700;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.06em}
+  .status-pending{background:rgba(200,164,78,.1);color:var(--gold);border:1px solid var(--gold-dim)}
+  .status-reviewed{background:rgba(74,222,128,.1);color:var(--emerald);border:1px solid rgba(74,222,128,.2)}
+  .video-player{width:100%;border-radius:10px;background:#000;margin-bottom:14px;max-height:400px}
+  .rating{display:flex;gap:4px;margin-bottom:12px}
+  .star{font-size:24px;cursor:pointer;transition:transform .15s}
+  .star:hover{transform:scale(1.2)}
+  .feedback-area{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg-raised);color:var(--text);font-size:12px;min-height:80px;resize:vertical;font-family:'Inter',sans-serif;outline:none}
+  .feedback-area:focus{border-color:var(--gold)}
+  .submit-review{padding:10px 24px;border-radius:10px;background:var(--gold);color:#1a1a2e;font-size:12px;font-weight:700;border:none;cursor:pointer;margin-top:10px}
+  .submit-review:disabled{opacity:.5;cursor:not-allowed}
+  .empty{text-align:center;padding:60px 20px;color:var(--text-3)}
+  .empty-icon{font-size:48px;margin-bottom:12px}
+  .logout{position:absolute;top:20px;right:20px;padding:8px 16px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--text-3);font-size:11px;cursor:pointer}
+  .logout:hover{border-color:var(--coral);color:var(--coral)}
+  .error{color:var(--coral);font-size:12px;margin-bottom:12px;padding:8px 12px;background:rgba(232,116,90,.08);border-radius:8px}
+  @media(max-width:600px){.stats{grid-template-columns:1fr}.container{padding:14px}}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const SUPABASE_URL='https://ewvzcagorcsimdljazkn.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_cXOU-pPxOR5zX-fX60AooA_ZvynKw9I';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+/* Coach email whitelist — only these emails can access the dashboard */
+const COACH_EMAILS=['adelepotel25@gmail.com','adelepotel26@gmail.com'];
+
+const app=document.getElementById('app');
+
+let state={user:null,videos:[],filter:'all',loading:true};
+
+function setState(updates){
+  state={...state,...updates};
+  render();
+}
+
+async function login(email,password){
+  const{data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error)return error.message;
+  if(!COACH_EMAILS.includes(data.user.email)){
+    await sb.auth.signOut();
+    return"Accès refusé. Ce dashboard est réservé aux coaches.";
+  }
+  setState({user:data.user});
+  loadVideos();
+  return null;
+}
+
+async function logout(){
+  await sb.auth.signOut();
+  setState({user:null,videos:[]});
+}
+
+async function loadVideos(){
+  setState({loading:true});
+  const{data,error}=await sb.from('video_submissions').select('*').order('created_at',{ascending:false});
+  if(error){console.error(error);setState({loading:false});return}
+  setState({videos:data||[],loading:false});
+}
+
+async function submitReview(id,rating,feedback){
+  const{error}=await sb.from('video_submissions').update({
+    coach_rating:rating,
+    coach_feedback:feedback,
+    status:'reviewed',
+    reviewed_at:new Date().toISOString()
+  }).eq('id',id);
+  if(!error)loadVideos();
+  return error;
+}
+
+function timeAgo(date){
+  const s=Math.floor((Date.now()-new Date(date))/1000);
+  if(s<60)return"À l'instant";
+  if(s<3600)return Math.floor(s/60)+"min";
+  if(s<86400)return Math.floor(s/3600)+"h";
+  return Math.floor(s/86400)+"j";
+}
+
+function renderLogin(){
+  let err='';
+  app.innerHTML=`
+    <div class="login-box">
+      <h2>Dashboard Coach</h2>
+      <p style="text-align:center;font-size:12px;color:var(--text-2);margin-bottom:24px">Castigat Academy</p>
+      <div id="login-error"></div>
+      <input class="input-field" type="email" id="email" placeholder="Email du coach">
+      <input class="input-field" type="password" id="password" placeholder="Mot de passe">
+      <button class="btn-gold" id="login-btn">SE CONNECTER</button>
+    </div>
+  `;
+  document.getElementById('login-btn').onclick=async()=>{
+    const email=document.getElementById('email').value;
+    const pwd=document.getElementById('password').value;
+    const errEl=document.getElementById('login-error');
+    const btn=document.getElementById('login-btn');
+    btn.textContent='Connexion...';btn.disabled=true;
+    const result=await login(email,pwd);
+    if(result){
+      errEl.innerHTML=`<div class="error">${result}</div>`;
+      btn.textContent='SE CONNECTER';btn.disabled=false;
+    }
+  };
+  document.getElementById('password').onkeydown=e=>{if(e.key==='Enter')document.getElementById('login-btn').click()};
+}
+
+function renderDashboard(){
+  const vids=state.videos;
+  const filtered=state.filter==='all'?vids:vids.filter(v=>v.status===state.filter);
+  const pending=vids.filter(v=>v.status==='pending').length;
+  const reviewed=vids.filter(v=>v.status==='reviewed').length;
+
+  app.innerHTML=`
+    <div style="position:relative">
+      <button class="logout" id="logout-btn">Déconnexion</button>
+      <div class="container">
+        <h1>Dashboard Coach</h1>
+        <p class="subtitle">Castigat Academy — Gestion des vidéos élèves</p>
+
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-num">${vids.length}</div>
+            <div class="stat-label">Total vidéos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" style="color:var(--gold)">${pending}</div>
+            <div class="stat-label">En attente</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" style="color:var(--emerald)">${reviewed}</div>
+            <div class="stat-label">Évaluées</div>
+          </div>
+        </div>
+
+        <div class="filters">
+          <button class="filter-btn ${state.filter==='all'?'active':''}" data-filter="all">Toutes (${vids.length})</button>
+          <button class="filter-btn ${state.filter==='pending'?'active':''}" data-filter="pending">En attente (${pending})</button>
+          <button class="filter-btn ${state.filter==='reviewed'?'active':''}" data-filter="reviewed">Évaluées (${reviewed})</button>
+        </div>
+
+        <div id="video-list">
+          ${filtered.length===0?`
+            <div class="empty">
+              <div class="empty-icon">🎬</div>
+              <p style="font-size:14px;margin-bottom:4px">Aucune vidéo ${state.filter==='pending'?'en attente':state.filter==='reviewed'?'évaluée':''}</p>
+              <p style="font-size:11px">Les vidéos envoyées par les élèves apparaîtront ici.</p>
+            </div>
+          `:filtered.map((v,i)=>`
+            <div class="video-card" id="card-${v.id}">
+              <div class="header">
+                <div>
+                  <div class="student">${v.student_name||'Élève anonyme'}</div>
+                  <div class="mono">${v.monologue_title||'Monologue'}</div>
+                  <div class="date">${v.student_email||''} · ${timeAgo(v.created_at)} · ${v.duration_seconds?Math.floor(v.duration_seconds/60)+'min '+v.duration_seconds%60+'s':''}</div>
+                </div>
+                <span class="status status-${v.status}">${v.status==='pending'?'En attente':'Évaluée'}</span>
+              </div>
+              <video class="video-player" src="${v.video_url}" controls preload="metadata"></video>
+              ${v.status==='reviewed'?`
+                <div style="padding:12px;border-radius:10px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.1);margin-top:8px">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                    <span style="font-size:11px;font-weight:700;color:var(--emerald)">Note :</span>
+                    <span style="font-size:14px">${'⭐'.repeat(v.coach_rating||0)}</span>
+                  </div>
+                  <p style="font-size:12px;color:var(--text);line-height:1.6">${v.coach_feedback||'Pas de commentaire'}</p>
+                  <p style="font-size:9px;color:var(--text-3);margin-top:6px">Évalué ${v.reviewed_at?timeAgo(v.reviewed_at):''}</p>
+                </div>
+              `:`
+                <div class="review-form" data-id="${v.id}">
+                  <p style="font-size:11px;font-weight:600;color:var(--gold);margin-bottom:8px">Évaluer cette vidéo</p>
+                  <div class="rating" data-rating="0">
+                    ${[1,2,3,4,5].map(n=>`<span class="star" data-n="${n}" style="color:var(--text-3)">★</span>`).join('')}
+                  </div>
+                  <textarea class="feedback-area" placeholder="Retour personnalisé pour l'élève..."></textarea>
+                  <button class="submit-review" disabled>Envoyer l'évaluation</button>
+                </div>
+              `}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  /* Event listeners */
+  document.getElementById('logout-btn').onclick=logout;
+  document.querySelectorAll('.filter-btn').forEach(btn=>{
+    btn.onclick=()=>setState({filter:btn.dataset.filter});
+  });
+
+  /* Rating + review forms */
+  document.querySelectorAll('.review-form').forEach(form=>{
+    const id=form.dataset.id;
+    const stars=form.querySelectorAll('.star');
+    const textarea=form.querySelector('.feedback-area');
+    const submitBtn=form.querySelector('.submit-review');
+    let rating=0;
+
+    stars.forEach(star=>{
+      star.onmouseenter=()=>{
+        const n=parseInt(star.dataset.n);
+        stars.forEach(s=>{s.style.color=parseInt(s.dataset.n)<=n?'var(--gold)':'var(--text-3)'});
+      };
+      star.onclick=()=>{
+        rating=parseInt(star.dataset.n);
+        stars.forEach(s=>{s.style.color=parseInt(s.dataset.n)<=rating?'var(--gold)':'var(--text-3)'});
+        submitBtn.disabled=false;
+      };
+    });
+    form.querySelector('.rating').onmouseleave=()=>{
+      stars.forEach(s=>{s.style.color=parseInt(s.dataset.n)<=rating?'var(--gold)':'var(--text-3)'});
+    };
+
+    submitBtn.onclick=async()=>{
+      if(!rating)return;
+      submitBtn.textContent='Envoi...';submitBtn.disabled=true;
+      const err=await submitReview(id,rating,textarea.value);
+      if(err){submitBtn.textContent='Erreur — Réessayer';submitBtn.disabled=false}
+    };
+  });
+}
+
+function render(){
+  if(!state.user)renderLogin();
+  else renderDashboard();
+}
+
+/* Check existing session */
+async function init(){
+  const{data}=await sb.auth.getSession();
+  if(data.session&&COACH_EMAILS.includes(data.session.user.email)){
+    setState({user:data.session.user});
+    loadVideos();
+  }else{
+    setState({loading:false});
+  }
+}
+
+init();
+</script>
+</body>
+</html>

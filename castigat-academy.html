@@ -56,6 +56,31 @@ window.addEventListener('beforeinstallprompt', function(e){
 const SUPABASE_URL='https://ewvzcagorcsimdljazkn.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_cXOU-pPxOR5zX-fX60AooA_ZvynKw9I';
 const _supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+/* ── Cloudinary Config ── */
+const CLOUDINARY_CLOUD='dsecqyf3w';
+const CLOUDINARY_PRESET='vidéos de castigat';
+
+async function uploadToCloudinary(file,onProgress){
+  const fd=new FormData();
+  fd.append('file',file);
+  fd.append('upload_preset',CLOUDINARY_PRESET);
+  fd.append('resource_type','video');
+  return new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();
+    xhr.open('POST','https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD+'/video/upload');
+    if(onProgress)xhr.upload.onprogress=e=>{if(e.lengthComputable)onProgress(Math.round(e.loaded/e.total*100))};
+    xhr.onload=()=>{if(xhr.status===200)resolve(JSON.parse(xhr.responseText));else reject(new Error('Upload failed'))};
+    xhr.onerror=()=>reject(new Error('Network error'));
+    xhr.send(fd);
+  });
+}
+
+async function saveVideoSubmission(data){
+  const{data:result,error}=await _supabase.from('video_submissions').insert([data]);
+  if(error)console.error('Supabase save error:',error);
+  return{result,error};
+}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -5542,14 +5567,45 @@ function Feed({st,setSt}){
                   <p className="body" style={{fontSize:11,marginBottom:12}}>Enregistrez votre performance et envoyez-la à un coach de la Compagnie Castigat.</p>
                   {!prog.videoSent?(
                     <div>
+                      {prog.uploadProgress!=null?(
+                        <div style={{padding:'16px 14px',borderRadius:10,border:'1px solid var(--gold-dim)',background:'rgba(200,164,78,.03)',marginBottom:12}}>
+                          <p style={{fontSize:11,fontWeight:600,color:'var(--gold)',marginBottom:8}}>Envoi en cours... {prog.uploadProgress}%</p>
+                          <div style={{height:4,borderRadius:2,background:'var(--line)',overflow:'hidden'}}><div style={{height:'100%',borderRadius:2,background:'var(--gold)',width:prog.uploadProgress+'%',transition:'width .3s'}}/></div>
+                        </div>
+                      ):(
                       <label style={{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',borderRadius:10,border:'1px solid var(--gold-dim)',background:'rgba(200,164,78,.03)',cursor:'pointer',marginBottom:12}}>
                         {I.upload({size:18,sw:1.5,style:{color:'var(--gold)'}})}
                         <div style={{flex:1}}>
                           <p style={{fontSize:11,fontWeight:600,color:'var(--gold)'}}>Filmer et envoyer</p>
                           <p style={{fontSize:9,color:'var(--text-3)',marginTop:1}}>Cliquez ici pour sélectionner une vidéo</p>
                         </div>
-                        <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={(e)=>{const f=e.target.files?.[0];if(f){updateMonoProgress(workingMono.id,p=>({...p,videoSent:true,coachRequested:true}));SFX.xp();setTimeout(()=>{setSt(s=>({...s,xp:s.xp+50}))},500);}}} style={{display:'none'}}/>
+                        <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={async(e)=>{
+                          const f=e.target.files?.[0];if(!f)return;
+                          updateMonoProgress(workingMono.id,p=>({...p,uploadProgress:0}));
+                          try{
+                            const res=await uploadToCloudinary(f,pct=>updateMonoProgress(workingMono.id,p=>({...p,uploadProgress:pct})));
+                            const currentUser=await _supabase.auth.getUser();
+                            await saveVideoSubmission({
+                              user_id:currentUser.data?.user?.id||null,
+                              student_name:st.user||st.pseudo||'Anonyme',
+                              student_email:st.email||'',
+                              monologue_title:workingMono.title,
+                              level:workingMono.id||0,
+                              video_url:res.secure_url,
+                              cloudinary_public_id:res.public_id,
+                              duration_seconds:Math.round(res.duration||0),
+                              status:'pending'
+                            });
+                            updateMonoProgress(workingMono.id,p=>({...p,videoSent:true,coachRequested:true,uploadProgress:null}));
+                            SFX.xp();setTimeout(()=>{setSt(s=>({...s,xp:s.xp+50}))},500);
+                          }catch(err){
+                            console.error('Upload error:',err);
+                            updateMonoProgress(workingMono.id,p=>({...p,uploadProgress:null}));
+                            alert('Erreur lors de l\'envoi. Réessayez.');
+                          }
+                        }} style={{display:'none'}}/>
                       </label>
+                      )}
                     </div>
                   ):(
                     <div style={{padding:14,borderRadius:10,background:'rgba(74,222,128,.08)',border:'1px solid rgba(74,222,128,.2)',display:'flex',alignItems:'center',gap:10}}>
