@@ -140,7 +140,7 @@ body{font-family:'Inter',sans-serif;background:#07070c;color:#f0ece4;overflow-x:
   <!-- Badge -->
   <div class="badge">
     <span class="badge-dot"></span>
-    Lancement le 6 avril 2026
+    Lancement le 5 avril 2026
   </div>
 
   <!-- Tagline -->
@@ -199,8 +199,8 @@ const SUPABASE_URL='https://ewvzcagorcsimdljazkn.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_cXOU-pPxOR5zX-fX60AooA_ZvynKw9I';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-// ── Countdown to April 6, 2026 9:00 Paris ──
-const LAUNCH=new Date('2026-04-06T07:00:00Z');// 9h Paris = 7h UTC
+// ── Countdown to April 5, 2026 9:00 Paris ──
+const LAUNCH=new Date('2026-04-05T07:00:00Z');// 9h Paris = 7h UTC (heure d'été)
 function updateCD(){
   const now=new Date();
   const diff=LAUNCH-now;
