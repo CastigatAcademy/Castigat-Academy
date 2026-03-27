@@ -6689,7 +6689,8 @@ function Profile({st,setSt}){
 }
 
 /* ═══ APP ═══ */
-/* ═══ DEV: pre-fill onboarding (remove for production) ═══ */
+/* ═══ DEV: pre-fill onboarding DISABLED for production ═══ */
+/*
 (function(){
   const K="castigat_academy_save";
   if(!localStorage.getItem(K)){
@@ -6710,6 +6711,7 @@ function Profile({st,setSt}){
     }));
   }
 })();
+*/
 /* ═══ LOCALSTORAGE ═══ */
 const SAVE_KEY="castigat_academy_save";
 function loadState(){
