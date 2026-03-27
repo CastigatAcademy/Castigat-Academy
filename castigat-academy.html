@@ -13,6 +13,32 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Castigat">
+
+<!-- OneSignal Push Notifications -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+  await OneSignal.init({
+    appId: "29c1736d-200b-47c7-b87d-5491130a65a4",
+    allowLocalhostAsSecureOrigin: true,
+    serviceWorkerParam: { scope: "/" },
+    promptOptions: {
+      slidedown: {
+        prompts: [{
+          type: "push",
+          autoPrompt: false,
+          text: {
+            actionMessage: "Recevez vos rappels de théâtre quotidiens !",
+            acceptButton: "Oui, j'active",
+            cancelButton: "Plus tard"
+          }
+        }]
+      }
+    }
+  });
+});
+</script>
 <meta name="application-name" content="Castigat Academy">
 <meta name="msapplication-TileColor" content="#6D28D9">
 <meta name="msapplication-TileImage" content="icons/icon-144x144.png">
@@ -2107,6 +2133,7 @@ function Onboard({done:onDone}){
   const[showInstallStep,setShowInstallStep]=useState(false);
   const[installIsIOS,setInstallIsIOS]=useState(false);
   const[installDevice,setInstallDevice]=useState(null);/* null='choose', 'apple', 'android' */
+  const[showNotifStep,setShowNotifStep]=useState(false);
   const[showSectionIntro,setShowSectionIntro]=useState(-1);
 
   /* Floating particles — gold + violet (must be before any early return) */
@@ -2299,7 +2326,7 @@ function Onboard({done:onDone}){
               ))}
             </div>
 
-            <button onClick={()=>{setShowInstallStep(false);setStep(1)}} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:12,cursor:'pointer'}}>
+            <button onClick={()=>{setShowInstallStep(false);setShowNotifStep(true)}} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:12,cursor:'pointer'}}>
               Passer cette étape
             </button>
           </div>
@@ -2375,17 +2402,49 @@ function Onboard({done:onDone}){
               </div>
             )}
 
-            <button className="btn-gold" onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setStep(1)}} style={{width:'100%',padding:'18px 0',fontSize:15,fontWeight:800,letterSpacing:'.03em',marginBottom:12}}>
+            <button className="btn-gold" onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setShowNotifStep(true)}} style={{width:'100%',padding:'18px 0',fontSize:15,fontWeight:800,letterSpacing:'.03em',marginBottom:12}}>
               C'EST FAIT, CONTINUER
             </button>
             <button onClick={()=>{setInstallDevice(null)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:12,cursor:'pointer',marginBottom:4}}>
               ← Changer d'appareil
             </button>
-            <button onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setStep(1)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>
+            <button onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setShowNotifStep(true)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>
               Passer cette étape
             </button>
           </div>
         )}
+      </div>
+    </div>
+  );
+
+  /* Notification Permission Step */
+  if(showNotifStep&&step===0) return(
+    <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 28px',textAlign:'center'}}>
+      <div style={{maxWidth:380,width:'100%'}}>
+        <div style={{width:80,height:80,borderRadius:20,background:'linear-gradient(135deg,var(--violet),#a78bfa)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 24px',boxShadow:'0 12px 40px rgba(167,139,250,.25)'}}>
+          <span style={{fontSize:40,filter:'grayscale(1) brightness(10)'}}>🔔</span>
+        </div>
+
+        <h1 className="heading" style={{fontSize:26,marginBottom:10}}>Restez motivé !</h1>
+        <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6,marginBottom:12}}>Recevez chaque jour un petit message pour vous rappeler de monter sur scène</p>
+
+        <div style={{background:'var(--bg-card)',borderRadius:16,padding:'20px',marginBottom:28,border:'1px solid var(--line)',textAlign:'left'}}>
+          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
+            <span style={{fontSize:16,filter:'grayscale(1) brightness(10)'}}>🎭</span>
+            <div>
+              <p style={{fontSize:12,fontWeight:700,color:'var(--text)'}}>Castigat Academy</p>
+              <p style={{fontSize:11,color:'var(--text-3)'}}>maintenant</p>
+            </div>
+          </div>
+          <p style={{fontSize:13,color:'var(--text)',lineHeight:1.5,fontStyle:'italic'}}>"Hé ho ! Ton public t'attend ! Viens bosser ta diction aujourd'hui 🎤"</p>
+        </div>
+
+        <button className="btn-gold" onClick={async()=>{try{if(window.OneSignalDeferred){OneSignalDeferred.push(async function(OneSignal){await OneSignal.Slidedown.promptPush()})}}catch(e){console.log('Notif prompt error',e)}setShowNotifStep(false);setStep(1)}} style={{width:'100%',padding:'16px 0',fontSize:14,letterSpacing:'.06em',marginBottom:12}}>
+          ACTIVER LES NOTIFICATIONS
+        </button>
+        <button onClick={()=>{setShowNotifStep(false);setStep(1)}} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>
+          Non merci, plus tard
+        </button>
       </div>
     </div>
   );
