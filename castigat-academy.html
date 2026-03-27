@@ -5329,17 +5329,25 @@ function CoachChat({st,setSt,onClose}){
   const[msg,setMsg]=useState("");
   const[messages,setMessages]=useState([]);
   const[loading,setLoading]=useState(true);
+  const[userEmail,setUserEmail]=useState(st.email||'');
   const chatEndRef=useRef(null);
 
+  /* Get email from Supabase session (more reliable than st.email) */
+  useEffect(()=>{(async()=>{
+    const{data}=await _supabase.auth.getSession();
+    if(data.session?.user?.email){setUserEmail(data.session.user.email)}
+  })()},[]);
+
   const loadMessages=async()=>{
+    if(!userEmail)return;
     try{
-      const{data,error}=await _supabase.from('messages').select('*').eq('student_email',st.email||'').order('created_at',{ascending:true});
+      const{data,error}=await _supabase.from('messages').select('*').eq('student_email',userEmail).order('created_at',{ascending:true});
       if(!error&&data)setMessages(data);
     }catch(e){console.error('Load messages error:',e)}
     setLoading(false);
   };
 
-  useEffect(()=>{loadMessages();const iv=setInterval(loadMessages,10000);return()=>clearInterval(iv);},[]);
+  useEffect(()=>{if(userEmail){loadMessages();const iv=setInterval(loadMessages,10000);return()=>clearInterval(iv);}},[userEmail]);
   useEffect(()=>{if(chatEndRef.current)chatEndRef.current.scrollIntoView({behavior:'smooth'});},[messages]);
 
   const sendMessage=async()=>{
@@ -5347,8 +5355,8 @@ function CoachChat({st,setSt,onClose}){
     const currentUser=await _supabase.auth.getUser();
     const{error}=await _supabase.from('messages').insert([{
       user_id:currentUser.data?.user?.id||null,
-      student_email:st.email||'',
-      student_name:st.user||st.pseudo||'Anonyme',
+      student_email:userEmail||st.email||'',
+      student_name:st.user||st.pseudo||currentUser.data?.user?.user_metadata?.display_name||'Anonyme',
       sender:'student',
       content:msg.trim(),
       read:false
