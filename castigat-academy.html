@@ -2104,6 +2104,9 @@ function Onboard({done:onDone}){
   const[formLoading,setFormLoading]=useState(false);
   const[avatar,setAvatar]=useState('dramaturge');
   const[showCGU,setShowCGU]=useState(false);
+  const[showInstallStep,setShowInstallStep]=useState(false);
+  const[installIsIOS,setInstallIsIOS]=useState(false);
+  const[installDevice,setInstallDevice]=useState(null);/* null='choose', 'apple', 'android' */
   const[showSectionIntro,setShowSectionIntro]=useState(-1);
 
   /* Floating particles — gold + violet (must be before any early return) */
@@ -2190,7 +2193,7 @@ function Onboard({done:onDone}){
   );
 
   /* Step 0 — Welcome */
-  if(step===0) return(
+  if(step===0&&!showInstallStep) return(
     <div style={{minHeight:'100vh',background:'#07070c',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative',overflow:'hidden'}}>
       {/* Dot pattern background */}
       <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px)',backgroundSize:'24px 24px',pointerEvents:'none'}}/>
@@ -2234,7 +2237,7 @@ function Onboard({done:onDone}){
 
         {/* CTA */}
         <div style={{animation:'btn-scale-in .8s cubic-bezier(.22,1,.36,1) 2.2s both',marginBottom:44}}>
-          <button onClick={()=>{SFX.click();setStep(1)}}
+          <button onClick={()=>{SFX.click();const standalone=window.matchMedia('(display-mode:standalone)').matches||navigator.standalone;if(standalone){setStep(1)}else{setInstallDevice(null);setShowInstallStep(true)}}}
             style={{background:'linear-gradient(135deg,var(--gold),var(--gold-light))',border:'none',borderRadius:16,padding:'20px 48px',cursor:'pointer',display:'inline-block',textAlign:'center',transition:'all .3s',boxShadow:'0 8px 40px rgba(200,164,78,.35),0 0 80px rgba(200,164,78,.12),inset 0 1px 0 rgba(255,255,255,.2)',animation:'btn-glow 3s ease-in-out 3s infinite'}}>
             <span style={{fontFamily:'Inter, sans-serif',fontSize:12,fontWeight:400,color:'rgba(7,7,12,.6)',letterSpacing:'.04em',display:'block',marginBottom:3}}>entrer en scène</span>
             <span style={{fontFamily:'Oswald, sans-serif',fontSize:22,fontWeight:700,color:'#07070c',letterSpacing:'.14em',textTransform:'uppercase',display:'block'}}>MAINTENANT</span>
@@ -2251,6 +2254,138 @@ function Onboard({done:onDone}){
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+
+  /* Install Step — between welcome & inscription */
+  if(showInstallStep&&step===0) return(
+    <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',padding:'40px 24px 32px',textAlign:'center'}}>
+      <div style={{maxWidth:380,width:'100%'}}>
+
+        {/* Logo */}
+        <div style={{width:72,height:72,borderRadius:18,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
+          <span style={{fontSize:36,filter:'grayscale(1) brightness(10)'}}>🎭</span>
+        </div>
+
+        <h1 className="heading" style={{fontSize:28,marginBottom:6}}>Installez l'application</h1>
+        <p style={{fontSize:13,color:'var(--text-3)',marginBottom:32}}>Accédez à Castigat Academy depuis votre écran d'accueil</p>
+
+        {/* Device choice — if no device selected yet */}
+        {!installDevice?(
+          <div>
+            <p style={{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:20}}>Quel est votre appareil ?</p>
+            <div style={{display:'flex',gap:14,marginBottom:36}}>
+              <button onClick={()=>setInstallDevice('apple')} style={{flex:1,padding:'24px 16px',borderRadius:16,background:'var(--bg-card)',border:'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+                <span style={{fontSize:36,filter:'grayscale(1) brightness(10)'}}>🍎</span>
+                <span style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>iPhone / iPad</span>
+                <span style={{fontSize:10,color:'var(--text-3)'}}>Safari</span>
+              </button>
+              <button onClick={()=>setInstallDevice('android')} style={{flex:1,padding:'24px 16px',borderRadius:16,background:'var(--bg-card)',border:'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+                <span style={{fontSize:36,filter:'grayscale(1) brightness(10)'}}>🤖</span>
+                <span style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>Android</span>
+                <span style={{fontSize:10,color:'var(--text-3)'}}>Chrome</span>
+              </button>
+            </div>
+
+            {/* Features */}
+            <div style={{display:'flex',gap:10,width:'100%',marginBottom:32}}>
+              {[{ic:'🎭',t:'Théâtre',d:'Cours complets'},{ic:'👨‍🏫',t:'Coach',d:'Retours perso'},{ic:'📱',t:'Mobile',d:'Même hors-ligne'}].map((f,i)=>(
+                <div key={i} style={{flex:1,textAlign:'center',padding:'14px 8px',borderRadius:12,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
+                  <div style={{fontSize:20,marginBottom:6,filter:'grayscale(1) brightness(10)'}}>{f.ic}</div>
+                  <p style={{fontSize:10,fontWeight:700,color:'var(--gold)',marginBottom:2}}>{f.t}</p>
+                  <p style={{fontSize:8,color:'var(--text-3)',lineHeight:1.4}}>{f.d}</p>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={()=>{setShowInstallStep(false);setStep(1)}} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:12,cursor:'pointer'}}>
+              Passer cette étape
+            </button>
+          </div>
+        ):(
+          /* Tutorial after device choice */
+          <div className="fade-up">
+            {/* Chrono badge */}
+            <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 22px',borderRadius:40,background:'rgba(167,139,250,.08)',border:'1.5px solid rgba(167,139,250,.25)',marginBottom:28,animation:'pulse 2s ease-in-out infinite'}}>
+              <span style={{fontSize:18,filter:'grayscale(1) brightness(10)'}}>⏱</span>
+              <span style={{fontSize:15,fontWeight:700,color:'var(--gold-light)'}}>3 secondes top chrono</span>
+            </div>
+
+            {installDevice==='apple'?(
+              /* Steps Apple/Safari */
+              <div style={{display:'flex',flexDirection:'column',gap:14,marginBottom:32}}>
+                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid rgba(167,139,250,.3)'}}>
+                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>1</div>
+                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>⬆</span>
+                  <div style={{textAlign:'left'}}>
+                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Appuyez sur Partager</p>
+                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Le bouton en bas de Safari (carré avec flèche)</p>
+                  </div>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
+                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>2</div>
+                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>➕</span>
+                  <div style={{textAlign:'left'}}>
+                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Sur l'écran d'accueil</p>
+                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Faites défiler le menu et appuyez dessus</p>
+                  </div>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
+                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>3</div>
+                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>✓</span>
+                  <div style={{textAlign:'left'}}>
+                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Ajouter</p>
+                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Et voilà, c'est sur votre écran d'accueil !</p>
+                  </div>
+                </div>
+              </div>
+            ):(
+              /* Steps Android/Chrome */
+              <div style={{display:'flex',flexDirection:'column',gap:14,marginBottom:32}}>
+                {typeof deferredPrompt!=='undefined'&&deferredPrompt?(
+                  <button onClick={async()=>{if(deferredPrompt){deferredPrompt.prompt();const r=await deferredPrompt.userChoice;if(r.outcome==='accepted')window.deferredPrompt=null}}} className="btn-gold" style={{width:'100%',padding:'18px 0',fontSize:15,fontWeight:800,letterSpacing:'.03em',marginBottom:8,boxShadow:'0 4px 24px rgba(200,164,78,.3)'}}>
+                    Installer en 1 clic
+                  </button>
+                ):null}
+                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid rgba(167,139,250,.3)'}}>
+                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>1</div>
+                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>⋮</span>
+                  <div style={{textAlign:'left'}}>
+                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Appuyez sur les 3 points</p>
+                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>En haut à droite dans Chrome</p>
+                  </div>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
+                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>2</div>
+                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>📲</span>
+                  <div style={{textAlign:'left'}}>
+                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Installer l'application</p>
+                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Appuyez sur cette option dans le menu</p>
+                  </div>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
+                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>3</div>
+                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>✓</span>
+                  <div style={{textAlign:'left'}}>
+                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Installer</p>
+                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Et voilà, c'est sur votre écran d'accueil !</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button className="btn-gold" onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setStep(1)}} style={{width:'100%',padding:'18px 0',fontSize:15,fontWeight:800,letterSpacing:'.03em',marginBottom:12}}>
+              C'EST FAIT, CONTINUER
+            </button>
+            <button onClick={()=>{setInstallDevice(null)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:12,cursor:'pointer',marginBottom:4}}>
+              ← Changer d'appareil
+            </button>
+            <button onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setStep(1)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>
+              Passer cette étape
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
