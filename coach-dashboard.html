@@ -49,6 +49,9 @@
   .logout{position:absolute;top:20px;right:20px;padding:8px 16px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--text-3);font-size:11px;cursor:pointer}
   .logout:hover{border-color:var(--coral);color:var(--coral)}
   .error{color:var(--coral);font-size:12px;margin-bottom:12px;padding:8px 12px;background:rgba(232,116,90,.08);border-radius:8px}
+  [data-tab]{cursor:pointer;transition:all .2s}
+  [data-tab]:hover{opacity:.8}
+  [id^="conv-"]:hover{border-color:var(--gold-dim);background:var(--bg-hover)}
   @media(max-width:600px){.stats{grid-template-columns:1fr}.container{padding:14px}}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -65,7 +68,7 @@ const COACH_EMAILS=['adelepotel25@gmail.com','adelepotel26@gmail.com'];
 
 const app=document.getElementById('app');
 
-let state={user:null,videos:[],filter:'all',loading:true};
+let state={user:null,videos:[],filter:'all',loading:true,tab:'videos',messages:[],selectedConversation:null,replyText:'',messagesLoading:false};
 
 function setState(updates){
   state={...state,...updates};
@@ -94,6 +97,7 @@ async function loadVideos(){
   const{data,error}=await sb.from('video_submissions').select('*').order('created_at',{ascending:false});
   if(error){console.error(error);setState({loading:false});return}
   setState({videos:data||[],loading:false});
+  loadMessages();
 }
 
 async function submitReview(id,rating,feedback){
@@ -105,6 +109,37 @@ async function submitReview(id,rating,feedback){
   }).eq('id',id);
   if(!error)loadVideos();
   return error;
+}
+
+async function loadMessages(){
+  setState({messagesLoading:true});
+  const{data,error}=await sb.from('messages').select('*').order('created_at',{ascending:false});
+  if(error){console.error(error);setState({messagesLoading:false});return}
+  setState({messages:data||[],messagesLoading:false});
+}
+
+async function sendReply(studentEmail,content){
+  if(!content.trim())return;
+  const{error}=await sb.from('messages').insert([{
+    user_id:state.user?.id||'',
+    student_email:studentEmail,
+    student_name:'',
+    sender:'coach',
+    content:content.trim(),
+    read:false,
+    created_at:new Date().toISOString()
+  }]);
+  if(!error){
+    setState({replyText:''});
+    loadMessages();
+  }
+  return error;
+}
+
+async function markAsRead(messageIds){
+  if(!messageIds||messageIds.length===0)return;
+  await sb.from('messages').update({read:true}).in('id',messageIds);
+  loadMessages();
 }
 
 function timeAgo(date){
@@ -148,13 +183,27 @@ function renderDashboard(){
   const pending=vids.filter(v=>v.status==='pending').length;
   const reviewed=vids.filter(v=>v.status==='reviewed').length;
 
-  app.innerHTML=`
-    <div style="position:relative">
-      <button class="logout" id="logout-btn">Déconnexion</button>
-      <div class="container">
-        <h1>Dashboard Coach</h1>
-        <p class="subtitle">Castigat Academy — Gestion des vidéos élèves</p>
+  /* Group messages by student */
+  const conversations={};
+  state.messages.forEach(msg=>{
+    if(!conversations[msg.student_email]){
+      conversations[msg.student_email]={
+        email:msg.student_email,
+        name:msg.student_name||'Élève',
+        messages:[],
+        unread:0,
+        lastMessage:null
+      };
+    }
+    conversations[msg.student_email].messages.push(msg);
+    if(msg.sender==='student'&&!msg.read)conversations[msg.student_email].unread++;
+    if(!conversations[msg.student_email].lastMessage||new Date(msg.created_at)>new Date(conversations[msg.student_email].lastMessage.created_at)){
+      conversations[msg.student_email].lastMessage=msg;
+    }
+  });
+  const convList=Object.values(conversations).sort((a,b)=>new Date(b.lastMessage?.created_at||0)-new Date(a.lastMessage?.created_at||0));
 
+  let videosHtml=`
         <div class="stats">
           <div class="stat-card">
             <div class="stat-num">${vids.length}</div>
@@ -216,15 +265,111 @@ function renderDashboard(){
             </div>
           `).join('')}
         </div>
+  `;
+
+  let messagesHtml=`
+        ${state.selectedConversation?`
+          <!-- Back button -->
+          <button style="padding:8px 12px;border:none;background:transparent;color:var(--gold);cursor:pointer;margin-bottom:20px;font-size:12px;font-weight:600" id="back-to-list">← Retour aux conversations</button>
+
+          <!-- Conversation view -->
+          <div style="padding:16px;border-radius:12px;background:var(--bg-raised);border:1px solid var(--line);margin-bottom:20px">
+            <div style="margin-bottom:12px">
+              <p style="font-size:13px;font-weight:700;color:var(--text)">${state.selectedConversation.name}</p>
+              <p style="font-size:10px;color:var(--text-3)">${state.selectedConversation.email}</p>
+            </div>
+            <div style="max-height:400px;overflow-y:auto;margin-bottom:12px;padding:12px;background:var(--bg);border-radius:8px;display:flex;flex-direction:column;gap:10px">
+              ${state.selectedConversation.messages.map(m=>`
+                <div style="display:flex;justify-content:${m.sender==='student'?'flex-start':'flex-end'}">
+                  <div style="max-width:70%;padding:10px 12px;border-radius:10px;background:${m.sender==='student'?'rgba(200,164,78,.15)':'rgba(74,222,128,.15)'};color:var(--text);font-size:11px;line-height:1.5">
+                    ${m.content}
+                    <p style="font-size:9px;color:var(--text-3);margin-top:4px">${timeAgo(m.created_at)}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            <div style="display:flex;gap:8px">
+              <textarea id="reply-text" placeholder="Votre réponse..." style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:11px;min-height:60px;resize:vertical;outline:none"></textarea>
+              <button id="send-reply" style="padding:10px 14px;border-radius:8px;background:var(--gold);color:#1a1a2e;border:none;cursor:pointer;font-size:11px;font-weight:700;white-space:nowrap">Envoyer</button>
+            </div>
+          </div>
+        `:`
+          <!-- Conversations list -->
+          ${convList.length===0?`
+            <div class="empty">
+              <div class="empty-icon">💬</div>
+              <p style="font-size:14px;margin-bottom:4px">Aucun message</p>
+              <p style="font-size:11px">Les élèves pourront vous envoyer des messages ici.</p>
+            </div>
+          `:`
+            ${convList.map(conv=>`
+              <div class="video-card" style="cursor:pointer;padding:14px" id="conv-${conv.email}">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                  <div>
+                    <p style="font-size:13px;font-weight:700;color:var(--text)">${conv.name}</p>
+                    <p style="font-size:10px;color:var(--text-3)">${conv.email}</p>
+                  </div>
+                  ${conv.unread>0?`<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700">${conv.unread}</span>`:''}
+                </div>
+                <p style="font-size:11px;color:var(--text-2);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${conv.lastMessage?.content||'Pas de message'}</p>
+                <p style="font-size:9px;color:var(--text-3);margin-top:4px">${conv.lastMessage?timeAgo(conv.lastMessage.created_at):'--'}</p>
+              </div>
+            `).join('')}
+          `}
+        `}
+  `;
+
+  app.innerHTML=`
+    <div style="position:relative">
+      <button class="logout" id="logout-btn">Déconnexion</button>
+      <div class="container">
+        <h1>Dashboard Coach</h1>
+        <p class="subtitle">Castigat Academy — Gestion des vidéos élèves</p>
+
+        <!-- Tabs -->
+        <div class="filters" style="margin-bottom:28px">
+          <button class="filter-btn ${state.tab==='videos'?'active':''}" data-tab="videos">Vidéos (${vids.length})</button>
+          <button class="filter-btn ${state.tab==='messages'?'active':''}" data-tab="messages">Messages ${convList.reduce((t,c)=>t+c.unread,0)>0?`<span style="color:#ef4444;font-weight:700">●</span>`:''}</button>
+        </div>
+
+        ${state.tab==='videos'?videosHtml:messagesHtml}
       </div>
     </div>
   `;
 
   /* Event listeners */
   document.getElementById('logout-btn').onclick=logout;
-  document.querySelectorAll('.filter-btn').forEach(btn=>{
+  document.querySelectorAll('[data-tab]').forEach(btn=>{
+    btn.onclick=()=>setState({tab:btn.dataset.tab,selectedConversation:null});
+  });
+  document.querySelectorAll('[data-filter]').forEach(btn=>{
     btn.onclick=()=>setState({filter:btn.dataset.filter});
   });
+  document.querySelectorAll('[id^="conv-"]').forEach(el=>{
+    el.onclick=()=>{
+      const email=el.id.replace('conv-','');
+      const conv=Object.values(conversations).find(c=>c.email===email);
+      if(conv){
+        setState({selectedConversation:conv});
+        /* Mark messages as read */
+        const unreadIds=conv.messages.filter(m=>m.sender==='student'&&!m.read).map(m=>m.id);
+        if(unreadIds.length>0)markAsRead(unreadIds);
+      }
+    };
+  });
+  const backBtn=document.getElementById('back-to-list');
+  if(backBtn)backBtn.onclick=()=>setState({selectedConversation:null});
+  const sendReplyBtn=document.getElementById('send-reply');
+  if(sendReplyBtn){
+    sendReplyBtn.onclick=()=>{
+      const text=document.getElementById('reply-text').value;
+      if(text.trim()){
+        sendReply(state.selectedConversation.email,text);
+      }
+    };
+  }
+  const replyTextarea=document.getElementById('reply-text');
+  if(replyTextarea)replyTextarea.onkeypress=e=>{if(e.key==='Enter'&&e.ctrlKey)sendReplyBtn.click()}
 
   /* Rating + review forms */
   document.querySelectorAll('.review-form').forEach(form=>{
