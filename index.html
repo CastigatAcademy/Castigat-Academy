@@ -2,10 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Castigat Academy — L'école de théâtre en ligne</title>
-<meta name="description" content="Apprenez le théâtre comme un jeu. Diction, improvisation, interprétation — progressez à votre rythme avec Castigat Academy.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Castigat Academy — L'école de théâtre dans votre poche</title>
+<meta name="description" content="L'école de théâtre en ligne — Apprenez le théâtre comme un jeu. Diction, improvisation, interprétation — progressez à votre rythme.">
 <meta name="theme-color" content="#6D28D9">
+<meta name="background-color" content="#0F0F23">
 <meta property="og:title" content="Castigat Academy — L'école de théâtre en ligne">
 <meta property="og:description" content="Apprenez le théâtre comme un jeu. Diction, improvisation, interprétation — progressez à votre rythme.">
 <meta property="og:type" content="website">
@@ -184,6 +185,25 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
 @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{opacity:0;transform:translateY(30px);transition:all .7s ease}
 .fade-in.visible{opacity:1;transform:translateY(0)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ INSTALL GUIDE ═══ */
+.install-section{padding:80px 0;background:rgba(255,255,255,.003);position:relative}
+.install-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 100%,rgba(167,139,250,.05) 0%,transparent 70%);pointer-events:none}
+.tab-buttons{display:flex;gap:12px;margin-bottom:40px;border-bottom:1px solid var(--line);padding-bottom:0}
+.tab-btn{padding:16px 24px;border:none;background:none;cursor:pointer;font-weight:600;font-size:15px;color:var(--text-2);transition:all .3s;border-bottom:3px solid transparent;position:relative}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-content{animation:slideUp .4s cubic-bezier(.22,1,.36,1) forwards}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:32px}
+.step-card{padding:24px;border-radius:14px;background:var(--bg-card);border:1px solid var(--line);transition:all .3s cubic-bezier(.22,1,.36,1)}
+.step-card:hover{background:var(--bg-hover);border-color:var(--line-s);transform:translateY(-2px)}
+.step-num-badge{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin-bottom:16px;flex-shrink:0}
+.step-card p{font-family:'Noto Sans','Inter',sans-serif;font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:12px}
+.step-card strong{font-weight:600;color:var(--text)}
+.step-card em{font-style:italic;color:var(--text-3)}
+
+.pwa-check{padding:12px 16px;border-radius:10px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);color:var(--emerald);font-size:12px;font-weight:600;margin-top:12px;display:flex;align-items:center;gap:8px}
+.pwa-check::before{content:'✓';font-size:14px}
 
 /* ═══ RESPONSIVE ═══ */
 @media(max-width:768px){
@@ -192,6 +212,10 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
   .pricing-grid{grid-template-columns:1fr}
   .nav-logo span{display:none}
   footer .container{justify-content:center;text-align:center}
+  .tab-buttons{gap:8px}
+  .tab-btn{padding:12px 16px;font-size:13px}
+  .steps-grid{grid-template-columns:1fr}
+  .step-card{padding:20px}
 }
 </style>
 </head>
@@ -205,13 +229,28 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
       <span class="nav-logo-text"><span class="nav-logo-castigat">Castigat®</span><span class="nav-logo-academy">Academy</span></span>
     </a>
     <div class="nav-links">
+      <a href="#install">Installer</a>
       <a href="#features">Fonctionnalités</a>
-      <a href="#pricing">Tarifs</a>
       <a href="#faq">FAQ</a>
-      <a href="castigat-academy.html" class="nav-cta">Commencer gratuitement</a>
+      <a href="castigat-academy.html" class="nav-cta">Ouvrir l'app</a>
     </div>
   </div>
 </nav>
+
+<!-- PWA Detection & Auto-Redirect -->
+<script>
+if(window.matchMedia('(display-mode: standalone)').matches){
+  setTimeout(()=>{window.location.href='castigat-academy.html'},5000);
+}
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  deferredPrompt=e;
+  /* Show native install button if available */
+  const btn=document.getElementById('native-install-btn');
+  if(btn)btn.style.display='inline-flex';
+});
+</script>
 
 <!-- HERO -->
 <section class="hero">
@@ -225,20 +264,96 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
         <div class="hero-brand-line"></div>
       </div>
       <div class="hero-tagline">
-        <span>L'école de</span>
-        <span class="gold">théâtre</span>
-        <span>dans votre poche</span>
+        <span>L'école de théâtre</span>
+        <span class="gold">dans votre poche</span>
       </div>
       <p>Diction, improvisation, interprétation, culture théâtrale — progressez à votre rythme avec un parcours personnalisé, des challenges quotidiens et un coach dédié.</p>
       <div class="hero-buttons">
         <a href="castigat-academy.html" class="btn btn-gold" style="flex-direction:column;padding:20px 48px"><span style="font-size:13px;font-weight:500;text-transform:lowercase;letter-spacing:.02em">entrer en scène</span><span style="font-size:20px;font-weight:800;letter-spacing:.1em;text-transform:uppercase">Maintenant</span></a>
-        <a href="#features" class="btn btn-outline">Découvrir</a>
+        <a href="#install" class="btn btn-outline">Installer</a>
       </div>
       <p style="font-size:13px;color:var(--text-3);margin-top:16px;font-style:italic">Créé par des professionnels du théâtre</p>
       <div class="hero-badges" style="display:flex;gap:24px;justify-content:center;margin-top:40px;flex-wrap:wrap">
         <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block"></span> À votre rythme</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--violet);display:inline-block"></span> Où vous voulez</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--violet);display:inline-block"></span> 100% mobile</span>
         <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--violet);display:inline-block"></span> Vrai coaching</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL GUIDE -->
+<section class="install-section" id="install">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:56px">
+      <h2 class="section-title fade-in">Installer sur votre <span class="gold">téléphone</span></h2>
+      <p class="section-sub fade-in" style="margin:0 auto">Deux clics et c'est fait. Disponible sur Android et iPhone.</p>
+    </div>
+
+    <!-- Tab buttons -->
+    <div style="max-width:600px;margin:0 auto">
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab('android')" style="flex:1;text-align:center">Android</button>
+        <button class="tab-btn" onclick="switchTab('ios')" style="flex:1;text-align:center">iPhone</button>
+      </div>
+
+      <!-- Android Tab -->
+      <div id="android-tab" class="tab-content" style="display:block">
+        <div class="steps-grid">
+          <div class="step-card fade-in">
+            <div class="step-num-badge">1</div>
+            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Ouvrez dans Chrome</h3>
+            <p>Tapez le lien ou scannez le QR code pour accéder au site dans votre navigateur Chrome.</p>
+          </div>
+          <div class="step-card fade-in">
+            <div class="step-num-badge">2</div>
+            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Menu ⋮</h3>
+            <p>Appuyez sur les <strong>trois points</strong> en haut à droite de Chrome pour ouvrir le menu.</p>
+          </div>
+          <div class="step-card fade-in">
+            <div class="step-num-badge">3</div>
+            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">"Installer l'app"</h3>
+            <p>Cherchez l'option <strong>"Installer l'application"</strong> ou <strong>"Ajouter à l'écran d'accueil"</strong>.</p>
+          </div>
+          <div class="step-card fade-in">
+            <div class="step-num-badge">4</div>
+            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Confirmez</h3>
+            <p>Tapez <strong>Installer</strong> et l'app apparaîtra sur votre écran d'accueil comme une application native.</p>
+            <div class="pwa-check">PWA déjà installée ? Elle s'lancera depuis votre accueil.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- iOS Tab -->
+      <div id="ios-tab" class="tab-content" style="display:none">
+        <div class="steps-grid">
+          <div class="step-card fade-in">
+            <div class="step-num-badge">1</div>
+            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Ouvrez dans Safari</h3>
+            <p>Utilisez le navigateur <strong>Safari</strong> (pas Chrome) pour accéder au site de Castigat Academy.</p>
+          </div>
+          <div class="step-card fade-in">
+            <div class="step-num-badge">2</div>
+            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Icône de partage</h3>
+            <p>Appuyez sur l'icône de <strong>partage</strong> (carré avec une flèche) en bas de l'écran.</p>
+          </div>
+          <div class="step-card fade-in">
+            <div class="step-num-badge">3</div>
+            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">"Sur l'écran d'accueil"</h3>
+            <p>Faites défiler vers le bas et appuyez sur <strong>"Sur l'écran d'accueil"</strong>.</p>
+          </div>
+          <div class="step-card fade-in">
+            <div class="step-num-badge">4</div>
+            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Confirmez et ajoutez</h3>
+            <p>Vérifiez le nom et tapez <strong>Ajouter</strong>. L'app apparaît sur votre écran d'accueil.</p>
+            <div class="pwa-check">Fonctionne mieux que l'App Store : mise à jour automatique !</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Native install button if available -->
+      <div style="text-align:center;margin-top:32px">
+        <button id="native-install-btn" style="display:none;padding:16px 36px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;border-radius:12px;border:none;font-weight:700;font-size:15px;cursor:pointer;transition:all .25s cubic-bezier(.22,1,.36,1);box-shadow:0 4px 20px rgba(212,168,67,.25);margin-bottom:16px" onclick="handleNativeInstall()">Installer maintenant</button>
       </div>
     </div>
   </div>
@@ -253,158 +368,24 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
     </div>
     <div class="features-grid">
       <div class="feature-card fade-in">
-        <div class="feature-icon"><span class="emoji">🎤</span></div>
-        <h3>Diction & Voix</h3>
-        <p>Exercices de diction avec reconnaissance vocale en temps réel. Voyez vos mots s'illuminer quand vous les prononcez correctement.</p>
+        <div class="feature-icon"><span class="emoji">⏰</span></div>
+        <h3>À votre rythme</h3>
+        <p>Progressez comme bon vous semble. 10 minutes ou 2 heures, c'est vous qui décidez. L'app s'adapte à votre emploi du temps.</p>
       </div>
       <div class="feature-card fade-in">
         <div class="feature-icon"><span class="emoji">🎭</span></div>
-        <h3>Improvisation</h3>
-        <p>Scénarios d'improvisation guidés, techniques de lâcher-prise et exercices pour développer votre spontanéité sur scène.</p>
+        <h3>Coach personnel</h3>
+        <p>Des comédiens professionnels vous guident à chaque étape. Retours vidéo, conseils personnalisés, bilans progressifs.</p>
       </div>
       <div class="feature-card fade-in">
-        <div class="feature-icon"><span class="emoji">📖</span></div>
-        <h3>Interprétation</h3>
-        <p>Travaillez des monologues classiques et contemporains. Analysez les textes, trouvez vos intentions et construisez vos personnages.</p>
-      </div>
-      <div class="feature-card fade-in">
-        <div class="feature-icon"><span class="emoji">🏛️</span></div>
-        <h3>Culture théâtrale</h3>
-        <p>De Molière à Wajdi Mouawad, découvrez les grands auteurs, les courants et les œuvres qui ont façonné le théâtre.</p>
-      </div>
-      <div class="feature-card fade-in">
-        <div class="feature-icon"><span class="emoji">🔥</span></div>
-        <h3>Challenges quotidiens</h3>
-        <p>Un nouveau défi chaque jour pour maintenir votre motivation. Gagnez des XP, des badges et grimpez dans le classement.</p>
-      </div>
-      <div class="feature-card fade-in">
-        <div class="feature-icon"><span class="emoji">🎬</span></div>
-        <h3>Feedback vidéo</h3>
-        <p>Envoyez vos performances en vidéo et recevez un retour personnalisé de votre coach. Comme un vrai cours particulier.</p>
+        <div class="feature-icon"><span class="emoji">📱</span></div>
+        <h3>100% mobile</h3>
+        <p>Installez-la comme une app native. Fonctionne offline, mise à jour automatique, sans compte App Store requis.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
-<section class="how">
-  <div class="container">
-    <div style="text-align:center">
-      <h2 class="section-title fade-in">Comment ça <span class="violet">marche</span> ?</h2>
-      <p class="section-sub fade-in" style="margin:0 auto">En 3 étapes, vous êtes sur scène.</p>
-    </div>
-    <div class="how-steps">
-      <div class="how-step fade-in">
-        <div class="step-num">1</div>
-        <h3>Faites le test</h3>
-        <p>Un questionnaire rapide évalue votre niveau et vos objectifs. L'app s'adapte à vous.</p>
-      </div>
-      <div class="how-step fade-in">
-        <div class="step-num">2</div>
-        <h3>Suivez le parcours</h3>
-        <p>Exercices progressifs, challenges quotidiens, culture théâtrale. 10 minutes par jour suffisent.</p>
-      </div>
-      <div class="how-step fade-in">
-        <div class="step-num">3</div>
-        <h3>Montez sur scène</h3>
-        <p>Avec ou sans coach, progressez jusqu'à maîtriser les fondamentaux du jeu théâtral.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- PRICING -->
-<section class="pricing" id="pricing">
-  <div class="container">
-    <div style="text-align:center">
-      <h2 class="section-title fade-in">Des <span class="gold">tarifs</span> pour chaque ambition</h2>
-      <p class="section-sub fade-in" style="margin:0 auto">Commencez gratuitement, évoluez à votre rythme.</p>
-    </div>
-    <div class="pricing-grid">
-      <!-- GRATUIT -->
-      <div class="price-card fade-in">
-        <div class="price-name">Gratuit</div>
-        <div style="font-size:14px;color:var(--text-3)">Pour découvrir</div>
-        <div class="price-amount">0€<span></span></div>
-        <div class="price-trial">Pour toujours</div>
-        <ul class="price-features">
-          <li>Votre niveau + le niveau suivant</li>
-          <li>Exercices & challenges</li>
-          <li>Culture théâtrale</li>
-          <li>Badges & streaks</li>
-          <li class="no">Bilans personnalisés</li>
-          <li class="no">Messagerie coach</li>
-          <li class="no">Feedback vidéo</li>
-        </ul>
-        <a href="castigat-academy.html" class="btn btn-outline" style="width:100%">Commencer</a>
-      </div>
-      <!-- COACH -->
-      <div class="price-card featured fade-in">
-        <div class="price-name gold">Coach</div>
-        <div style="font-size:14px;color:var(--text-3)">Pour progresser</div>
-        <div class="price-amount">9,90€<span>/mois</span></div>
-        <div class="price-trial">✨ 4 jours d'essai gratuit</div>
-        <ul class="price-features">
-          <li>Tous les niveaux débloqués</li>
-          <li>Exercices & challenges</li>
-          <li>Culture théâtrale complète</li>
-          <li>Bilans personnalisés</li>
-          <li>Messagerie coach</li>
-          <li>Badges & streaks</li>
-          <li class="no">Feedback vidéo</li>
-        </ul>
-        <a href="castigat-academy.html" class="btn btn-gold" style="width:100%">Essayer 4 jours gratuit</a>
-      </div>
-      <!-- PREMIUM -->
-      <div class="price-card fade-in">
-        <div class="price-name violet">Premium</div>
-        <div style="font-size:14px;color:var(--text-3)">Pour performer</div>
-        <div class="price-amount">19,90€<span>/mois</span></div>
-        <div class="price-trial">&nbsp;</div>
-        <ul class="price-features">
-          <li>Tout le plan Coach</li>
-          <li>Upload de vos vidéos</li>
-          <li>Retour personnalisé du coach</li>
-          <li>Programme sur mesure</li>
-          <li>Accès prioritaire nouveautés</li>
-        </ul>
-        <a href="castigat-academy.html" class="btn btn-violet" style="width:100%">S'abonner</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- TESTIMONIALS -->
-<section class="testimonials">
-  <div class="container">
-    <div style="text-align:center">
-      <h2 class="section-title fade-in">Ce qu'en disent <span class="violet">nos élèves</span></h2>
-    </div>
-    <div class="testimonials-grid">
-      <div class="testimonial fade-in">
-        <p class="testimonial-text">"Je n'aurais jamais osé pousser la porte d'un cours de théâtre. Castigat Academy m'a permis de commencer chez moi, à mon rythme. Aujourd'hui je monte sur scène avec confiance."</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">M</div>
-          <div><div class="testimonial-name">Margaux D.</div><div class="testimonial-role">Débutante, 6 mois sur l'app</div></div>
-        </div>
-      </div>
-      <div class="testimonial fade-in">
-        <p class="testimonial-text">"Le challenge diction est devenu mon rituel du matin. En 3 mois, mes collègues m'ont fait remarquer que je parlais plus clairement en réunion. Merci Castigat !"</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">L</div>
-          <div><div class="testimonial-name">Lucas T.</div><div class="testimonial-role">Plan Coach, 4 mois</div></div>
-        </div>
-      </div>
-      <div class="testimonial fade-in">
-        <p class="testimonial-text">"Le feedback vidéo du coach est incroyable. C'est comme avoir un prof particulier. J'ai plus progressé en 2 mois qu'en un an de cours collectifs."</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">C</div>
-          <div><div class="testimonial-name">Chloé M.</div><div class="testimonial-role">Plan Premium, 2 mois</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- FAQ -->
 <section class="faq" id="faq">
@@ -463,8 +444,11 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
 <section class="cta-final">
   <div class="container">
     <h2 class="section-title fade-in">Prêt·e à monter <span class="violet">sur scène</span> ?</h2>
-    <p class="section-sub fade-in" style="margin:0 auto 40px">Rejoignez Castigat Academy et commencez votre parcours théâtral dès aujourd'hui. C'est gratuit.</p>
-    <a href="castigat-academy.html" class="btn btn-gold fade-in" style="font-size:18px;padding:20px 48px">Commencer gratuitement →</a>
+    <p class="section-sub fade-in" style="margin:0 auto 40px">Installez Castigat Academy et commencez votre parcours théâtral dès aujourd'hui. Gratuit, sans engagement.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+      <a href="castigat-academy.html" class="btn btn-gold fade-in" style="font-size:16px;padding:18px 42px">Ouvrir l'app →</a>
+      <a href="#install" class="btn btn-outline fade-in" style="font-size:16px;padding:18px 42px">Guide d'installation</a>
+    </div>
   </div>
 </section>
 
@@ -476,14 +460,42 @@ footer .container{display:flex;align-items:center;justify-content:space-between;
       <span class="nav-logo-text"><span class="nav-logo-castigat">Castigat®</span><span class="nav-logo-academy">Academy</span></span>
     </div>
     <div class="footer-links">
+      <a href="#install">Installer</a>
       <a href="#features">Fonctionnalités</a>
-      <a href="#pricing">Tarifs</a>
       <a href="#faq">FAQ</a>
-      <a href="#">Contact</a>
+      <a href="castigat-academy.html">Ouvrir l'app</a>
     </div>
     <div class="footer-copy">© 2026 Compagnie Castigat. Tous droits réservés.</div>
   </div>
 </footer>
+
+<!-- INSTALL GUIDE INTERACTIONS -->
+<script>
+function switchTab(tabName){
+  /* Hide all tabs */
+  document.getElementById('android-tab').style.display='none';
+  document.getElementById('ios-tab').style.display='none';
+
+  /* Remove active class from all buttons */
+  document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active'));
+
+  /* Show selected tab and activate button */
+  document.getElementById(tabName+'-tab').style.display='block';
+  event.target.classList.add('active');
+}
+
+function handleNativeInstall(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(result=>{
+      if(result.outcome==='accepted'){
+        window.deferredPrompt=null;
+        document.getElementById('native-install-btn').style.display='none';
+      }
+    });
+  }
+}
+</script>
 
 <!-- SCROLL ANIMATIONS -->
 <script>

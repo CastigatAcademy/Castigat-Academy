@@ -6957,6 +6957,84 @@ function TutoOverlay({step,onNext,onDone}){
   );
 }
 
+/* ═══ PWA INSTALL PROMPT ═══ */
+function InstallPrompt({st}){
+  const[show,setShow]=useState(true);
+  const[isIOS,setIsIOS]=useState(false);
+
+  useEffect(()=>{
+    /* Detect iOS */
+    const ua=navigator.userAgent.toLowerCase();
+    const isApple=/iphone|ipad|ipod/.test(ua);
+    setIsIOS(isApple);
+  },[]);
+
+  useEffect(()=>{
+    if(!st.onb||!show)return;
+    if(!deferredPrompt&&!isIOS)return;/* Only show if available or iOS */
+
+    /* Check if user dismissed in last 3 days */
+    const dismissed=localStorage.getItem('castigat_install_dismissed');
+    if(dismissed){
+      const dismissTime=parseInt(dismissed);
+      const now=Date.now();
+      const daysPassed=(now-dismissTime)/(1000*60*60*24);
+      if(daysPassed<3){setShow(false);return}
+    }
+
+    /* Show after 3 seconds */
+    const timer=setTimeout(()=>setShow(true),3000);
+    return()=>clearTimeout(timer);
+  },[st.onb,deferredPrompt,isIOS]);
+
+  if(!st.onb||!show||(typeof deferredPrompt==='undefined'&&!isIOS))return null;
+
+  const handleDismiss=()=>{
+    localStorage.setItem('castigat_install_dismissed',String(Date.now()));
+    setShow(false);
+  };
+
+  const handleInstall=async()=>{
+    if(deferredPrompt){
+      deferredPrompt.prompt();
+      const result=await deferredPrompt.userChoice;
+      if(result.outcome==='accepted'){
+        window.deferredPrompt=null;
+        handleDismiss();
+      }
+    }
+  };
+
+  return(
+    <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:99,animation:'slideUp .4s cubic-bezier(.22,1,.36,1) forwards'}}>
+      <div style={{background:'linear-gradient(180deg,var(--bg-raised) 0%,var(--bg) 100%)',borderTop:'1px solid var(--line)',padding:'24px 20px 32px',margin:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:16,maxWidth:500,margin:'0 auto',marginBottom:16}}>
+          <div style={{width:50,height:50,borderRadius:12,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <span style={{fontSize:28}}>🎭</span>
+          </div>
+          <div style={{flex:1}}>
+            <p className="heading" style={{fontSize:16,marginBottom:2}}>Installer Castigat Academy</p>
+            {isIOS?(
+              <p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.4}}>Appuyez sur <span style={{fontWeight:700,color:'var(--gold)'}}>partage</span> puis <span style={{fontWeight:700,color:'var(--gold)'}}>Sur l'écran d'accueil</span></p>
+            ):(
+              <p style={{fontSize:12,color:'var(--text-2)'}}>Accédez à l'app directement depuis votre écran d'accueil</p>
+            )}
+          </div>
+          <button onClick={handleDismiss} style={{fontSize:18,cursor:'pointer',background:'none',border:'none',color:'var(--text-3)',padding:'4px 8px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
+        </div>
+        {!isIOS&&(
+          <button onClick={handleInstall} style={{width:'100%',padding:'14px 16px',background:'linear-gradient(135deg,var(--gold),var(--gold-light))',color:'#05050a',borderRadius:12,border:'none',fontWeight:700,fontSize:14,cursor:'pointer',marginBottom:8,transition:'all .25s cubic-bezier(.22,1,.36,1)',boxShadow:'0 4px 20px rgba(212,168,67,.25)'}}>
+            Installer
+          </button>
+        )}
+        <button onClick={handleDismiss} style={{width:'100%',padding:'10px 16px',background:'transparent',color:'var(--text-3)',borderRadius:12,border:'none',fontWeight:500,fontSize:12,cursor:'pointer',transition:'color .2s'}}>
+          Plus tard
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const defaultSt={xp:0,initialXp:0,streak:0,lastActiveDate:null,doneEx:[],doneCu:[],doneSA:[],perf:0,vid:0,lv:0,onb:false,user:null,plan:"free",showCGU:false,theme:"dark",stars:{},weekXP:0,weekEx:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:null,perfectWeeks:0,weekStart:new Date().toDateString(),srs:{},seenBadges:[],warmups:0,avantScenes:0,connexions:0,challenges:0,totalBreaths:0,coachMessages:[],seenTuto:false,exFeedback:{},catLastPracticed:{},firstActivityDate:null,saResults:{},cuResults:{},lastSADate:null,dailyPulse:{answers:[],lastAnswerDate:null},challengeScores:{},passedExams:[],unreadMessageCount:0,messages:[]};
 
 function App(){
@@ -7104,6 +7182,7 @@ function App(){
       {!st.seenTuto&&tab==="home"&&<TutoOverlay step={tutoStep} onNext={()=>setTutoStep(tutoStep+1)} onDone={()=>setSt(p=>({...p,seenTuto:true}))}/>}
       {badgePopup&&<BadgePopup badge={badgePopup} onClose={()=>setBadgePopup(null)}/>}
       <Top xp={st.xp} streak={st.streak}/>
+      <InstallPrompt st={st}/>
       {tab==="home"&&<Home st={st} setSt={setSt} go={go} setMod={setMod} setExam={setExam}/>}
       {tab==="practice"&&<ModList title="Pratique" sub="Exercices progressifs" mods={PR} dk="doneEx" st={st} setSt={setSt} active={mod} setMod={setMod} sec="pr"/>}
       {tab==="culture"&&<ModList title="Culture" sub="Histoire, auteurs, techniques" mods={CU} dk="doneCu" st={st} setSt={setSt} active={mod} setMod={setMod} sec="cu"/>}
