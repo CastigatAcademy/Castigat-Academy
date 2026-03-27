@@ -14,6 +14,7 @@
 <meta property="og:locale" content="fr_FR">
 <link rel="icon" type="image/png" href="icons/icon-192x192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ═══ RESET & BASE ═══ */
@@ -24,7 +25,7 @@ a{text-decoration:none;color:inherit}
 img{max-width:100%;display:block}
 ::selection{background:rgba(200,164,78,.25);color:var(--text)}
 
-/* ═══ VARIABLES — matching app DA ═══ */
+/* ═══ VARIABLES ═══ */
 :root{
   --bg:#05050a;
   --bg-card:#0c0c14;
@@ -48,10 +49,6 @@ img{max-width:100%;display:block}
   --font-body:'Inter',sans-serif;
   --max-w:1100px;
 }
-/* ═══ WHITE EMOJIS — matching app DA ═══ */
-.emoji{display:inline-flex;align-items:center;justify-content:center;filter:grayscale(1) brightness(0) invert(1)}
-@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
-.gold-shimmer{background:linear-gradient(90deg,var(--gold-dim),var(--gold-light),var(--gold),var(--gold-light),var(--gold-dim));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 5s linear infinite}
 
 /* ═══ UTILITIES ═══ */
 .container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
@@ -59,430 +56,459 @@ img{max-width:100%;display:block}
 .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;box-shadow:0 4px 20px rgba(212,168,67,.25),0 1px 0 rgba(255,255,255,.15) inset}
 .btn-gold:hover{box-shadow:0 8px 40px rgba(212,168,67,.4);transform:translateY(-2px)}
 .btn-gold:active{transform:scale(.96);box-shadow:0 2px 10px rgba(212,168,67,.2)}
-.btn-violet{background:linear-gradient(135deg,var(--violet-dim),var(--violet));color:#fff;box-shadow:0 4px 24px var(--violet-glow),0 1px 0 rgba(255,255,255,.1) inset}
-.btn-violet:hover{box-shadow:0 8px 32px rgba(167,139,250,.3);transform:translateY(-2px)}
 .btn-outline{background:transparent;border:1.5px solid rgba(212,168,67,.25);color:var(--gold);backdrop-filter:blur(8px)}
 .btn-outline:hover{background:var(--gold-glow);border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow)}
-.section-title{font-family:var(--font-heading);font-size:clamp(32px,5vw,52px);font-weight:600;line-height:1.15;margin-bottom:16px;letter-spacing:-0.01em}
-.section-sub{font-family:'Noto Sans','Inter',sans-serif;font-size:clamp(15px,2vw,18px);color:var(--text-2);max-width:600px;line-height:1.7}
-.gold{color:var(--gold)}
-.violet{color:var(--violet)}
-
-/* ═══ NAV ═══ */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 0;transition:all .3s;background:rgba(5,5,10,.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--line)}
-nav .container{display:flex;align-items:center;justify-content:space-between}
-.nav-logo{display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:22px;font-weight:700}
-.nav-logo img{width:36px;height:36px;border-radius:8px}
-.nav-logo-text{display:flex;flex-direction:column;line-height:1;gap:0}
-.nav-logo-castigat{font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--gold)}
-.nav-logo-academy{font-size:20px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text)}
-.nav-links{display:flex;align-items:center;gap:28px}
-.nav-links a{font-size:14px;font-weight:500;color:var(--text-2);transition:color .3s}.nav-links a:hover{color:var(--gold)}
-.nav-cta{padding:10px 24px;font-size:13px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;font-weight:700;transition:all .25s;box-shadow:0 4px 16px rgba(212,168,67,.2)}.nav-cta:hover{box-shadow:0 6px 24px rgba(212,168,67,.35);transform:translateY(-1px)}
-@media(max-width:768px){.nav-links{display:none}}
-
-/* ═══ HERO ═══ */
-.hero{min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;padding:120px 0 80px}
-.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(212,168,67,.06) 0%,transparent 60%),radial-gradient(ellipse at 70% 50%,rgba(167,139,250,.05) 0%,transparent 60%);pointer-events:none}
-.hero-content{position:relative;z-index:1;text-align:center;max-width:800px;margin:0 auto}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:50px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);font-size:12px;font-weight:600;color:var(--violet);margin-bottom:32px;letter-spacing:.05em}
-.footer-brand{display:flex;align-items:center;gap:10px}
-.footer-brand .nav-logo-text{display:flex;flex-direction:column;line-height:1;gap:0}
-.hero h1{font-family:var(--font-heading);font-size:clamp(40px,7vw,72px);font-weight:700;line-height:1.08;margin-bottom:24px}
-.hero-brand{text-align:center;margin-bottom:32px}
-.hero-brand-castigat{font-family:var(--font-heading);font-size:clamp(18px,3vw,28px);font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
-.hero-brand-castigat sup{font-size:50%;vertical-align:super}
-.hero-brand-academy{font-family:var(--font-heading);font-size:clamp(56px,10vw,110px);font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text);line-height:1}
-.hero-brand-line{width:80px;height:3px;background:var(--gold);margin:12px auto 0;border-radius:2px}
-.hero-tagline{font-family:var(--font-heading);font-size:clamp(22px,3.5vw,36px);font-weight:700;text-transform:uppercase;letter-spacing:.08em;line-height:1.4;margin-bottom:24px;text-align:center}
-.hero-tagline .gold{display:block;font-size:clamp(26px,4vw,42px)}
-.hero p{font-size:clamp(16px,2.2vw,21px);color:var(--text-2);max-width:560px;margin:0 auto 40px;line-height:1.7}
-.hero-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
-.hero-stats{display:flex;gap:48px;justify-content:center;margin-top:56px}
-.hero-stat{text-align:center}
-.hero-stat .num{font-family:var(--font-heading);font-size:36px;font-weight:700;color:var(--gold)}
-.hero-stat .label{font-size:13px;color:var(--text-3);margin-top:4px}
-
-/* ═══ HALFTONE SPHERE DECORATION ═══ */
-.sphere-bg{position:absolute;width:500px;height:500px;border-radius:50%;opacity:.12;pointer-events:none}
-.sphere-bg.left{top:10%;left:-200px;background:radial-gradient(circle,rgba(212,168,67,.5) 0%,transparent 70%)}
-.sphere-bg.right{bottom:10%;right:-200px;background:radial-gradient(circle,rgba(167,139,250,.4) 0%,transparent 70%)}
-
-/* ═══ FEATURES ═══ */
-.features{padding:120px 0;position:relative}
-.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:56px}
-.feature-card{padding:36px 28px;border-radius:16px;background:var(--bg-card);border:1px solid var(--line);transition:all .3s cubic-bezier(.22,1,.36,1);position:relative;overflow:hidden;backdrop-filter:blur(12px)}
-.feature-card:hover{background:var(--bg-hover);border-color:var(--line-s);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
-.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg,var(--gold-dim),var(--violet));opacity:0;transition:opacity .4s}
-.feature-card:hover::before{opacity:1}
-.feature-icon{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:20px}
-.feature-card h3{font-family:var(--font-heading);font-size:20px;font-weight:600;margin-bottom:8px;letter-spacing:-0.01em}
-.feature-card p{font-family:'Noto Sans','Inter',sans-serif;font-size:13px;color:var(--text-2);line-height:1.7}
-
-/* ═══ HOW IT WORKS ═══ */
-.how{padding:120px 0;background:rgba(255,255,255,.005)}
-.how-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:32px;margin-top:56px;position:relative}
-.how-step{text-align:center;padding:32px 20px}
-.step-num{font-family:var(--font-heading);font-size:52px;font-weight:600;background:linear-gradient(135deg,var(--gold-dim),var(--gold-light),var(--gold),var(--gold-light),var(--gold-dim));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 5s linear infinite;line-height:1;margin-bottom:16px}
-.how-step h3{font-family:var(--font-heading);font-size:20px;font-weight:600;margin-bottom:10px}
-.how-step p{font-family:'Noto Sans','Inter',sans-serif;font-size:13px;color:var(--text-2);line-height:1.7}
-
-/* ═══ PRICING ═══ */
-.pricing{padding:120px 0}
-.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:56px;align-items:start}
-.price-card{padding:40px 32px;border-radius:18px;background:var(--bg-card);border:1px solid var(--line);position:relative;transition:all .3s cubic-bezier(.22,1,.36,1);backdrop-filter:blur(12px)}
-.price-card:hover{background:var(--bg-hover);transform:translateY(-2px)}
-.price-card.featured{background:linear-gradient(160deg,rgba(212,168,67,.06),var(--bg-card));border:1px solid var(--line-s);box-shadow:0 0 60px var(--gold-glow),0 1px 0 rgba(212,168,67,.08) inset}
-.price-card.featured::before{content:'POPULAIRE';position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:6px 20px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;font-size:10px;font-weight:800;letter-spacing:.12em}
-.price-name{font-family:var(--font-heading);font-size:24px;font-weight:700;margin-bottom:4px}
-.price-amount{font-family:var(--font-heading);font-size:44px;font-weight:700;margin:16px 0 4px}
-.price-amount span{font-size:16px;font-weight:400;color:var(--text-3)}
-.price-trial{font-size:13px;color:var(--violet);font-weight:600;margin-bottom:24px;min-height:20px}
-.price-features{list-style:none;margin-bottom:32px}
-.price-features li{padding:10px 0;font-size:13px;color:var(--text-2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;font-family:'Noto Sans','Inter',sans-serif}
-.price-features li::before{content:'✓';color:var(--gold);font-weight:700;font-size:13px}
-.price-features li.no::before{content:'✗';color:var(--text-3)}
-.price-features li.no{color:var(--text-3)}
-
-/* ═══ TESTIMONIALS ═══ */
-.testimonials{padding:120px 0;background:rgba(255,255,255,.01)}
-.testimonials-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-top:56px}
-.testimonial{padding:32px;border-radius:16px;background:var(--bg-card);border:1px solid var(--line);backdrop-filter:blur(12px);transition:all .3s}
-.testimonial:hover{border-color:var(--line-s)}
-.testimonial-text{font-family:'Noto Sans','Inter',sans-serif;font-size:14px;line-height:1.7;color:var(--text-2);font-style:italic;margin-bottom:20px}
-.testimonial-author{display:flex;align-items:center;gap:12px}
-.testimonial-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dim),var(--gold-light));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#05050a}
-.testimonial-name{font-weight:700;font-size:14px}
-.testimonial-role{font-size:12px;color:var(--text-3)}
-
-/* ═══ FAQ ═══ */
-.faq{padding:120px 0}
-.faq-list{max-width:700px;margin:56px auto 0}
-.faq-item{border-bottom:1px solid var(--line);padding:24px 0}
-.faq-q{font-family:var(--font-heading);font-size:19px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;transition:color .3s;letter-spacing:-0.01em}
-.faq-q:hover{color:var(--gold)}
-.faq-q .arrow{font-size:14px;transition:transform .3s;color:var(--text-3)}
-.faq-item.open .arrow{transform:rotate(180deg)}
-.faq-a{max-height:0;overflow:hidden;transition:max-height .4s ease,padding .4s;font-family:'Noto Sans','Inter',sans-serif;font-size:14px;color:var(--text-2);line-height:1.7}
-.faq-item.open .faq-a{max-height:300px;padding-top:16px}
-
-/* ═══ CTA FINAL ═══ */
-.cta-final{padding:120px 0;text-align:center;position:relative}
-.cta-final::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(167,139,250,.05) 0%,transparent 60%);pointer-events:none}
-.cta-final .section-title{margin-bottom:20px}
-
-/* ═══ FOOTER ═══ */
-footer{padding:48px 0;border-top:1px solid var(--line)}
-footer .container{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
-.footer-brand{display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;font-weight:600;color:var(--text-3)}
-.footer-brand img{width:28px;height:28px;border-radius:6px}
-.footer-links{display:flex;gap:24px}
-.footer-links a{font-size:13px;color:var(--text-3);transition:color .3s}.footer-links a:hover{color:var(--gold)}
-.footer-copy{font-size:12px;color:var(--text-3);width:100%;text-align:center;margin-top:16px}
 
 /* ═══ ANIMATIONS ═══ */
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
-.fade-in{opacity:0;transform:translateY(30px);transition:all .7s ease}
-.fade-in.visible{opacity:1;transform:translateY(0)}
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1;filter:drop-shadow(0 0 8px rgba(224,184,78,0.4))}50%{opacity:.6;filter:drop-shadow(0 0 16px rgba(224,184,78,0.8))}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pointArrow{0%{transform:translate(0,0);opacity:1}50%{transform:translate(4px,-4px);opacity:.8}100%{transform:translate(0,0);opacity:1}}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeSlideOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(20px)}}
+@keyframes confetti{0%{transform:translate(0,0) rotate(0deg);opacity:1}100%{transform:translate(var(--tx),var(--ty)) rotate(360deg);opacity:0}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
 
-/* ═══ INSTALL GUIDE ═══ */
-.install-section{padding:80px 0;background:rgba(255,255,255,.003);position:relative}
-.install-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 100%,rgba(167,139,250,.05) 0%,transparent 70%);pointer-events:none}
-.tab-buttons{display:flex;gap:12px;margin-bottom:40px;border-bottom:1px solid var(--line);padding-bottom:0}
-.tab-btn{padding:16px 24px;border:none;background:none;cursor:pointer;font-weight:600;font-size:15px;color:var(--text-2);transition:all .3s;border-bottom:3px solid transparent;position:relative}
-.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
-.tab-content{animation:slideUp .4s cubic-bezier(.22,1,.36,1) forwards}
-.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:32px}
-.step-card{padding:24px;border-radius:14px;background:var(--bg-card);border:1px solid var(--line);transition:all .3s cubic-bezier(.22,1,.36,1)}
-.step-card:hover{background:var(--bg-hover);border-color:var(--line-s);transform:translateY(-2px)}
-.step-num-badge{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin-bottom:16px;flex-shrink:0}
-.step-card p{font-family:'Noto Sans','Inter',sans-serif;font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:12px}
-.step-card strong{font-weight:600;color:var(--text)}
-.step-card em{font-style:italic;color:var(--text-3)}
+/* ═══ INSTALL PAGE LAYOUT ═══ */
+body.install-page{display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:24px 24px 0}
+.install-wrapper{width:100%;max-width:900px}
 
-.pwa-check{padding:12px 16px;border-radius:10px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);color:var(--emerald);font-size:12px;font-weight:600;margin-top:12px;display:flex;align-items:center;gap:8px}
-.pwa-check::before{content:'✓';font-size:14px}
+/* ═══ HEADER ═══ */
+.install-header{text-align:center;margin-bottom:48px}
+.install-logo{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:32px}
+.install-logo img{width:60px;height:60px;border-radius:12px}
+.install-brand{text-align:center}
+.install-brand-text{font-family:var(--font-heading);font-size:32px;font-weight:700;color:var(--text);letter-spacing:.1em;text-transform:uppercase}
+.install-brand-sub{font-size:14px;color:var(--text-2);margin-top:4px;letter-spacing:.05em}
+
+/* ═══ PHONE MOCKUP CONTAINER ═══ */
+.mockup-container{position:relative;display:flex;align-items:center;justify-content:center;margin:48px 0;min-height:600px}
+.phone-mockup{position:relative;width:280px;height:560px;background:#000;border-radius:40px;border:8px solid #1a1a1a;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;display:flex;flex-direction:column}
+.phone-mockup::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:40%;height:25px;background:#1a1a1a;border-radius:0 0 20px 20px;z-index:10}
+.phone-mockup::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:80%;height:20px;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:10}
+
+.phone-screen{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden}
+
+/* Step content layers */
+.step-layer{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;animation:fadeSlideIn .6s ease forwards;pointer-events:none}
+.step-layer.active{opacity:1;pointer-events:auto}
+.step-layer.exiting{animation:fadeSlideOut .4s ease forwards}
+
+/* Step 1: iPhone Safari bar (iOS) */
+.step-1-ios{justify-content:flex-end;background:#1a1a1a}
+.step-1-ios .safari-bar{width:100%;padding:12px;background:#2a2a2a;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid rgba(255,255,255,.1)}
+.step-1-ios .safari-item{font-size:18px;cursor:pointer}
+.step-1-ios .safari-share{animation:pulse 1.5s ease-in-out infinite;position:relative}
+.step-1-ios .safari-share::after{content:'';position:absolute;top:-20px;right:-20px;width:40px;height:40px;border:2px solid var(--gold);border-radius:50%;animation:pulse 1.5s ease-in-out infinite}
+
+.pointer-ios-1{position:absolute;bottom:60px;right:20px;font-size:28px;animation:pointArrow .8s ease-in-out infinite}
+
+.step-text-ios-1{position:absolute;bottom:90px;right:10px;text-align:right;background:rgba(0,0,0,.8);padding:8px 12px;border-radius:8px;font-size:12px;color:var(--gold);font-weight:600;white-space:nowrap}
+
+/* Step 2: iPhone menu (iOS) */
+.step-2-ios{justify-content:flex-end;background:#1a1a1a}
+.step-2-ios .safari-bar{width:100%;padding:12px;background:#2a2a2a;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.step-2-ios .safari-item{font-size:18px}
+.step-2-ios .menu-popup{position:absolute;bottom:50px;right:10px;width:180px;background:#2a2a2a;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.8);overflow:hidden;border:1px solid rgba(255,255,255,.1);z-index:20;animation:fadeSlideIn .4s ease}
+.step-2-ios .menu-item{padding:12px 14px;font-size:11px;color:var(--text-3);border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer}
+.step-2-ios .menu-item.highlight{background:rgba(224,184,78,.15);color:var(--gold);font-weight:600;animation:pulse 1.5s ease-in-out infinite}
+.step-2-ios .menu-item:last-child{border-bottom:none}
+
+.pointer-ios-2{position:absolute;bottom:100px;right:-10px;font-size:28px;animation:pointArrow .8s ease-in-out infinite}
+.step-text-ios-2{position:absolute;bottom:130px;right:-40px;text-align:center;background:rgba(0,0,0,.8);padding:8px 12px;border-radius:8px;font-size:12px;color:var(--gold);font-weight:600}
+
+/* Step 3: iPhone confirmation (iOS) */
+.step-3-ios{background:#1a1a1a;padding:40px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.step-3-ios .dialog-box{background:#2a2a2a;border-radius:16px;padding:24px;text-align:center;border:1px solid rgba(255,255,255,.1);width:100%;max-width:240px;animation:fadeSlideIn .5s ease}
+.step-3-ios .dialog-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px}
+.step-3-ios .dialog-btn{width:100%;padding:10px;background:rgba(224,184,78,.8);color:#05050a;border:none;border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;animation:pulse 1.5s ease-in-out infinite}
+
+.pointer-ios-3{position:absolute;bottom:140px;font-size:28px;animation:pointArrow .8s ease-in-out infinite}
+.step-text-ios-3{position:absolute;bottom:170px;background:rgba(0,0,0,.8);padding:8px 12px;border-radius:8px;font-size:12px;color:var(--gold);font-weight:600}
+
+/* Step 4: iPhone celebration (iOS) */
+.step-4-ios{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:40px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.step-4-ios .celebration-text{font-family:var(--font-heading);font-size:32px;font-weight:700;text-align:center;color:var(--gold)}
+.step-4-ios .celebration-emoji{font-size:48px;animation:bounce 1s ease-in-out infinite}
+
+/* Android Step 1: Chrome menu (Android) */
+.step-1-android{justify-content:flex-start;background:#1a1a1a}
+.step-1-android .address-bar{width:100%;padding:8px 12px;background:#2a2a2a;display:flex;align-items:center;justify-content:flex-end;gap:4px;border-bottom:1px solid rgba(255,255,255,.1)}
+.step-1-android .menu-dots{font-size:18px;font-weight:bold;cursor:pointer;animation:pulse 1.5s ease-in-out infinite;position:relative;padding:4px}
+.step-1-android .menu-dots::after{content:'';position:absolute;top:-15px;right:-15px;width:30px;height:30px;border:2px solid var(--gold);border-radius:50%;animation:pulse 1.5s ease-in-out infinite}
+
+.pointer-android-1{position:absolute;top:25px;right:10px;font-size:28px;animation:pointArrow .8s ease-in-out infinite}
+.step-text-android-1{position:absolute;top:45px;right:0px;text-align:right;background:rgba(0,0,0,.8);padding:8px 12px;border-radius:8px;font-size:12px;color:var(--gold);font-weight:600}
+
+/* Step 2: Android menu dropdown (Android) */
+.step-2-android{justify-content:flex-start;background:#1a1a1a}
+.step-2-android .address-bar{width:100%;padding:8px 12px;background:#2a2a2a;display:flex;align-items:center;justify-content:flex-end;gap:4px}
+.step-2-android .menu-dots{font-size:18px;font-weight:bold;cursor:pointer;padding:4px}
+.step-2-android .menu-dropdown{position:absolute;top:40px;right:8px;width:200px;background:#2a2a2a;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.8);overflow:hidden;border:1px solid rgba(255,255,255,.1);z-index:20;animation:fadeSlideIn .4s ease}
+.step-2-android .dropdown-item{padding:12px 14px;font-size:11px;color:var(--text-3);border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer}
+.step-2-android .dropdown-item.highlight{background:rgba(224,184,78,.15);color:var(--gold);font-weight:600;animation:pulse 1.5s ease-in-out infinite}
+.step-2-android .dropdown-item:last-child{border-bottom:none}
+
+.pointer-android-2{position:absolute;top:120px;right:20px;font-size:28px;animation:pointArrow .8s ease-in-out infinite}
+.step-text-android-2{position:absolute;top:150px;right:-50px;text-align:center;background:rgba(0,0,0,.8);padding:8px 12px;border-radius:8px;font-size:12px;color:var(--gold);font-weight:600}
+
+/* Step 3: Android confirmation dialog (Android) */
+.step-3-android{background:#1a1a1a;padding:40px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.step-3-android .dialog-box{background:#2a2a2a;border-radius:12px;padding:24px;text-align:center;border:1px solid rgba(255,255,255,.1);width:100%;max-width:240px;animation:fadeSlideIn .5s ease}
+.step-3-android .dialog-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px}
+.step-3-android .dialog-btn{width:100%;padding:10px;background:rgba(224,184,78,.8);color:#05050a;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;animation:pulse 1.5s ease-in-out infinite}
+
+.pointer-android-3{position:absolute;bottom:140px;font-size:28px;animation:pointArrow .8s ease-in-out infinite}
+.step-text-android-3{position:absolute;bottom:170px;background:rgba(0,0,0,.8);padding:8px 12px;border-radius:8px;font-size:12px;color:var(--gold);font-weight:600}
+
+/* Step 4: Android celebration (Android) */
+.step-4-android{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:40px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.step-4-android .celebration-text{font-family:var(--font-heading);font-size:32px;font-weight:700;text-align:center;color:var(--gold)}
+.step-4-android .celebration-emoji{font-size:48px;animation:bounce 1s ease-in-out infinite}
+
+/* Step indicator dots */
+.step-indicators{display:flex;gap:8px;justify-content:center;margin-bottom:40px}
+.dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .3s ease;cursor:pointer}
+.dot.active{background:var(--gold);width:24px;border-radius:5px}
+
+/* Confetti particles */
+.confetti{position:absolute;pointer-events:none}
+
+/* ═══ CTA SECTION ═══ */
+.install-cta{text-align:center}
+#native-install-btn{display:none;padding:16px 42px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;border-radius:12px;border:none;font-weight:700;font-size:15px;cursor:pointer;transition:all .25s cubic-bezier(.22,1,.36,1);box-shadow:0 4px 20px rgba(212,168,67,.25);margin-bottom:16px}
+#native-install-btn:hover{box-shadow:0 8px 40px rgba(212,168,67,.4);transform:translateY(-2px)}
+
+.install-link{display:inline-block;margin-top:24px;font-size:13px;color:var(--text-2);text-decoration:none;transition:color .3s}
+.install-link:hover{color:var(--gold)}
+.install-link::after{content:' →';margin-left:4px}
+
+/* ═══ TEXT GUIDE ═══ */
+.text-guide{max-width:420px;margin:48px auto 0;padding:0 16px}
+.text-guide-title{font-family:var(--font-heading);font-size:20px;font-weight:600;color:var(--text);text-align:center;margin-bottom:20px}
+.text-steps{display:flex;flex-direction:column;gap:12px}
+.text-step{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-radius:12px;background:var(--bg-card);border:1px solid var(--line)}
+.text-step-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.text-step strong{font-size:13px;color:var(--text);display:block;margin-bottom:2px}
+.text-step-desc{font-size:11px;color:var(--text-2);line-height:1.5}
+
+/* ═══ FEATURES ═══ */
+.features-section{display:flex;gap:12px;max-width:420px;margin:40px auto 0;padding:0 16px}
+.feature-card{flex:1;padding:16px 12px;border-radius:12px;background:var(--bg-card);border:1px solid var(--line);text-align:center}
+.feature-icon{font-size:24px;margin-bottom:8px}
+.feature-title{font-size:11px;font-weight:700;color:var(--gold);margin-bottom:4px}
+.feature-desc{font-size:9px;color:var(--text-3);line-height:1.5}
+
+/* ═══ FOOTER ═══ */
+.landing-footer{text-align:center;padding:40px 16px 24px;font-size:10px;color:var(--text-3)}
 
 /* ═══ RESPONSIVE ═══ */
-@media(max-width:768px){
-  .hero h1{font-size:36px}
-  .hero-stats{gap:24px;flex-wrap:wrap}
-  .pricing-grid{grid-template-columns:1fr}
-  .nav-logo span{display:none}
-  footer .container{justify-content:center;text-align:center}
-  .tab-buttons{gap:8px}
-  .tab-btn{padding:12px 16px;font-size:13px}
-  .steps-grid{grid-template-columns:1fr}
-  .step-card{padding:20px}
+@media(max-width:640px){
+  .install-wrapper{padding:16px}
+  .install-header{margin-bottom:32px}
+  .install-brand-text{font-size:24px}
+  .mockup-container{min-height:500px;margin:32px 0}
+  .phone-mockup{width:240px;height:480px;border-radius:32px;border:6px solid #1a1a1a}
 }
 </style>
 </head>
-<body>
+<body class="install-page">
 
-<!-- NAV -->
-<nav>
-  <div class="container">
-    <a href="#" class="nav-logo">
+<div class="install-wrapper">
+  <!-- Header -->
+  <div class="install-header">
+    <div class="install-logo">
       <img src="icons/icon-192x192.png" alt="Castigat">
-      <span class="nav-logo-text"><span class="nav-logo-castigat">Castigat®</span><span class="nav-logo-academy">Academy</span></span>
-    </a>
-    <div class="nav-links">
-      <a href="#install">Installer</a>
-      <a href="#features">Fonctionnalités</a>
-      <a href="#faq">FAQ</a>
-      <a href="castigat-academy.html" class="nav-cta">Ouvrir l'app</a>
+    </div>
+    <div class="install-brand">
+      <div class="install-brand-text">Castigat Academy</div>
+      <div class="install-brand-sub">Installer l'application</div>
     </div>
   </div>
-</nav>
 
-<!-- PWA Detection & Auto-Redirect -->
-<script>
-if(window.matchMedia('(display-mode: standalone)').matches){
-  setTimeout(()=>{window.location.href='castigat-academy.html'},5000);
-}
-let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',function(e){
-  e.preventDefault();
-  deferredPrompt=e;
-  /* Show native install button if available */
-  const btn=document.getElementById('native-install-btn');
-  if(btn)btn.style.display='inline-flex';
-});
-</script>
+  <!-- Native Install Button (shown if beforeinstallprompt available) -->
+  <div style="text-align:center;margin-bottom:32px">
+    <button id="native-install-btn" onclick="handleNativeInstall()">Installer en 1 clic</button>
+  </div>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="sphere-bg left"></div>
-  <div class="sphere-bg right"></div>
-  <div class="container">
-    <div class="hero-content">
-      <div class="hero-brand">
-        <div class="hero-brand-castigat">Castigat<sup>®</sup></div>
-        <div class="hero-brand-academy">Academy</div>
-        <div class="hero-brand-line"></div>
-      </div>
-      <div class="hero-tagline">
-        <span>L'école de théâtre</span>
-        <span class="gold">dans votre poche</span>
-      </div>
-      <p>Diction, improvisation, interprétation, culture théâtrale — progressez à votre rythme avec un parcours personnalisé, des challenges quotidiens et un coach dédié.</p>
-      <div class="hero-buttons">
-        <a href="castigat-academy.html" class="btn btn-gold" style="flex-direction:column;padding:20px 48px"><span style="font-size:13px;font-weight:500;text-transform:lowercase;letter-spacing:.02em">entrer en scène</span><span style="font-size:20px;font-weight:800;letter-spacing:.1em;text-transform:uppercase">Maintenant</span></a>
-        <a href="#install" class="btn btn-outline">Installer</a>
-      </div>
-      <p style="font-size:13px;color:var(--text-3);margin-top:16px;font-style:italic">Créé par des professionnels du théâtre</p>
-      <div class="hero-badges" style="display:flex;gap:24px;justify-content:center;margin-top:40px;flex-wrap:wrap">
-        <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block"></span> À votre rythme</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--violet);display:inline-block"></span> 100% mobile</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--violet);display:inline-block"></span> Vrai coaching</span>
-      </div>
+  <!-- Animated Mockup -->
+  <div class="mockup-container">
+    <div class="phone-mockup" id="phoneMockup">
+      <div class="phone-screen" id="phoneScreen"></div>
     </div>
   </div>
-</section>
 
-<!-- INSTALL GUIDE -->
-<section class="install-section" id="install">
-  <div class="container">
-    <div style="text-align:center;margin-bottom:56px">
-      <h2 class="section-title fade-in">Installer sur votre <span class="gold">téléphone</span></h2>
-      <p class="section-sub fade-in" style="margin:0 auto">Deux clics et c'est fait. Disponible sur Android et iPhone.</p>
-    </div>
+  <!-- Step Indicators -->
+  <div class="step-indicators" id="indicators"></div>
 
-    <!-- Tab buttons -->
-    <div style="max-width:600px;margin:0 auto">
-      <div class="tab-buttons">
-        <button class="tab-btn active" onclick="switchTab('android')" style="flex:1;text-align:center">Android</button>
-        <button class="tab-btn" onclick="switchTab('ios')" style="flex:1;text-align:center">iPhone</button>
-      </div>
-
-      <!-- Android Tab -->
-      <div id="android-tab" class="tab-content" style="display:block">
-        <div class="steps-grid">
-          <div class="step-card fade-in">
-            <div class="step-num-badge">1</div>
-            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Ouvrez dans Chrome</h3>
-            <p>Tapez le lien ou scannez le QR code pour accéder au site dans votre navigateur Chrome.</p>
-          </div>
-          <div class="step-card fade-in">
-            <div class="step-num-badge">2</div>
-            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Menu ⋮</h3>
-            <p>Appuyez sur les <strong>trois points</strong> en haut à droite de Chrome pour ouvrir le menu.</p>
-          </div>
-          <div class="step-card fade-in">
-            <div class="step-num-badge">3</div>
-            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">"Installer l'app"</h3>
-            <p>Cherchez l'option <strong>"Installer l'application"</strong> ou <strong>"Ajouter à l'écran d'accueil"</strong>.</p>
-          </div>
-          <div class="step-card fade-in">
-            <div class="step-num-badge">4</div>
-            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Confirmez</h3>
-            <p>Tapez <strong>Installer</strong> et l'app apparaîtra sur votre écran d'accueil comme une application native.</p>
-            <div class="pwa-check">PWA déjà installée ? Elle s'lancera depuis votre accueil.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- iOS Tab -->
-      <div id="ios-tab" class="tab-content" style="display:none">
-        <div class="steps-grid">
-          <div class="step-card fade-in">
-            <div class="step-num-badge">1</div>
-            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Ouvrez dans Safari</h3>
-            <p>Utilisez le navigateur <strong>Safari</strong> (pas Chrome) pour accéder au site de Castigat Academy.</p>
-          </div>
-          <div class="step-card fade-in">
-            <div class="step-num-badge">2</div>
-            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Icône de partage</h3>
-            <p>Appuyez sur l'icône de <strong>partage</strong> (carré avec une flèche) en bas de l'écran.</p>
-          </div>
-          <div class="step-card fade-in">
-            <div class="step-num-badge">3</div>
-            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">"Sur l'écran d'accueil"</h3>
-            <p>Faites défiler vers le bas et appuyez sur <strong>"Sur l'écran d'accueil"</strong>.</p>
-          </div>
-          <div class="step-card fade-in">
-            <div class="step-num-badge">4</div>
-            <h3 style="font-family:var(--font-heading);font-size:16px;fontWeight:600;margin-bottom:8px">Confirmez et ajoutez</h3>
-            <p>Vérifiez le nom et tapez <strong>Ajouter</strong>. L'app apparaît sur votre écran d'accueil.</p>
-            <div class="pwa-check">Fonctionne mieux que l'App Store : mise à jour automatique !</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Native install button if available -->
-      <div style="text-align:center;margin-top:32px">
-        <button id="native-install-btn" style="display:none;padding:16px 36px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#05050a;border-radius:12px;border:none;font-weight:700;font-size:15px;cursor:pointer;transition:all .25s cubic-bezier(.22,1,.36,1);box-shadow:0 4px 20px rgba(212,168,67,.25);margin-bottom:16px" onclick="handleNativeInstall()">Installer maintenant</button>
-      </div>
-    </div>
+  <!-- CTA -->
+  <div class="install-cta">
+    <a href="castigat-academy.html" class="btn btn-gold">Ouvrir l'application</a>
+    <a href="castigat-academy.html" class="install-link">Lancer maintenant</a>
   </div>
-</section>
+</div>
 
-<!-- FEATURES -->
-<section class="features" id="features">
-  <div class="container">
-    <div style="text-align:center">
-      <h2 class="section-title fade-in">Tout pour <span class="gold">progresser</span> en théâtre</h2>
-      <p class="section-sub fade-in" style="margin:0 auto">Un parcours complet, du débutant curieux au comédien confirmé.</p>
-    </div>
-    <div class="features-grid">
-      <div class="feature-card fade-in">
-        <div class="feature-icon"><span class="emoji">⏰</span></div>
-        <h3>À votre rythme</h3>
-        <p>Progressez comme bon vous semble. 10 minutes ou 2 heures, c'est vous qui décidez. L'app s'adapte à votre emploi du temps.</p>
-      </div>
-      <div class="feature-card fade-in">
-        <div class="feature-icon"><span class="emoji">🎭</span></div>
-        <h3>Coach personnel</h3>
-        <p>Des comédiens professionnels vous guident à chaque étape. Retours vidéo, conseils personnalisés, bilans progressifs.</p>
-      </div>
-      <div class="feature-card fade-in">
-        <div class="feature-icon"><span class="emoji">📱</span></div>
-        <h3>100% mobile</h3>
-        <p>Installez-la comme une app native. Fonctionne offline, mise à jour automatique, sans compte App Store requis.</p>
-      </div>
-    </div>
+<!-- ═══ TEXT INSTRUCTIONS (for those who prefer reading) ═══ -->
+<div class="text-guide">
+  <p class="text-guide-title">Pas à pas en texte</p>
+
+  <div class="text-steps" id="textStepsIos" style="display:none">
+    <div class="text-step"><span class="text-step-num">1</span><div><strong>Ouvrez dans Safari</strong><br><span class="text-step-desc">Allez sur academy.compagnie-castigat.com avec Safari (pas Chrome)</span></div></div>
+    <div class="text-step"><span class="text-step-num">2</span><div><strong>Appuyez sur le bouton Partager</strong><br><span class="text-step-desc">C'est le carré avec une flèche vers le haut ⬆️ en bas de l'écran</span></div></div>
+    <div class="text-step"><span class="text-step-num">3</span><div><strong>« Sur l'écran d'accueil »</strong><br><span class="text-step-desc">Faites défiler et appuyez sur cette option</span></div></div>
+    <div class="text-step"><span class="text-step-num">4</span><div><strong>Appuyez « Ajouter »</strong><br><span class="text-step-desc">Et voilà ! L'icône Castigat Academy apparaît sur votre écran 🎭</span></div></div>
   </div>
-</section>
 
-
-<!-- FAQ -->
-<section class="faq" id="faq">
-  <div class="container">
-    <div style="text-align:center">
-      <h2 class="section-title fade-in">Questions <span class="gold">fréquentes</span></h2>
-    </div>
-    <div class="faq-list">
-      <div class="faq-item fade-in">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Faut-il avoir de l'expérience en théâtre ?</span>
-          <span class="arrow">▼</span>
-        </div>
-        <div class="faq-a">Pas du tout ! L'app s'adapte à votre niveau grâce au questionnaire initial. Que vous n'ayez jamais mis les pieds sur une scène ou que vous soyez comédien amateur, le parcours est personnalisé pour vous.</div>
-      </div>
-      <div class="faq-item fade-in">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Combien de temps faut-il y consacrer par jour ?</span>
-          <span class="arrow">▼</span>
-        </div>
-        <div class="faq-a">10 à 15 minutes suffisent pour un exercice et un challenge quotidien. Bien sûr, vous pouvez en faire plus si vous le souhaitez — l'app est conçue pour s'intégrer dans votre quotidien sans pression.</div>
-      </div>
-      <div class="faq-item fade-in">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Comment fonctionne l'essai gratuit du plan Coach ?</span>
-          <span class="arrow">▼</span>
-        </div>
-        <div class="faq-a">Vous accédez à toutes les fonctionnalités Coach pendant 4 jours, sans engagement. On vous demande votre carte bancaire à l'inscription, mais aucun prélèvement n'est effectué avant la fin de l'essai. Vous pouvez annuler à tout moment.</div>
-      </div>
-      <div class="faq-item fade-in">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Est-ce que ça marche sur mobile ?</span>
-          <span class="arrow">▼</span>
-        </div>
-        <div class="faq-a">Oui ! Castigat Academy est une Progressive Web App : vous pouvez l'installer sur votre téléphone comme une application native, directement depuis votre navigateur. Pas besoin de l'App Store.</div>
-      </div>
-      <div class="faq-item fade-in">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Qui est le coach ?</span>
-          <span class="arrow">▼</span>
-        </div>
-        <div class="faq-a">Le coaching est assuré par les comédiens et metteurs en scène de la Compagnie Castigat, une compagnie de théâtre professionnelle. Vous bénéficiez d'un vrai regard de professionnel sur votre travail.</div>
-      </div>
-      <div class="faq-item fade-in">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Je peux annuler mon abonnement quand je veux ?</span>
-          <span class="arrow">▼</span>
-        </div>
-        <div class="faq-a">Absolument. Aucun engagement, résiliation en un clic depuis votre profil. Votre accès reste actif jusqu'à la fin de la période payée.</div>
-      </div>
-    </div>
+  <div class="text-steps" id="textStepsAndroid" style="display:none">
+    <div class="text-step"><span class="text-step-num">1</span><div><strong>Ouvrez dans Chrome</strong><br><span class="text-step-desc">Allez sur academy.compagnie-castigat.com avec Chrome</span></div></div>
+    <div class="text-step"><span class="text-step-num">2</span><div><strong>Appuyez sur ⋮ (3 points)</strong><br><span class="text-step-desc">En haut à droite de Chrome</span></div></div>
+    <div class="text-step"><span class="text-step-num">3</span><div><strong>« Installer l'application »</strong><br><span class="text-step-desc">Appuyez sur cette option dans le menu</span></div></div>
+    <div class="text-step"><span class="text-step-num">4</span><div><strong>Confirmez « Installer »</strong><br><span class="text-step-desc">Et voilà ! L'icône Castigat Academy apparaît sur votre écran 🎭</span></div></div>
   </div>
-</section>
+</div>
 
-<!-- CTA FINAL -->
-<section class="cta-final">
-  <div class="container">
-    <h2 class="section-title fade-in">Prêt·e à monter <span class="violet">sur scène</span> ?</h2>
-    <p class="section-sub fade-in" style="margin:0 auto 40px">Installez Castigat Academy et commencez votre parcours théâtral dès aujourd'hui. Gratuit, sans engagement.</p>
-    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
-      <a href="castigat-academy.html" class="btn btn-gold fade-in" style="font-size:16px;padding:18px 42px">Ouvrir l'app →</a>
-      <a href="#install" class="btn btn-outline fade-in" style="font-size:16px;padding:18px 42px">Guide d'installation</a>
-    </div>
+<!-- ═══ FEATURES ═══ -->
+<div class="features-section">
+  <div class="feature-card">
+    <div class="feature-icon">⏱️</div>
+    <div class="feature-title">À votre rythme</div>
+    <div class="feature-desc">Progressez quand vous voulez, où vous voulez</div>
   </div>
-</section>
+  <div class="feature-card">
+    <div class="feature-icon">👨‍🏫</div>
+    <div class="feature-title">Coach personnel</div>
+    <div class="feature-desc">Retours vidéo et messages directs avec un pro</div>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📱</div>
+    <div class="feature-title">100% mobile</div>
+    <div class="feature-desc">Une vraie app sur votre téléphone, même hors-ligne</div>
+  </div>
+</div>
 
-<!-- FOOTER -->
-<footer>
-  <div class="container">
-    <div class="footer-brand">
-      <img src="icons/icon-192x192.png" alt="Castigat">
-      <span class="nav-logo-text"><span class="nav-logo-castigat">Castigat®</span><span class="nav-logo-academy">Academy</span></span>
-    </div>
-    <div class="footer-links">
-      <a href="#install">Installer</a>
-      <a href="#features">Fonctionnalités</a>
-      <a href="#faq">FAQ</a>
-      <a href="castigat-academy.html">Ouvrir l'app</a>
-    </div>
-    <div class="footer-copy">© 2026 Compagnie Castigat. Tous droits réservés.</div>
-  </div>
+<footer class="landing-footer">
+  <p>Compagnie Castigat — L'école de théâtre dans votre poche</p>
 </footer>
 
-<!-- INSTALL GUIDE INTERACTIONS -->
 <script>
-function switchTab(tabName){
-  /* Hide all tabs */
-  document.getElementById('android-tab').style.display='none';
-  document.getElementById('ios-tab').style.display='none';
-
-  /* Remove active class from all buttons */
-  document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active'));
-
-  /* Show selected tab and activate button */
-  document.getElementById(tabName+'-tab').style.display='block';
-  event.target.classList.add('active');
+// ═══ DEVICE DETECTION ═══
+function detectDevice(){
+  const ua=navigator.userAgent.toLowerCase();
+  const isIPhone=/iphone|ipad|ipod/.test(ua);
+  const isAndroid=/android/.test(ua);
+  if(isIPhone)return 'ios';
+  if(isAndroid)return 'android';
+  return 'unknown';
 }
+
+const DEVICE=detectDevice();
+
+// ═══ STEP CONTENT DEFINITIONS ═══
+const STEPS_IOS=[
+  {
+    content:`
+      <div class="step-1-ios">
+        <div class="safari-bar">
+          <span class="safari-item">←</span>
+          <span class="safari-item">⤷</span>
+          <span class="safari-item">-</span>
+          <span class="safari-share safari-item">⬆️</span>
+        </div>
+        <div class="pointer-ios-1">👆</div>
+        <div class="step-text-ios-1">1. Appuyez ici</div>
+      </div>
+    `
+  },
+  {
+    content:`
+      <div class="step-2-ios">
+        <div class="safari-bar">
+          <span class="safari-item">←</span>
+          <span class="safari-item">⤷</span>
+          <span class="safari-item">-</span>
+          <span class="safari-item">⬆️</span>
+        </div>
+        <div class="menu-popup">
+          <div class="menu-item">Copier le lien</div>
+          <div class="menu-item highlight">Sur l'écran d'accueil</div>
+          <div class="menu-item">Signaler</div>
+        </div>
+        <div class="pointer-ios-2">👆</div>
+        <div class="step-text-ios-2">2. Appuyez ici</div>
+      </div>
+    `
+  },
+  {
+    content:`
+      <div class="step-3-ios">
+        <div class="dialog-box">
+          <div class="dialog-title">Ajouter à l'écran d'accueil</div>
+          <div class="dialog-btn">Ajouter</div>
+        </div>
+        <div class="pointer-ios-3">👆</div>
+        <div class="step-text-ios-3">3. Confirmez</div>
+      </div>
+    `
+  },
+  {
+    content:`
+      <div class="step-4-ios">
+        <div class="celebration-emoji">🎭</div>
+        <div class="celebration-text">C'est fait !</div>
+      </div>
+    `,
+    pauseTime:3000
+  }
+];
+
+const STEPS_ANDROID=[
+  {
+    content:`
+      <div class="step-1-android">
+        <div class="address-bar">
+          <span style="flex:1">castigat-academy.pwa</span>
+          <span class="menu-dots">⋮</span>
+        </div>
+        <div class="pointer-android-1">👆</div>
+        <div class="step-text-android-1">1. Appuyez ici</div>
+      </div>
+    `
+  },
+  {
+    content:`
+      <div class="step-2-android">
+        <div class="address-bar">
+          <span style="flex:1">castigat-academy.pwa</span>
+          <span class="menu-dots">⋮</span>
+        </div>
+        <div class="menu-dropdown">
+          <div class="dropdown-item">Nouveau Tab</div>
+          <div class="dropdown-item">Nouvel onglet privé</div>
+          <div class="dropdown-item highlight">Installer l'application</div>
+          <div class="dropdown-item">Paramètres</div>
+        </div>
+        <div class="pointer-android-2">👆</div>
+        <div class="step-text-android-2">2. Appuyez ici</div>
+      </div>
+    `
+  },
+  {
+    content:`
+      <div class="step-3-android">
+        <div class="dialog-box">
+          <div class="dialog-title">Installer l'application ?</div>
+          <div class="dialog-btn">Installer</div>
+        </div>
+        <div class="pointer-android-3">👆</div>
+        <div class="step-text-android-3">3. Confirmez</div>
+      </div>
+    `
+  },
+  {
+    content:`
+      <div class="step-4-android">
+        <div class="celebration-emoji">🎭</div>
+        <div class="celebration-text">C'est fait !</div>
+      </div>
+    `,
+    pauseTime:3000
+  }
+];
+
+const STEPS=DEVICE==='ios'?STEPS_IOS:STEPS_ANDROID;
+
+// ═══ ANIMATION STATE ═══
+let currentStep=0;
+let isAutoPlaying=true;
+let autoPlayTimer=null;
+
+// ═══ INITIALIZE ═══
+function initialize(){
+  renderIndicators();
+  showStep(0);
+  startAutoPlay();
+}
+
+function renderIndicators(){
+  const indicators=document.getElementById('indicators');
+  indicators.innerHTML='';
+  STEPS.forEach((_, i)=>{
+    const dot=document.createElement('div');
+    dot.className='dot'+(i===0?' active':'');
+    dot.onclick=()=>jumpToStep(i);
+    indicators.appendChild(dot);
+  });
+}
+
+function showStep(stepIndex){
+  const screen=document.getElementById('phoneScreen');
+  const oldLayers=screen.querySelectorAll('.step-layer');
+
+  oldLayers.forEach(layer=>{
+    if(layer.classList.contains('active')){
+      layer.classList.remove('active');
+      layer.classList.add('exiting');
+      setTimeout(()=>layer.remove(),400);
+    }
+  });
+
+  const step=STEPS[stepIndex];
+  const newLayer=document.createElement('div');
+  newLayer.className='step-layer active';
+  newLayer.innerHTML=step.content;
+  screen.appendChild(newLayer);
+
+  // Update indicators
+  document.querySelectorAll('.dot').forEach((dot, i)=>{
+    dot.classList.toggle('active', i===stepIndex);
+  });
+
+  currentStep=stepIndex;
+}
+
+function nextStep(){
+  if(currentStep<STEPS.length-1){
+    showStep(currentStep+1);
+  }else{
+    showStep(0); // Loop back
+  }
+}
+
+function jumpToStep(index){
+  stopAutoPlay();
+  showStep(index);
+  startAutoPlay();
+}
+
+function startAutoPlay(){
+  stopAutoPlay();
+  const pauseTime=STEPS[currentStep].pauseTime||2500;
+  autoPlayTimer=setTimeout(()=>{
+    nextStep();
+    startAutoPlay();
+  }, pauseTime);
+}
+
+function stopAutoPlay(){
+  if(autoPlayTimer){
+    clearTimeout(autoPlayTimer);
+    autoPlayTimer=null;
+  }
+}
+
+// ═══ USER INTERACTION ═══
+document.getElementById('phoneMockup').addEventListener('click', ()=>{
+  nextStep();
+  stopAutoPlay();
+  startAutoPlay();
+});
+
+// ═══ PWA DETECTION ═══
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  document.getElementById('native-install-btn').style.display='inline-flex';
+});
 
 function handleNativeInstall(){
   if(deferredPrompt){
@@ -495,14 +521,23 @@ function handleNativeInstall(){
     });
   }
 }
-</script>
 
-<!-- SCROLL ANIMATIONS -->
-<script>
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }});
-}, { threshold: 0.1 });
-document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+// ═══ APP ALREADY INSTALLED CHECK ═══
+if(window.matchMedia('(display-mode: standalone)').matches){
+  setTimeout(()=>{
+    window.location.href='castigat-academy.html';
+  }, 1000);
+}
+
+// ═══ SHOW TEXT STEPS FOR DETECTED DEVICE ═══
+if(DEVICE==='ios'){
+  document.getElementById('textStepsIos').style.display='flex';
+}else{
+  document.getElementById('textStepsAndroid').style.display='flex';
+}
+
+// ═══ START ═══
+initialize();
 </script>
 
 </body>
