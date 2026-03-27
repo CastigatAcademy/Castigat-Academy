@@ -50,6 +50,13 @@ window.addEventListener('beforeinstallprompt', function(e){
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* ── Supabase Client Init ── */
+const SUPABASE_URL='https://ewvzcagorcsimdljazkn.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_cXOU-pPxOR5zX-fX60AooA_ZvynKw9I';
+const _supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -2057,8 +2064,9 @@ function Onboard({done:onDone}){
   const[step,setStep]=useState(0);
   const[ans,setAns]=useState([]);
   const[ansIdx,setAnsIdx]=useState([]);/* actual option indices chosen */
-  const[form,setForm]=useState({prenom:'',nom:'',birth:'',email:'',cgu:false,pseudo:''});
+  const[form,setForm]=useState({prenom:'',nom:'',birth:'',email:'',password:'',cgu:false,pseudo:''});
   const[formErr,setFormErr]=useState('');
+  const[formLoading,setFormLoading]=useState(false);
   const[avatar,setAvatar]=useState('dramaturge');
   const[showCGU,setShowCGU]=useState(false);
   const[showSectionIntro,setShowSectionIntro]=useState(-1);
@@ -2092,10 +2100,23 @@ function Onboard({done:onDone}){
     if(!form.nom.trim())return"Veuillez renseigner votre nom.";
     if(!form.birth)return"Veuillez renseigner votre date de naissance.";
     if(!form.email.trim()||!form.email.includes('@'))return"Adresse email invalide.";
+    if(!form.password||form.password.length<6)return"Le mot de passe doit contenir au moins 6 caractères.";
     if(!form.cgu)return"Veuillez accepter les CGU.";
     return null;
   };
-  const submitForm=()=>{const err=validateForm();if(err){setFormErr(err);return}setFormErr('');setStep(2)};
+  const submitForm=async()=>{
+    const err=validateForm();if(err){setFormErr(err);return}
+    setFormErr('');setFormLoading(true);
+    try{
+      const{data,error}=await _supabase.auth.signUp({
+        email:form.email.trim(),
+        password:form.password,
+        options:{data:{display_name:form.prenom+' '+form.nom,prenom:form.prenom,nom:form.nom,birth:form.birth}}
+      });
+      if(error){setFormErr(error.message);setFormLoading(false);return}
+      setFormLoading(false);setStep(2);
+    }catch(e){setFormErr("Erreur de connexion. Réessayez.");setFormLoading(false)}
+  };
 
   /* Step 0 — Welcome */
   if(step===0) return(
@@ -2181,12 +2202,13 @@ function Onboard({done:onDone}){
           </div>
           <div><label className="input-label">Date de naissance</label><input className="input-field" type="date" value={form.birth} onChange={e=>setForm({...form,birth:e.target.value})} style={{colorScheme:'dark'}}/></div>
           <div><label className="input-label">Adresse email</label><input className="input-field" type="email" placeholder="votre@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
+          <div><label className="input-label">Mot de passe</label><input className="input-field" type="password" placeholder="6 caractères minimum" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></div>
           <div onClick={()=>setForm({...form,cgu:!form.cgu})} className="checkbox-row">
             <div className={"checkbox-box"+(form.cgu?" checked":"")}>{form.cgu&&<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#07070b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>}</div>
             <p style={{fontSize:11,color:'var(--text-2)',lineHeight:1.6}}>J'accepte les <span onClick={(e)=>{e.stopPropagation();setShowCGU(true)}} style={{color:'var(--gold)',textDecoration:'underline',cursor:'pointer'}}>conditions générales</span></p>
           </div>
           {formErr&&<div style={{padding:'10px 14px',borderRadius:8,background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)'}}><p style={{fontSize:11,color:'#ef4444'}}>{formErr}</p></div>}
-          <button className="btn-gold" onClick={submitForm} style={{width:'100%',padding:'15px 0',fontSize:13,letterSpacing:'.08em',marginTop:4}}>CONTINUER</button>
+          <button className="btn-gold" onClick={submitForm} disabled={formLoading} style={{width:'100%',padding:'15px 0',fontSize:13,letterSpacing:'.08em',marginTop:4,opacity:formLoading?.6:1}}>{formLoading?'Inscription...':'CONTINUER'}</button>
         </div>
       </div>
     </div>
