@@ -135,6 +135,14 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;color:inhe
 @keyframes text-reveal{0%{opacity:0;letter-spacing:.4em;filter:blur(6px)}100%{opacity:1;letter-spacing:.14em;filter:blur(0)}}
 @keyframes text-fade-up{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes flicker{0%,100%{opacity:.9}10%{opacity:.85}20%{opacity:1}40%{opacity:.95}60%{opacity:1}80%{opacity:.88}}
+@keyframes mc-grain{0%,100%{transform:translate(0,0)}10%{transform:translate(-2%,-3%)}30%{transform:translate(3%,2%)}50%{transform:translate(-1%,1%)}70%{transform:translate(2%,-1%)}90%{transform:translate(-3%,3%)}}
+@keyframes mc-curtain-l{0%{transform:translateX(0)}100%{transform:translateX(-105%)}}
+@keyframes mc-curtain-r{0%{transform:translateX(0)}100%{transform:translateX(105%)}}
+@keyframes mc-line-draw{0%{width:0;opacity:0}100%{width:120px;opacity:1}}
+@keyframes mc-breathe{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes mc-title-in{0%{opacity:0;letter-spacing:.5em;filter:blur(4px)}100%{opacity:1;letter-spacing:.25em;filter:blur(0)}}
+@keyframes mc-sub-in{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes mc-badge-in{0%{opacity:0;transform:translateY(8px) scale(.95)}100%{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes curtain-left{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
 @keyframes curtain-right{0%{transform:translateX(0)}100%{transform:translateX(100%)}}
 @keyframes knock-flash{0%{opacity:0}10%{opacity:.15}30%{opacity:0}100%{opacity:0}}
@@ -2181,68 +2189,94 @@ function Onboard({done:onDone}){
     </div>
   );
 
-  /* Step 0 — Welcome */
+  /* Step 0 — Welcome (MasterClass-inspired) */
   if(step===0) return(
-    <div style={{minHeight:'100vh',background:'#07070c',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative',overflow:'hidden'}}>
-      {/* Dot pattern background */}
-      <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px)',backgroundSize:'24px 24px',pointerEvents:'none'}}/>
+    <div style={{minHeight:'100vh',background:'#030305',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 20px',position:'relative',overflow:'hidden'}}>
 
-      {/* Spotlight cone from top */}
-      <div style={{position:'absolute',top:'-5%',left:'50%',transform:'translateX(-50%)',width:300,height:'70%',background:'linear-gradient(180deg,rgba(200,164,78,.12) 0%,rgba(200,164,78,.03) 50%,transparent 100%)',clipPath:'polygon(35% 0%, 65% 0%, 85% 100%, 15% 100%)',pointerEvents:'none',animation:'spotlight-ray 4s ease-in-out infinite'}}/>
-      {/* Side glows */}
-      <div style={{position:'absolute',top:'20%',left:'-10%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(167,139,250,.06),transparent 70%)',pointerEvents:'none'}}/>
-      <div style={{position:'absolute',top:'30%',right:'-10%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(200,164,78,.05),transparent 70%)',pointerEvents:'none'}}/>
-      <div style={{position:'absolute',bottom:0,left:0,right:0,height:300,background:'linear-gradient(0deg,rgba(167,139,250,.04),transparent)',pointerEvents:'none'}}/>
+      {/* Theater curtain reveal */}
+      <div style={{position:'absolute',inset:0,zIndex:10,pointerEvents:'none',display:'flex'}}>
+        <div style={{flex:1,background:'linear-gradient(90deg,#0a0208 60%,#1a0a12)',animation:'mc-curtain-l 1.4s cubic-bezier(.76,0,.24,1) .3s both'}}/>
+        <div style={{flex:1,background:'linear-gradient(270deg,#0a0208 60%,#1a0a12)',animation:'mc-curtain-r 1.4s cubic-bezier(.76,0,.24,1) .3s both'}}/>
+      </div>
 
-      {/* Floating particles */}
-      {Landing_particles.map((p,i)=>(
-        <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:p.color==='gold'?'var(--gold-light)':'var(--violet)',opacity:p.opa,left:`${p.left}%`,top:`${p.startY}%`,pointerEvents:'none',animation:`float ${p.dur}s ease-in-out ${p.delay}s infinite`,boxShadow:p.color==='gold'?`0 0 ${p.size*4}px rgba(224,184,78,.5), 0 0 ${p.size*8}px rgba(224,184,78,.2)`:`0 0 ${p.size*4}px rgba(167,139,250,.5), 0 0 ${p.size*8}px rgba(167,139,250,.2)`}}/>
+      {/* Film grain overlay */}
+      <div style={{position:'absolute',inset:'-50%',width:'200%',height:'200%',backgroundImage:'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.04\'/%3E%3C/svg%3E")',opacity:.5,pointerEvents:'none',animation:'mc-grain 8s steps(10) infinite',zIndex:2}}/>
+
+      {/* Deep vignette */}
+      <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse 70% 60% at 50% 45%,transparent 0%,rgba(3,3,5,.4) 50%,rgba(3,3,5,.85) 100%)',pointerEvents:'none',zIndex:1}}/>
+
+      {/* Single dramatic spotlight from above */}
+      <div style={{position:'absolute',top:'-20%',left:'50%',transform:'translateX(-50%)',width:500,height:'80%',background:'radial-gradient(ellipse 40% 70% at 50% 0%,rgba(200,164,78,.1) 0%,rgba(200,164,78,.03) 40%,transparent 70%)',pointerEvents:'none',zIndex:1}}/>
+
+      {/* Warm ambient glow at center */}
+      <div style={{position:'absolute',top:'35%',left:'50%',transform:'translate(-50%,-50%)',width:600,height:600,borderRadius:'50%',background:'radial-gradient(circle,rgba(200,164,78,.04) 0%,transparent 60%)',pointerEvents:'none',zIndex:1,animation:'mc-breathe 6s ease-in-out infinite'}}/>
+
+      {/* Subtle floor reflection */}
+      <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)',width:'120%',height:'25%',background:'linear-gradient(0deg,rgba(200,164,78,.03) 0%,transparent 100%)',pointerEvents:'none',zIndex:1}}/>
+
+      {/* Few elegant floating particles — gold only, fewer, slower */}
+      {Landing_particles.filter((_,i)=>i<8).map((p,i)=>(
+        <div key={i} style={{position:'absolute',width:p.size*.7,height:p.size*.7,borderRadius:'50%',background:'var(--gold)',opacity:p.opa*.3,left:`${p.left}%`,top:`${p.startY}%`,pointerEvents:'none',zIndex:1,animation:`float ${p.dur+4}s ease-in-out ${p.delay}s infinite`,boxShadow:`0 0 ${p.size*6}px rgba(200,164,78,.3)`}}/>
       ))}
 
       {/* Content */}
-      <div style={{position:'relative',zIndex:1,textAlign:'center',maxWidth:380,width:'100%'}}>
+      <div style={{position:'relative',zIndex:3,textAlign:'center',maxWidth:400,width:'100%'}}>
 
-        {/* CASTIGAT® + ACADEMY — visible immediately */}
-        <div style={{animation:'fadeIn .6s ease both',marginBottom:2}}>
-          <p style={{fontFamily:'Oswald, sans-serif',fontWeight:600,fontSize:24,letterSpacing:'.22em',color:'#fff',margin:0,textTransform:'uppercase'}}>
-            CASTIGAT<sup style={{fontSize:10,verticalAlign:'super',fontWeight:400}}>®</sup>
+        {/* Top decorative line */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:16,marginBottom:40,animation:'fadeIn 1s ease 1.6s both'}}>
+          <div style={{width:40,height:1,background:'linear-gradient(90deg,transparent,rgba(200,164,78,.4))'}}/>
+          <div style={{width:6,height:6,borderRadius:'50%',border:'1px solid rgba(200,164,78,.4)'}}/>
+          <div style={{width:40,height:1,background:'linear-gradient(270deg,transparent,rgba(200,164,78,.4))'}}/>
+        </div>
+
+        {/* CASTIGAT */}
+        <div style={{animation:'mc-title-in 1.2s cubic-bezier(.25,.46,.45,.94) 1.8s both'}}>
+          <p style={{fontFamily:"'Cormorant Garamond', serif",fontWeight:300,fontSize:16,letterSpacing:'.25em',color:'rgba(200,164,78,.7)',margin:'0 0 6px',textTransform:'uppercase'}}>
+            CASTIGAT
           </p>
         </div>
 
-        <div style={{animation:'fadeIn .8s ease .2s both'}}>
-          <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:68,letterSpacing:'.08em',color:'#fff',lineHeight:.95,margin:'0 0 10px',textTransform:'uppercase',textShadow:'0 4px 30px rgba(255,255,255,.08)'}}>ACADEMY</h1>
-          <div style={{width:90,height:2,background:'linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)',margin:'0 auto',borderRadius:2,boxShadow:'0 0 16px rgba(200,164,78,.4)',animation:'shimmer 3s linear infinite',backgroundSize:'200% auto'}}/>
+        {/* ACADEMY — hero title, very large */}
+        <div style={{animation:'mc-title-in 1.4s cubic-bezier(.25,.46,.45,.94) 2s both'}}>
+          <h1 style={{fontFamily:"'Cormorant Garamond', serif",fontWeight:700,fontSize:72,letterSpacing:'.12em',color:'#fff',lineHeight:.9,margin:'0 0 20px',textTransform:'uppercase',textShadow:'0 0 80px rgba(200,164,78,.15), 0 4px 40px rgba(0,0,0,.5)'}}>ACADEMY</h1>
         </div>
 
-        {/* L'ÉCOLE DE THÉÂTRE DANS VOTRE POCHE — animated entrance */}
-        <div style={{marginTop:30,marginBottom:42}}>
-          <p style={{fontFamily:'Oswald, sans-serif',fontWeight:600,fontSize:28,letterSpacing:'.04em',color:'#fff',lineHeight:1.3,margin:0,textTransform:'uppercase'}}>
-            <span style={{display:'block',animation:'hero-text-in .7s cubic-bezier(.22,1,.36,1) .8s both'}}>L'ÉCOLE DE</span>
-            <span style={{display:'block',animation:'hero-text-in .8s cubic-bezier(.22,1,.36,1) 1.1s both',color:'var(--gold-light)',fontWeight:700,fontSize:34,textShadow:'0 0 24px rgba(200,164,78,.5),0 0 60px rgba(200,164,78,.15)'}}>THÉÂTRE</span>
-            <span style={{display:'block',animation:'hero-text-in .7s cubic-bezier(.22,1,.36,1) 1.4s both'}}>DANS VOTRE</span>
-            <span style={{display:'block',animation:'hero-text-in .7s cubic-bezier(.22,1,.36,1) 1.6s both'}}>POCHE</span>
+        {/* Gold line separator */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:32,animation:'fadeIn 1s ease 2.4s both'}}>
+          <div style={{height:1,background:'linear-gradient(90deg,transparent,rgba(200,164,78,.5),rgba(200,164,78,.8))',animation:'mc-line-draw 1s ease 2.6s both'}}/>
+          <div style={{width:8,height:8,background:'var(--gold)',transform:'rotate(45deg)',flexShrink:0,opacity:.8}}/>
+          <div style={{height:1,background:'linear-gradient(270deg,transparent,rgba(200,164,78,.5),rgba(200,164,78,.8))',animation:'mc-line-draw 1s ease 2.6s both'}}/>
+        </div>
+
+        {/* Tagline — elegant serif */}
+        <div style={{marginBottom:48}}>
+          <p style={{fontFamily:"'Cormorant Garamond', serif",fontWeight:400,fontSize:20,color:'rgba(255,255,255,.75)',lineHeight:1.6,margin:0,fontStyle:'italic',letterSpacing:'.02em'}}>
+            <span style={{display:'block',animation:'mc-sub-in .8s ease 2.8s both'}}>L'école de théâtre</span>
+            <span style={{display:'block',animation:'mc-sub-in .8s ease 3s both',color:'var(--gold-light)',fontStyle:'normal',fontWeight:600,fontSize:22}}>dans votre poche</span>
           </p>
         </div>
 
-        {/* CTA — appears after slogan */}
-        <div style={{animation:'btn-scale-in .8s cubic-bezier(.22,1,.36,1) 2.2s both',marginBottom:44}}>
+        {/* CTA — refined, minimal, MasterClass-style */}
+        <div style={{animation:'btn-scale-in .8s cubic-bezier(.22,1,.36,1) 3.4s both',marginBottom:48}}>
           <button onClick={()=>{SFX.click();setStep(1)}}
-            style={{background:'linear-gradient(135deg,var(--gold),var(--gold-light))',border:'none',borderRadius:16,padding:'20px 48px',cursor:'pointer',display:'inline-block',textAlign:'center',transition:'all .3s',boxShadow:'0 8px 40px rgba(200,164,78,.35),0 0 80px rgba(200,164,78,.12),inset 0 1px 0 rgba(255,255,255,.2)',animation:'btn-glow 3s ease-in-out 3s infinite'}}>
-            <span style={{fontFamily:'Inter, sans-serif',fontSize:12,fontWeight:400,color:'rgba(7,7,12,.6)',letterSpacing:'.04em',display:'block',marginBottom:3}}>entrer en scène</span>
-            <span style={{fontFamily:'Oswald, sans-serif',fontSize:22,fontWeight:700,color:'#07070c',letterSpacing:'.14em',textTransform:'uppercase',display:'block'}}>MAINTENANT</span>
+            style={{background:'transparent',border:'1.5px solid var(--gold)',borderRadius:0,padding:'18px 56px',cursor:'pointer',display:'inline-block',textAlign:'center',transition:'all .4s',position:'relative',overflow:'hidden'}}>
+            <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,rgba(200,164,78,.12),rgba(200,164,78,.04))',transition:'all .4s'}}/>
+            <span style={{fontFamily:"'Cormorant Garamond', serif",fontSize:18,fontWeight:600,color:'var(--gold-light)',letterSpacing:'.18em',textTransform:'uppercase',position:'relative',zIndex:1}}>Entrer en scène</span>
           </button>
-          <p style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:14,fontStyle:'italic',animation:'fadeIn .6s ease 2.8s both'}}>Créé par des professionnels du théâtre</p>
         </div>
 
-        {/* 3 features bottom */}
-        <div style={{display:'flex',justifyContent:'center',gap:12,flexWrap:'wrap',width:'100%',maxWidth:340,margin:'0 auto'}}>
-          {[{t:"À votre rythme",ic:'⏱',d:'2.6s'},{t:"Où vous voulez",ic:'🌍',d:'2.8s'},{t:"Vrai coaching",ic:'👨‍🏫',d:'3.0s'}].map((x,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:6,animation:`fadeUp .5s ease ${x.d} both`,padding:'7px 14px',borderRadius:10,background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)'}}>
-              <span style={{fontSize:14,filter:'grayscale(1) brightness(10)'}}>{x.ic}</span>
-              <span style={{fontFamily:'Inter, sans-serif',fontSize:11,fontWeight:500,color:'rgba(255,255,255,.7)',letterSpacing:'.02em'}}>{x.t}</span>
+        {/* 3 features — minimal, spaced */}
+        <div style={{display:'flex',justifyContent:'center',gap:28,flexWrap:'wrap',width:'100%',maxWidth:360,margin:'0 auto'}}>
+          {[{t:"À votre rythme",ic:'⏱',d:'3.6s'},{t:"Où vous voulez",ic:'🌍',d:'3.8s'},{t:"Vrai coaching",ic:'👨‍🏫',d:'4.0s'}].map((x,i)=>(
+            <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,animation:`mc-badge-in .6s ease ${x.d} both`}}>
+              <span style={{fontSize:18,filter:'grayscale(1) brightness(10)',opacity:.6}}>{x.ic}</span>
+              <span style={{fontFamily:'Inter, sans-serif',fontSize:10,fontWeight:400,color:'rgba(255,255,255,.4)',letterSpacing:'.08em',textTransform:'uppercase'}}>{x.t}</span>
             </div>
           ))}
         </div>
+
+        {/* Bottom credits */}
+        <p style={{fontSize:10,color:'rgba(255,255,255,.2)',marginTop:40,fontFamily:"'Cormorant Garamond', serif",fontStyle:'italic',letterSpacing:'.06em',animation:'fadeIn .6s ease 4.2s both'}}>Créé par des professionnels du théâtre</p>
       </div>
     </div>
   );
@@ -7003,7 +7037,7 @@ function InstallPrompt({st}){
       <div style={{background:'linear-gradient(180deg,var(--bg-raised) 0%,var(--bg) 100%)',borderTop:'1px solid var(--line)',padding:'24px 20px 32px',margin:0}}>
         <div style={{display:'flex',alignItems:'center',gap:16,maxWidth:500,margin:'0 auto',marginBottom:16}}>
           <div style={{width:50,height:50,borderRadius:12,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            <span style={{fontSize:28}}>🎭</span>
+            <span style={{fontSize:28,filter:'grayscale(1) brightness(10)'}}>🎭</span>
           </div>
           <div style={{flex:1}}>
             <p className="heading" style={{fontSize:16,marginBottom:2}}>Installer Castigat Academy</p>
