@@ -5329,39 +5329,46 @@ function CoachChat({st,setSt,onClose}){
   const[msg,setMsg]=useState("");
   const[messages,setMessages]=useState([]);
   const[loading,setLoading]=useState(true);
-  const[userEmail,setUserEmail]=useState(st.email||'');
   const chatEndRef=useRef(null);
+  const emailRef=useRef(st.email||'');
 
-  /* Get email from Supabase session (more reliable than st.email) */
+  /* Get email from Supabase session once, then load messages */
   useEffect(()=>{(async()=>{
     const{data}=await _supabase.auth.getSession();
-    if(data.session?.user?.email){setUserEmail(data.session.user.email)}
-  })()},[]);
-
-  const loadMessages=async()=>{
-    if(!userEmail)return;
-    try{
-      const{data,error}=await _supabase.from('messages').select('*').eq('student_email',userEmail).order('created_at',{ascending:true});
-      if(!error&&data)setMessages(data);
-    }catch(e){console.error('Load messages error:',e)}
+    if(data.session?.user?.email)emailRef.current=data.session.user.email;
+    /* Load immediately after getting email */
+    if(emailRef.current){
+      const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
+      if(!res.error&&res.data)setMessages(res.data);
+    }
     setLoading(false);
-  };
-
-  useEffect(()=>{if(userEmail){loadMessages();const iv=setInterval(loadMessages,10000);return()=>clearInterval(iv);}},[userEmail]);
+  })();
+  const iv=setInterval(async()=>{
+    if(!emailRef.current)return;
+    const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
+    if(!res.error&&res.data)setMessages(res.data);
+  },8000);
+  return()=>clearInterval(iv);
+  },[]);
   useEffect(()=>{if(chatEndRef.current)chatEndRef.current.scrollIntoView({behavior:'smooth'});},[messages]);
 
   const sendMessage=async()=>{
     if(!msg.trim())return;
     const currentUser=await _supabase.auth.getUser();
+    if(!emailRef.current&&currentUser.data?.user?.email)emailRef.current=currentUser.data.user.email;
     const{error}=await _supabase.from('messages').insert([{
       user_id:currentUser.data?.user?.id||null,
-      student_email:userEmail||st.email||'',
+      student_email:emailRef.current||'',
       student_name:st.user||st.pseudo||currentUser.data?.user?.user_metadata?.display_name||'Anonyme',
       sender:'student',
       content:msg.trim(),
       read:false
     }]);
-    if(!error){setMsg("");loadMessages();}
+    if(!error){
+      setMsg("");
+      const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
+      if(!res.error&&res.data)setMessages(res.data);
+    }
   };
 
   return(
