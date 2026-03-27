@@ -2234,21 +2234,14 @@ function Onboard({done:onDone}){
           <p style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:14,fontStyle:'italic',animation:'fadeIn .6s ease 2.8s both'}}>Créé par des professionnels du théâtre</p>
         </div>
 
-        {/* 3 features bottom with icons */}
-        <div style={{display:'flex',justifyContent:'center',gap:24,flexWrap:'wrap'}}>
-          {[{color:'var(--violet)',t:"À votre rythme",ic:'⏱️',d:'2.6s'},{color:'var(--gold)',t:"Où vous voulez",ic:'🌍',d:'2.8s'},{color:'var(--emerald)',t:"Vrai coaching",ic:'👨‍🏫',d:'3.0s'}].map((x,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:8,animation:`fadeUp .5s ease ${x.d} both`,padding:'8px 12px',borderRadius:12,background:`rgba(255,255,255,.02)`,border:'1px solid rgba(255,255,255,.06)',cursor:'pointer',transition:'all .3s',':hover':{background:`rgba(${x.color.includes('gold')?'224,184,78':x.color.includes('emerald')?'52,211,153':'167,139,250'},.08)`,borderColor:`${x.color}33`}}}>
-              <span style={{fontSize:16}}>{x.ic}</span>
-              <span style={{fontFamily:'Inter, sans-serif',fontSize:12,fontWeight:500,color:'rgba(255,255,255,.7)',letterSpacing:'.02em'}}>{x.t}</span>
+        {/* 3 features bottom */}
+        <div style={{display:'flex',justifyContent:'center',gap:12,flexWrap:'wrap',width:'100%',maxWidth:340,margin:'0 auto'}}>
+          {[{t:"À votre rythme",ic:'⏱',d:'2.6s'},{t:"Où vous voulez",ic:'🌍',d:'2.8s'},{t:"Vrai coaching",ic:'👨‍🏫',d:'3.0s'}].map((x,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:6,animation:`fadeUp .5s ease ${x.d} both`,padding:'7px 14px',borderRadius:10,background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)'}}>
+              <span style={{fontSize:14,filter:'grayscale(1) brightness(10)'}}>{x.ic}</span>
+              <span style={{fontFamily:'Inter, sans-serif',fontSize:11,fontWeight:500,color:'rgba(255,255,255,.7)',letterSpacing:'.02em'}}>{x.t}</span>
             </div>
           ))}
-        </div>
-
-        {/* Testimonial section */}
-        <div style={{marginTop:48,paddingTop:32,borderTop:'1px solid rgba(255,255,255,.1)',animation:'fadeUp .6s ease 3.2s both'}}>
-          <p style={{fontSize:11,color:'rgba(255,255,255,.5)',fontStyle:'italic',marginBottom:12,textAlign:'center'}}>Approuvé par les étudiants</p>
-          <p style={{fontSize:13,color:'rgba(255,255,255,.8)',fontWeight:500,textAlign:'center',maxWidth:300,margin:'0 auto',lineHeight:1.6}}>« Une méthode innovante pour apprendre le théâtre à mon rythme. »</p>
-          <p style={{fontSize:10,color:'rgba(255,255,255,.5)',marginTop:8,textAlign:'center'}}>— Sophie, Marseille</p>
         </div>
       </div>
     </div>
