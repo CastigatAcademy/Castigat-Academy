@@ -2087,6 +2087,7 @@ function Top({xp,streak}){
 /* ═══ ONBOARDING ═══ */
 function Onboard({done:onDone}){
   const[step,setStep]=useState(0);
+  const[loginMode,setLoginMode]=useState(false);
   const[ans,setAns]=useState([]);
   const[ansIdx,setAnsIdx]=useState([]);/* actual option indices chosen */
   const[form,setForm]=useState({prenom:'',nom:'',birth:'',email:'',password:'',cgu:false,pseudo:''});
@@ -2142,6 +2143,42 @@ function Onboard({done:onDone}){
       setFormLoading(false);setStep(2);
     }catch(e){setFormErr("Erreur de connexion. Réessayez.");setFormLoading(false)}
   };
+
+  const loginUser=async()=>{
+    if(!form.email.trim()||!form.email.includes('@')){setFormErr("Adresse email invalide.");return}
+    if(!form.password||form.password.length<6){setFormErr("Mot de passe requis (6 caractères min.).");return}
+    setFormErr('');setFormLoading(true);
+    try{
+      const{data,error}=await _supabase.auth.signInWithPassword({email:form.email.trim(),password:form.password});
+      if(error){setFormErr(error.message==='Invalid login credentials'?'Email ou mot de passe incorrect.':error.message);setFormLoading(false);return}
+      /* Restore user profile from Supabase */
+      const displayName=data.user?.user_metadata?.display_name||data.user?.email?.split('@')[0]||'';
+      setFormLoading(false);
+      onDone({user:displayName,email:data.user.email,pseudo:displayName});
+    }catch(e){setFormErr("Erreur de connexion. Réessayez.");setFormLoading(false)}
+  };
+
+  /* Login screen */
+  if(loginMode) return(
+    <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',padding:'40px 24px'}}>
+      <div className="mw">
+        <div style={{textAlign:'center',marginBottom:32}}>
+          <div style={{width:56,height:56,borderRadius:16,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
+            {I.user({size:26,sw:1.6,style:{color:'#07070b'}})}
+          </div>
+          <h1 className="heading" style={{fontSize:28,marginBottom:8}}>Bon retour !</h1>
+          <p className="body" style={{fontSize:12}}>Connectez-vous pour retrouver votre progression</p>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div><label className="input-label">Adresse email</label><input className="input-field" type="email" placeholder="votre@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
+          <div><label className="input-label">Mot de passe</label><input className="input-field" type="password" placeholder="Votre mot de passe" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} onKeyDown={e=>{if(e.key==='Enter')loginUser()}}/></div>
+          {formErr&&<div style={{padding:'10px 14px',borderRadius:8,background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)'}}><p style={{fontSize:11,color:'#ef4444'}}>{formErr}</p></div>}
+          <button className="btn-gold" onClick={loginUser} disabled={formLoading} style={{width:'100%',padding:'15px 0',fontSize:13,letterSpacing:'.08em',marginTop:4,opacity:formLoading?.6:1}}>{formLoading?'Connexion...':'SE CONNECTER'}</button>
+          <p style={{textAlign:'center',fontSize:12,color:'var(--text-3)',marginTop:8}}>Pas encore de compte ? <span onClick={()=>{setLoginMode(false);setFormErr('')}} style={{color:'var(--gold)',cursor:'pointer',fontWeight:600}}>S'inscrire</span></p>
+        </div>
+      </div>
+    </div>
+  );
 
   /* Step 0 — Welcome */
   if(step===0) return(
@@ -2234,6 +2271,7 @@ function Onboard({done:onDone}){
           </div>
           {formErr&&<div style={{padding:'10px 14px',borderRadius:8,background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)'}}><p style={{fontSize:11,color:'#ef4444'}}>{formErr}</p></div>}
           <button className="btn-gold" onClick={submitForm} disabled={formLoading} style={{width:'100%',padding:'15px 0',fontSize:13,letterSpacing:'.08em',marginTop:4,opacity:formLoading?.6:1}}>{formLoading?'Inscription...':'CONTINUER'}</button>
+          <p style={{textAlign:'center',fontSize:12,color:'var(--text-3)',marginTop:12}}>Déjà un compte ? <span onClick={()=>{setLoginMode(true);setFormErr('')}} style={{color:'var(--gold)',cursor:'pointer',fontWeight:600}}>Se connecter</span></p>
         </div>
       </div>
     </div>
