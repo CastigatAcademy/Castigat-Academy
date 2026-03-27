@@ -276,6 +276,7 @@ const I={
   settings:p=><Ic {...p} d="M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>,
   mirror:p=><Ic {...p} d="M12 3a7 7 0 100 14 7 7 0 000-14z M12 17v4 M8 21h8"/>,
   curtain:p=><Ic {...p} d="M2 3h20v4c0 4-3 6-4 8s0 4 0 6H6c0-2 1-4 0-6S2 7 2 7z M12 3v18"/>,
+  message:p=><Ic {...p} d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>,
   pen:p=><Ic {...p} d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5z"/>,
   compass:p=><Ic {...p} d="M12 22a10 10 0 100-20 10 10 0 000 20z M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36z"/>,
   run:p=><Ic {...p} d="M13 4a2 2 0 100-4 2 2 0 000 4z M4 17l3.5-5L10 14l4-6 4 4 M6 21l2-4"/>,
@@ -2002,14 +2003,14 @@ function ExamView({levelId,st,setSt,onPass,onBack}){
             {monoAudio&&(
               <div style={{padding:12,borderRadius:10,background:'rgba(74,222,128,.08)',border:'1px solid rgba(74,222,128,.2)'}}>
                 <p style={{fontSize:11,fontWeight:600,color:'var(--emerald)',marginBottom:2}}>✓ Enregistrement sauvegardé</p>
-                <p style={{fontSize:9,color:'var(--text-2)'}}>Prêt à être envoyé{st.plan==="coach"?" au coach":""}</p>
+                <p style={{fontSize:9,color:'var(--text-2)'}}>Prêt à être envoyé{st.plan==="premium"?" au coach":""}</p>
               </div>
             )}
           </div>
         )}
         {selectedMono&&monoAudio&&(
-          <button onClick={()=>{setPhase("pass");setXpPop(true);setSt(p=>({...p,xp:Math.max(p.xp,nextLv.xp),passedExams:[...(p.passedExams||[]).filter(e=>e!==levelId),levelId],coachMessages:st.plan==="coach"?[...p.coachMessages,{id:Date.now(),mono:selectedMono.title,status:"pending",timestamp:new Date().toDateString()}]:p.coachMessages}));}} className="btn-gold" style={{width:'100%',padding:'14px 0',fontSize:13}}>
-            {st.plan==="coach"?"Envoyer au coach":"Je valide mon passage"}
+          <button onClick={()=>{setPhase("pass");setXpPop(true);setSt(p=>({...p,xp:Math.max(p.xp,nextLv.xp),passedExams:[...(p.passedExams||[]).filter(e=>e!==levelId),levelId],coachMessages:st.plan==="premium"?[...p.coachMessages,{id:Date.now(),mono:selectedMono.title,status:"pending",timestamp:new Date().toDateString()}]:p.coachMessages}));}} className="btn-gold" style={{width:'100%',padding:'14px 0',fontSize:13}}>
+            {st.plan==="premium"?"Envoyer au coach":"Je valide mon passage"}
           </button>
         )}
       </div>
@@ -2233,14 +2234,21 @@ function Onboard({done:onDone}){
           <p style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:14,fontStyle:'italic',animation:'fadeIn .6s ease 2.8s both'}}>Créé par des professionnels du théâtre</p>
         </div>
 
-        {/* 3 features bottom */}
+        {/* 3 features bottom with icons */}
         <div style={{display:'flex',justifyContent:'center',gap:24,flexWrap:'wrap'}}>
-          {[{color:'var(--violet)',t:"À votre rythme",d:'2.6s'},{color:'var(--violet)',t:"Où vous voulez",d:'2.8s'},{color:'var(--violet)',t:"Vrai coaching",d:'3.0s'}].map((x,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:8,animation:`fadeUp .5s ease ${x.d} both`}}>
-              <div style={{width:8,height:8,borderRadius:'50%',background:x.color,boxShadow:`0 0 10px ${x.color}`}}/>
+          {[{color:'var(--violet)',t:"À votre rythme",ic:'⏱️',d:'2.6s'},{color:'var(--gold)',t:"Où vous voulez",ic:'🌍',d:'2.8s'},{color:'var(--emerald)',t:"Vrai coaching",ic:'👨‍🏫',d:'3.0s'}].map((x,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:8,animation:`fadeUp .5s ease ${x.d} both`,padding:'8px 12px',borderRadius:12,background:`rgba(255,255,255,.02)`,border:'1px solid rgba(255,255,255,.06)',cursor:'pointer',transition:'all .3s',':hover':{background:`rgba(${x.color.includes('gold')?'224,184,78':x.color.includes('emerald')?'52,211,153':'167,139,250'},.08)`,borderColor:`${x.color}33`}}}>
+              <span style={{fontSize:16}}>{x.ic}</span>
               <span style={{fontFamily:'Inter, sans-serif',fontSize:12,fontWeight:500,color:'rgba(255,255,255,.7)',letterSpacing:'.02em'}}>{x.t}</span>
             </div>
           ))}
+        </div>
+
+        {/* Testimonial section */}
+        <div style={{marginTop:48,paddingTop:32,borderTop:'1px solid rgba(255,255,255,.1)',animation:'fadeUp .6s ease 3.2s both'}}>
+          <p style={{fontSize:11,color:'rgba(255,255,255,.5)',fontStyle:'italic',marginBottom:12,textAlign:'center'}}>Approuvé par les étudiants</p>
+          <p style={{fontSize:13,color:'rgba(255,255,255,.8)',fontWeight:500,textAlign:'center',maxWidth:300,margin:'0 auto',lineHeight:1.6}}>« Une méthode innovante pour apprendre le théâtre à mon rythme. »</p>
+          <p style={{fontSize:10,color:'rgba(255,255,255,.5)',marginTop:8,textAlign:'center'}}>— Sophie, Marseille</p>
         </div>
       </div>
     </div>
@@ -5319,20 +5327,34 @@ function MonTexte({st,setSt,onClose}){
 /* ═══ COACH CHAT ═══ */
 function CoachChat({st,setSt,onClose}){
   const[msg,setMsg]=useState("");
-  const[recording,setRecording]=useState(false);
-  const recorderRef=useRef(null);
-  const audioRef=useRef(null);
+  const[messages,setMessages]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const chatEndRef=useRef(null);
 
-  const startRecording=async()=>{try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});const rec=new MediaRecorder(stream);const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);rec.onstop=()=>{const blob=new Blob(chunks,{type:'audio/webm'});const url=URL.createObjectURL(blob);setSt(p=>({...p,coachMessages:[...p.coachMessages,{id:Date.now(),type:"audio",content:url,sender:"student",timestamp:new Date()}]}));stream.getTracks().forEach(t=>t.stop());};rec.start();recorderRef.current=rec;setRecording(true);}catch(e){console.log("Mic access denied",e)}};
-  const stopRecording=()=>{if(recorderRef.current){recorderRef.current.stop();setRecording(false)}};
-  const sendMessage=()=>{if(msg.trim()){setSt(p=>({...p,coachMessages:[...p.coachMessages,{id:Date.now(),type:"text",content:msg,sender:"student",timestamp:new Date()}]}));setMsg("");}};
+  const loadMessages=async()=>{
+    try{
+      const{data,error}=await _supabase.from('messages').select('*').eq('student_email',st.email||'').order('created_at',{ascending:true});
+      if(!error&&data)setMessages(data);
+    }catch(e){console.error('Load messages error:',e)}
+    setLoading(false);
+  };
 
-  const defaultMessages=[
-    {id:"coach1",type:"text",sender:"coach",content:"Salut ! J'ai regardé ton monologue d'Antigone. Très belle énergie ! Travaille un peu plus les silences entre les phrases, laisse respirer le texte. La colère est bien dosée. Continue comme ça !",coach:"Sophie",timestamp:"Il y a 2h"},
-    {id:"coach2",type:"text",sender:"coach",content:"N'hésite pas à envoyer tes questions ou tes enregistrements.",coach:"Sophie",timestamp:"Il y a 1h"}
-  ];
-  const messages=st.coachMessages||[];
-  const allMessages=[...defaultMessages,...messages].sort((a,b)=>(a.timestamp?.getTime?.()??new Date(a.timestamp).getTime())-(b.timestamp?.getTime?.()??new Date(b.timestamp).getTime()));
+  useEffect(()=>{loadMessages();const iv=setInterval(loadMessages,10000);return()=>clearInterval(iv);},[]);
+  useEffect(()=>{if(chatEndRef.current)chatEndRef.current.scrollIntoView({behavior:'smooth'});},[messages]);
+
+  const sendMessage=async()=>{
+    if(!msg.trim())return;
+    const currentUser=await _supabase.auth.getUser();
+    const{error}=await _supabase.from('messages').insert([{
+      user_id:currentUser.data?.user?.id||null,
+      student_email:st.email||'',
+      student_name:st.user||st.pseudo||'Anonyme',
+      sender:'student',
+      content:msg.trim(),
+      read:false
+    }]);
+    if(!error){setMsg("");loadMessages();}
+  };
 
   return(
     <div className="safe-b fade-up" style={{padding:'68px 20px 100px'}}>
@@ -5347,28 +5369,26 @@ function CoachChat({st,setSt,onClose}){
         </div>
 
         <div style={{height:'50vh',overflowY:'auto',marginBottom:16,padding:12,borderRadius:12,background:'var(--bg-card)',border:'1px solid var(--line)',display:'flex',flexDirection:'column',gap:8}}>
-          {allMessages.map((m,i)=>{
+          {loading&&<p style={{textAlign:'center',color:'var(--text-3)',fontSize:11,padding:20}}>Chargement...</p>}
+          {!loading&&messages.length===0&&<div style={{textAlign:'center',padding:'40px 20px'}}><p style={{fontSize:32,marginBottom:8}}>💬</p><p style={{fontSize:12,color:'var(--text-2)',marginBottom:4}}>Aucun message pour l'instant</p><p style={{fontSize:10,color:'var(--text-3)'}}>Envoyez votre premier message à votre coach !</p></div>}
+          {messages.map((m,i)=>{
             const isMe=m.sender==="student";
             return(
               <div key={m.id} style={{display:'flex',justifyContent:isMe?'flex-end':'flex-start'}}>
-                <div style={{maxWidth:'70%',padding:'10px 14px',borderRadius:10,background:isMe?'var(--gold)':'rgba(167,139,250,.1)',borderBottomLeftRadius:isMe?10:2,borderBottomRightRadius:isMe?2:10}}>
-                  {!isMe&&<p style={{fontSize:9,fontWeight:700,color:'var(--violet)',marginBottom:4}}>{m.coach}</p>}
-                  {m.type==="text"&&<p style={{fontSize:11,color:isMe?'#07070b':'var(--text)',lineHeight:1.6}}>{m.content}</p>}
-                  {m.type==="audio"&&<button onClick={()=>{if(audioRef.current){audioRef.current.src=m.content;audioRef.current.play()}}} style={{fontSize:11,display:'flex',alignItems:'center',gap:6,background:isMe?'rgba(0,0,0,.1)':'rgba(255,255,255,.1)',padding:'6px 10px',borderRadius:8,color:isMe?'#07070b':'var(--text)',cursor:'pointer',fontWeight:600}}>▶️ Audio</button>}
-                  <p style={{fontSize:8,color:isMe?'rgba(0,0,0,.6)':'var(--text-3)',marginTop:4}}>{m.timestamp?.toLocaleTimeString?.()??m.timestamp}</p>
-                  <audio ref={audioRef} style={{display:'none'}}/>
+                <div style={{maxWidth:'75%',padding:'10px 14px',borderRadius:12,background:isMe?'var(--gold)':'rgba(167,139,250,.12)',borderBottomLeftRadius:isMe?12:2,borderBottomRightRadius:isMe?2:12}}>
+                  {!isMe&&<p style={{fontSize:9,fontWeight:700,color:'var(--violet)',marginBottom:4}}>Coach</p>}
+                  <p style={{fontSize:12,color:isMe?'#07070b':'var(--text)',lineHeight:1.6}}>{m.content}</p>
+                  <p style={{fontSize:8,color:isMe?'rgba(0,0,0,.5)':'var(--text-3)',marginTop:4}}>{new Date(m.created_at).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p>
                 </div>
               </div>
             );
           })}
+          <div ref={chatEndRef}/>
         </div>
 
-        <div style={{display:'flex',gap:8,marginBottom:12}}>
-          <input type="text" placeholder="Votre message…" value={msg} onChange={(e)=>setMsg(e.target.value)} onKeyPress={(e)=>e.key==="Enter"&&sendMessage()} style={{flex:1,padding:'10px 12px',borderRadius:10,border:'1px solid var(--line)',background:'var(--bg-raised)',color:'var(--text)',fontSize:11,fontFamily:'inherit'}}/>
-          <button onClick={sendMessage} style={{padding:'10px 16px',borderRadius:10,background:'var(--gold)',color:'#07070b',fontWeight:700,fontSize:11,cursor:'pointer'}}>Envoyer</button>
-        </div>
         <div style={{display:'flex',gap:8}}>
-          {!recording?<button onClick={startRecording} className="btn-outline" style={{flex:1,padding:'10px 14px',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>🎤 Message vocal</button>:<button onClick={stopRecording} style={{flex:1,padding:'10px 14px',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',gap:5,background:'rgba(232,116,90,.15)',border:'1.5px solid var(--coral)',borderRadius:12,color:'var(--coral)',fontWeight:600,cursor:'pointer'}}>⏹️ Arrêter</button>}
+          <input type="text" placeholder="Votre message…" value={msg} onChange={(e)=>setMsg(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey)sendMessage()}} style={{flex:1,padding:'12px 14px',borderRadius:12,border:'1px solid var(--line)',background:'var(--bg-raised)',color:'var(--text)',fontSize:12,fontFamily:'inherit'}}/>
+          <button onClick={sendMessage} style={{padding:'12px 20px',borderRadius:12,background:'var(--gold)',color:'#07070b',fontWeight:700,fontSize:12,cursor:'pointer',border:'none',whiteSpace:'nowrap'}}>Envoyer</button>
         </div>
       </div>
     </div>
@@ -5596,7 +5616,7 @@ function Feed({st,setSt}){
           </div>
 
           {allDone&&(
-            <div className="card" style={{padding:20,marginBottom:16,borderColor:st.plan==="coach"?'var(--gold-dim)':'var(--line)',background:st.plan==="coach"?'rgba(200,164,78,.03)':'var(--bg-card)'}}>
+            <div className="card" style={{padding:20,marginBottom:16,borderColor:st.plan==="premium"?'var(--gold-dim)':'var(--line)',background:st.plan==="premium"?'rgba(200,164,78,.03)':'var(--bg-card)'}}>
               <p className="label-gold" style={{marginBottom:10}}>ENVOYER À UN COACH</p>
               {st.plan!=="coach"?(
                 <p className="body" style={{fontSize:11,color:'var(--text-2)',marginBottom:0}}>Envoyez votre monologue à un coach — Disponible avec Plan Coach</p>
@@ -5792,7 +5812,7 @@ function Feed({st,setSt}){
         <p className="body" style={{fontSize:12,marginBottom:24}}>Vos outils de travail du comédien</p>
 
         {/* 0. MON COACH (Coach plan only) */}
-        {st.plan==="coach"&&<button onClick={()=>setCoachChat(true)} className="card obj-3d" style={{padding:18,marginBottom:14,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:'1px solid rgba(167,139,250,.1)'}}>
+        {st.plan==="premium"&&<button onClick={()=>setCoachChat(true)} className="card obj-3d" style={{padding:18,marginBottom:14,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:'1px solid rgba(167,139,250,.1)'}}>
           <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
             {I.users({size:18,sw:1.6,style:{color:'#fff'}})}
           </div>
@@ -6588,6 +6608,8 @@ function CuV({mod,st,setSt,back}){
 function Profile({st,setSt}){
   const[editMode,setEditMode]=useState(false);
   const[confirmReset,setConfirmReset]=useState(false);
+  const[adminTaps,setAdminTaps]=useState(0);
+  const[adminTimer,setAdminTimer]=useState(null);
   const lv=getLv(st.xp),tier=getTier(lv);
   const tE=Object.values(PR).flat().length,tC=Object.values(CU).flat().length;
   return(
@@ -6652,7 +6674,7 @@ function Profile({st,setSt}){
         </div>
 
         {/* Leaderboard (Standard+) */}
-        {(st.plan==="standard"||st.plan==="coach")&&<div style={{padding:18,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:24}}>
+        {(st.plan==="standard"||st.plan==="premium")&&<div style={{padding:18,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:24}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
             <p className="label" style={{margin:0}}>CLASSEMENT HEBDO</p>
             <span style={{fontSize:8,color:'var(--violet)',fontWeight:700,padding:'2px 8px',borderRadius:12,background:'rgba(167,139,250,.1)'}}>STANDARD+</span>
@@ -6701,7 +6723,19 @@ function Profile({st,setSt}){
         </div>}
 
         {/* Pricing plans */}
-        <p className="label" style={{marginBottom:14}}>MON ABONNEMENT</p>
+        <p className="label" style={{marginBottom:14,cursor:'default',userSelect:'none'}} onClick={()=>{
+          const t=adminTaps+1;
+          setAdminTaps(t);
+          if(adminTimer)clearTimeout(adminTimer);
+          const timer=setTimeout(()=>setAdminTaps(0),2000);
+          setAdminTimer(timer);
+          if(t>=5){
+            setAdminTaps(0);
+            const newPlan=st.plan==='premium'?'free':'premium';
+            setSt(p=>({...p,plan:newPlan}));
+            alert('Mode admin : plan changé en '+newPlan.toUpperCase());
+          }
+        }}>MON ABONNEMENT</p>
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:24}}>
           {[{id:"free",name:"Gratuit",price:"0€",highlight:false,features:["3 premiers niveaux","Quiz culture de base","Pulse du jour","Challenge Diction","Badges & streaks"]},
             {id:"standard",name:"Standard",price:"9,90€/mois",trial:"4 jours gratuits",highlight:true,features:["Tout le parcours (12 niveaux)","Toutes les analyses de scène","Avant-Scène & Connexion","Mon Texte & Mon Monologue","Bilan personnalisé","Bibliothèque complète"]},
@@ -6908,10 +6942,10 @@ function TutoOverlay({step,onNext,onDone}){
   );
 }
 
-const defaultSt={xp:0,initialXp:0,streak:0,lastActiveDate:null,doneEx:[],doneCu:[],doneSA:[],perf:0,vid:0,lv:0,onb:false,user:null,plan:"free",showCGU:false,theme:"dark",stars:{},weekXP:0,weekEx:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:null,perfectWeeks:0,weekStart:new Date().toDateString(),srs:{},seenBadges:[],warmups:0,avantScenes:0,connexions:0,challenges:0,totalBreaths:0,coachMessages:[],seenTuto:false,exFeedback:{},catLastPracticed:{},firstActivityDate:null,saResults:{},cuResults:{},lastSADate:null,dailyPulse:{answers:[],lastAnswerDate:null},challengeScores:{},passedExams:[]};
+const defaultSt={xp:0,initialXp:0,streak:0,lastActiveDate:null,doneEx:[],doneCu:[],doneSA:[],perf:0,vid:0,lv:0,onb:false,user:null,plan:"free",showCGU:false,theme:"dark",stars:{},weekXP:0,weekEx:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:null,perfectWeeks:0,weekStart:new Date().toDateString(),srs:{},seenBadges:[],warmups:0,avantScenes:0,connexions:0,challenges:0,totalBreaths:0,coachMessages:[],seenTuto:false,exFeedback:{},catLastPracticed:{},firstActivityDate:null,saResults:{},cuResults:{},lastSADate:null,dailyPulse:{answers:[],lastAnswerDate:null},challengeScores:{},passedExams:[],unreadMessageCount:0,messages:[]};
 
 function App(){
-  const[st,setSt]=useState(()=>{const saved=loadState();if(!saved)return defaultSt;const merged={...defaultSt,...saved,plan:saved.plan||(saved.premium?"standard":"free"),srs:saved.srs||{},seenBadges:saved.seenBadges||[],exFeedback:saved.exFeedback||{},catLastPracticed:saved.catLastPracticed||{},firstActivityDate:saved.firstActivityDate||saved.lastActiveDate||null,saResults:saved.saResults||{},cuResults:saved.cuResults||{},lastSADate:saved.lastSADate||null,dailyPulse:saved.dailyPulse||{answers:[],lastAnswerDate:null},challengeScores:saved.challengeScores||{},passedExams:saved.passedExams||[]};return merged;});
+  const[st,setSt]=useState(()=>{const saved=loadState();if(!saved)return defaultSt;const merged={...defaultSt,...saved,plan:saved.plan||(saved.premium?"standard":"free"),srs:saved.srs||{},seenBadges:saved.seenBadges||[],exFeedback:saved.exFeedback||{},catLastPracticed:saved.catLastPracticed||{},firstActivityDate:saved.firstActivityDate||saved.lastActiveDate||null,saResults:saved.saResults||{},cuResults:saved.cuResults||{},lastSADate:saved.lastSADate||null,dailyPulse:saved.dailyPulse||{answers:[],lastAnswerDate:null},challengeScores:saved.challengeScores||{},passedExams:saved.passedExams||[],unreadMessageCount:saved.unreadMessageCount||0,messages:saved.messages||[]};return merged;});
   const[tab,setTab]=useState("home");
   const[mod,setMod]=useState(null);
   const[exam,setExam]=useState(null);
