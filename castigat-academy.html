@@ -4520,6 +4520,7 @@ function DictionChallenge({onClose,st,setSt}){
             <button onClick={onClose} style={{flex:1,padding:'14px 0',fontSize:13,borderRadius:12,border:'1px solid var(--line)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer'}}>Terminer</button>
           </div>
         </div>
+          <button onClick={async()=>{const sc=validated+'/'+phrases.length;const txt='Je viens de scorer '+sc+' au Challenge Diction sur Castigat Academy ! Tu peux faire mieux ? Essaie ici : https://castigat-academy.vercel.app';if(navigator.share){try{await navigator.share({title:'Challenge Diction - Castigat Academy',text:txt})}catch(e){}}else{try{await navigator.clipboard.writeText(txt);alert('Lien copié !')}catch(e){alert(txt)}}}} style={{width:'100%',padding:'14px 0',fontSize:13,fontWeight:700,color:'var(--violet)',borderRadius:10,background:'rgba(109,40,217,.08)',border:'1px solid rgba(109,40,217,.2)',cursor:'pointer',marginTop:10,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>{I.share2({size:15})} Défie un ami</button>
       </div>
     );
   }
@@ -5654,9 +5655,6 @@ function Feed({st,setSt}){
   const[dailyRecording,setDailyRecording]=useState(false);
   const[dailyAudio,setDailyAudio]=useState(null);
   const[monoExpanded,setMonoExpanded]=useState(false);
-  const[showChallenge,setShowChallenge]=useState(false);
-  const[challengeMono,setChallengeMono]=useState(null);
-  const[challengeMsg,setChallengeMsg]=useState("");
   const[communityPosts,setCommunityPosts]=useState([
     {id:1,pseudo:"Marie L.",text:"L'exercice de respiration abdominale m'a vraiment aidée avant mon audition. Je sentais moins de tension dans la gorge.",time:"Il y a 2h",likes:8,tag:"Respiration",liked:false,replies:[]},
     {id:2,pseudo:"Julien M.",text:"Le virelangue « Les chaussettes de l'archiduchesse » à vitesse max, c'est redoutable ! Quelqu'un arrive à le faire sans bafouiller ?",time:"Il y a 5h",likes:12,tag:"Diction",liked:false,replies:[{pseudo:"Coach Sophie",text:"Essaye de le décomposer syllabe par syllabe d'abord, puis accélère progressivement !",time:"Il y a 3h"}]},
@@ -5700,7 +5698,6 @@ function Feed({st,setSt}){
   const[coachChat,setCoachChat]=useState(null);
   if(monTexte) return <MonTexte st={st} setSt={setSt} onClose={()=>setMonTexte(false)}/>;
   if(warmup) return <Warmup onClose={()=>setWarmup(false)} st={st} setSt={setSt}/>;
-  if(showChallenge) return <DictionChallenge onClose={()=>setShowChallenge(false)} st={st} setSt={setSt}/>;
   if(avantScene) return <AvantScene onClose={()=>setAvantScene(false)} st={st}/>;
   if(sceneAn) return <SceneAnalysis analysis={sceneAn} st={st} setSt={setSt} onClose={()=>setSceneAn(null)}/>;
   if(coachChat) return <CoachChat st={st} setSt={setSt} onClose={()=>setCoachChat(null)}/>;
@@ -6103,64 +6100,7 @@ function Feed({st,setSt}){
           {I.chR({size:16,sw:1.5,style:{color:'var(--gold)'}})}
         </button>
 
-        {/* 4. DÉFIER UN AMI */}
-        <button onClick={()=>setShowChallenge(true)} className="card obj-3d" style={{padding:18,marginBottom:14,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:'1px solid rgba(167,139,250,.1)'}}>
-          <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),#a78bfa)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            {I.users({size:18,sw:1.6,style:{color:'#fff'}})}
-          </div>
-          <div style={{flex:1}}>
-            <p className="label" style={{color:'var(--violet)',marginBottom:3}}>DÉFIER UN AMI</p>
-            <p style={{fontSize:11,fontWeight:700}}>Partagez un monologue</p>
-            <p style={{fontSize:9,color:'var(--text-3)',marginTop:2}}>Défi sur WhatsApp, SMS, etc.</p>
-          </div>
-          {I.chR({size:16,sw:1.5,style:{color:'var(--violet)'}})}
-        </button>
 
-        {/* Challenge Modal */}
-        {showChallenge&&(
-          <div style={{position:'fixed',inset:0,background:'rgba(5,5,10,0.95)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:250,padding:'20px'}}>
-            <div style={{background:'var(--bg-card)',borderRadius:18,border:'1px solid var(--line)',padding:28,maxWidth:420,width:'100%',animation:'fadeUp .4s ease-out'}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-                <h2 className="heading" style={{fontSize:20}}>Défier un ami</h2>
-                <button onClick={()=>setShowChallenge(false)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'var(--text-3)'}}>✕</button>
-              </div>
-
-              <p className="body" style={{fontSize:11,marginBottom:12,color:'var(--text-2)'}}>Choisissez un monologue et partagez le défi</p>
-
-              <div style={{marginBottom:14}}>
-                <p style={{fontSize:10,fontWeight:700,color:'var(--text-3)',marginBottom:8}}>MONOLOGUE</p>
-                <select onChange={(e)=>setChallengeMono(FEED_MONOLOGUES.find(m=>m.id===e.target.value))}
-                  style={{width:'100%',padding:'10px 12px',borderRadius:10,border:'1px solid var(--line)',background:'var(--bg-raised)',color:'var(--text)',fontSize:11,fontFamily:'inherit',cursor:'pointer'}}>
-                  <option value="">— Sélectionner un monologue</option>
-                  {FEED_MONOLOGUES.map(m=><option key={m.id} value={m.id}>{m.title} — {m.source}</option>)}
-                </select>
-              </div>
-
-              {challengeMono&&(
-                <>
-                  <div style={{marginBottom:14}}>
-                    <p style={{fontSize:10,fontWeight:700,color:'var(--text-3)',marginBottom:8}}>MESSAGE (optionnel)</p>
-                    <textarea value={challengeMsg} onChange={(e)=>setChallengeMsg(e.target.value)} placeholder="Ex: C'est mon défi pour toi!"
-                      style={{width:'100%',padding:'10px 12px',borderRadius:10,border:'1px solid var(--line)',background:'var(--bg-raised)',color:'var(--text)',fontSize:11,fontFamily:'inherit',resize:'vertical',minHeight:60}}/>
-                  </div>
-
-                  <div style={{padding:12,borderRadius:10,background:'rgba(200,164,78,.05)',border:'1px solid rgba(200,164,78,.2)',marginBottom:14,maxHeight:120,overflow:'auto'}}>
-                    <p style={{fontSize:9,color:'var(--text-3)',lineHeight:1.6,fontFamily:'monospace',wordBreak:'break-word'}}>
-                      🎭 {st.user?.pseudo||"Vous"} te défie sur Castigat Academy ! Monologue : <strong>{challengeMono.title}</strong> — {challengeMono.source}{challengeMsg?". "+challengeMsg:""} Relève le défi ! #CastigatChallenge
-                    </p>
-                  </div>
-
-                  <button onClick={()=>{const text=`🎭 ${st.user?.pseudo||"Vous"} te défie sur Castigat Academy !\nMonologue : ${challengeMono.title} — ${challengeMono.source}\n${challengeMsg?challengeMsg+"\n":""}Relève le défi ! #CastigatChallenge`;navigator.clipboard.writeText(text);alert("Défi copié ! Partagez-le à vos amis.");setShowChallenge(false);setChallengeMono(null);setChallengeMsg("");}}
-                    className="btn-gold" style={{width:'100%',padding:'12px 0',fontSize:12,fontWeight:700}}>
-                    {I.copy?I.copy({size:0}):""}📋 Copier le défi
-                  </button>
-                </>
-              )}
-
-              {!challengeMono&&<p style={{fontSize:11,color:'var(--text-3)',textAlign:'center',padding:'20px 0'}}>Veuillez sélectionner un monologue</p>}
-            </div>
-          </div>
-        )}
 
         {/* Bibliothèque de monologues (collapsed) */}
         {monoProgress&&(()=>{
