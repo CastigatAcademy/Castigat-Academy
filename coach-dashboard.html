@@ -70,6 +70,9 @@ const app=document.getElementById('app');
 
 let state={user:null,videos:[],filter:'all',loading:true,tab:'videos',messages:[],selectedConversation:null,replyText:'',messagesLoading:false};
 
+/* HTML escape to prevent XSS */
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
+
 function setState(updates){
   state={...state,...updates};
   render();
@@ -170,7 +173,7 @@ function renderLogin(){
     btn.textContent='Connexion...';btn.disabled=true;
     const result=await login(email,pwd);
     if(result){
-      errEl.innerHTML=`<div class="error">${result}</div>`;
+      errEl.innerHTML=`<div class="error">${esc(result)}</div>`;
       btn.textContent='SE CONNECTER';btn.disabled=false;
     }
   };
@@ -236,9 +239,9 @@ function renderDashboard(){
             <div class="video-card" id="card-${v.id}">
               <div class="header">
                 <div>
-                  <div class="student">${v.student_name||'Élève anonyme'}</div>
-                  <div class="mono">${v.monologue_title||'Monologue'}</div>
-                  <div class="date">${v.student_email||''} · ${timeAgo(v.created_at)} · ${v.duration_seconds?Math.floor(v.duration_seconds/60)+'min '+v.duration_seconds%60+'s':''}</div>
+                  <div class="student">${esc(v.student_name)||'Élève anonyme'}</div>
+                  <div class="mono">${esc(v.monologue_title)||'Monologue'}</div>
+                  <div class="date">${esc(v.student_email)||''} · ${timeAgo(v.created_at)} · ${v.duration_seconds?Math.floor(v.duration_seconds/60)+'min '+v.duration_seconds%60+'s':''}</div>
                 </div>
                 <span class="status status-${v.status}">${v.status==='pending'?'En attente':'Évaluée'}</span>
               </div>
@@ -249,7 +252,7 @@ function renderDashboard(){
                     <span style="font-size:11px;font-weight:700;color:var(--emerald)">Note :</span>
                     <span style="font-size:14px">${'⭐'.repeat(v.coach_rating||0)}</span>
                   </div>
-                  <p style="font-size:12px;color:var(--text);line-height:1.6">${v.coach_feedback||'Pas de commentaire'}</p>
+                  <p style="font-size:12px;color:var(--text);line-height:1.6">${esc(v.coach_feedback)||'Pas de commentaire'}</p>
                   <p style="font-size:9px;color:var(--text-3);margin-top:6px">Évalué ${v.reviewed_at?timeAgo(v.reviewed_at):''}</p>
                 </div>
               `:`
@@ -275,14 +278,14 @@ function renderDashboard(){
           <!-- Conversation view -->
           <div style="padding:16px;border-radius:12px;background:var(--bg-raised);border:1px solid var(--line);margin-bottom:20px">
             <div style="margin-bottom:12px">
-              <p style="font-size:13px;font-weight:700;color:var(--text)">${state.selectedConversation.name}</p>
-              <p style="font-size:10px;color:var(--text-3)">${state.selectedConversation.email}</p>
+              <p style="font-size:13px;font-weight:700;color:var(--text)">${esc(state.selectedConversation.name)}</p>
+              <p style="font-size:10px;color:var(--text-3)">${esc(state.selectedConversation.email)}</p>
             </div>
             <div style="max-height:400px;overflow-y:auto;margin-bottom:12px;padding:12px;background:var(--bg);border-radius:8px;display:flex;flex-direction:column;gap:10px">
               ${state.selectedConversation.messages.map(m=>`
                 <div style="display:flex;justify-content:${m.sender==='student'?'flex-start':'flex-end'}">
                   <div style="max-width:70%;padding:10px 12px;border-radius:10px;background:${m.sender==='student'?'rgba(200,164,78,.15)':'rgba(74,222,128,.15)'};color:var(--text);font-size:11px;line-height:1.5">
-                    ${m.content}
+                    ${esc(m.content)}
                     <p style="font-size:9px;color:var(--text-3);margin-top:4px">${timeAgo(m.created_at)}</p>
                   </div>
                 </div>
@@ -303,15 +306,15 @@ function renderDashboard(){
             </div>
           `:`
             ${convList.map(conv=>`
-              <div class="video-card" style="cursor:pointer;padding:14px" id="conv-${conv.email}">
+              <div class="video-card" style="cursor:pointer;padding:14px" id="conv-${esc(conv.email)}">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                   <div>
-                    <p style="font-size:13px;font-weight:700;color:var(--text)">${conv.name}</p>
+                    <p style="font-size:13px;font-weight:700;color:var(--text)">${esc(conv.name)}</p>
                     <p style="font-size:10px;color:var(--text-3)">${conv.email}</p>
                   </div>
                   ${conv.unread>0?`<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700">${conv.unread}</span>`:''}
                 </div>
-                <p style="font-size:11px;color:var(--text-2);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${conv.lastMessage?.content||'Pas de message'}</p>
+                <p style="font-size:11px;color:var(--text-2);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(conv.lastMessage?.content)||'Pas de message'}</p>
                 <p style="font-size:9px;color:var(--text-3);margin-top:4px">${conv.lastMessage?timeAgo(conv.lastMessage.created_at):'--'}</p>
               </div>
             `).join('')}
