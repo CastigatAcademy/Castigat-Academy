@@ -4613,25 +4613,22 @@ function AvantScene({onClose,st}){
     if(ambientRef.current)return;
     try{
       const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      if(ctx.state==='suspended')ctx.resume();
       const master=ctx.createGain();master.gain.value=0;master.connect(ctx.destination);
-      /* Warm pad: layered sines at healing/calming frequencies + gentle LFO */
-      const freqs=[136.1,174,220,261.6];/* OM, solfège, A3, C4 */
+      const freqs=[136.1,174,220,261.6];
       const oscs=freqs.map((f,i)=>{
         const o=ctx.createOscillator();o.type=i<2?"sine":"triangle";o.frequency.value=f;
-        const g=ctx.createGain();g.gain.value=i<2?0.06:0.025;
+        const g=ctx.createGain();g.gain.value=i<2?0.12:0.06;
         o.connect(g);return{o,g};
       });
-      /* LFO for gentle volume wobble */
       const lfo=ctx.createOscillator();lfo.type="sine";lfo.frequency.value=0.15;
-      const lfoGain=ctx.createGain();lfoGain.gain.value=0.015;
+      const lfoGain=ctx.createGain();lfoGain.gain.value=0.02;
       lfo.connect(lfoGain);
-      /* Low-pass filter for warmth */
-      const filter=ctx.createBiquadFilter();filter.type="lowpass";filter.frequency.value=350;filter.Q.value=0.7;
+      const filter=ctx.createBiquadFilter();filter.type="lowpass";filter.frequency.value=800;filter.Q.value=0.7;
       oscs.forEach(({o,g})=>{g.connect(filter);lfoGain.connect(g.gain);o.start()});
       lfo.start();
       filter.connect(master);
-      /* Slow fade in over 5 seconds */
-      master.gain.linearRampToValueAtTime(0.38,ctx.currentTime+5);
+      master.gain.linearRampToValueAtTime(0.55,ctx.currentTime+4);
       ambientRef.current=ctx;ambientGainRef.current=master;
       setMusicOn(true);
     }catch(e){console.log("Audio context error",e)}
