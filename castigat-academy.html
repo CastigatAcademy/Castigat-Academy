@@ -5533,7 +5533,7 @@ function CoachChat({st,setSt,onClose}){
     if(data.session?.user?.email){emailRef.current=data.session.user.email;}
     else{
       /* No auth session: use st.email, st.user, or a device-based ID */
-      const fallback=st.email||st.user||st.pseudo||localStorage.getItem('castigat_chat_id');
+      const fallback=st.email||(typeof st.user==='string'?st.user:st.user?.prenom||st.user?.name)||st.pseudo||localStorage.getItem('castigat_chat_id');
       if(fallback){emailRef.current=fallback;}
       else{const newId='device_'+Math.random().toString(36).substr(2,9);localStorage.setItem('castigat_chat_id',newId);emailRef.current=newId;}
     }
@@ -5556,7 +5556,7 @@ function CoachChat({st,setSt,onClose}){
       const currentUser=await _supabase.auth.getUser();
       if(currentUser.data?.user?.email)emailRef.current=currentUser.data.user.email;
       else{
-        const fallback=st.email||st.user||st.pseudo||localStorage.getItem('castigat_chat_id');
+        const fallback=st.email||(typeof st.user==='string'?st.user:st.user?.prenom||st.user?.name)||st.pseudo||localStorage.getItem('castigat_chat_id');
         if(fallback)emailRef.current=fallback;
         else{const newId='device_'+Math.random().toString(36).substr(2,9);localStorage.setItem('castigat_chat_id',newId);emailRef.current=newId;}
       }
@@ -5565,7 +5565,7 @@ function CoachChat({st,setSt,onClose}){
     const{error}=await _supabase.from('messages').insert([{
       user_id:currentUser.data?.user?.id||null,
       student_email:emailRef.current,
-      student_name:st.user||st.pseudo||currentUser.data?.user?.user_metadata?.display_name||'Anonyme',
+      student_name:(typeof st.user==='string'?st.user:st.user?.prenom||st.user?.name)||st.pseudo||currentUser.data?.user?.user_metadata?.display_name||'Anonyme',
       sender:'student',
       content:msg.trim(),
       read:false
