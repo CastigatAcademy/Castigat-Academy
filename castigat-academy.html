@@ -87,6 +87,48 @@ window.scrollTo(0,0);
 
 const _supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
+/* ── Cloud Sync: save/load progress to Supabase ── */
+const saveToCloud=async(stateData)=>{
+  try{
+    const{data:{user}}=await _supabase.auth.getUser();
+    if(!user)return;
+    const uid=user.id;
+    /* Save main progress */
+    await _supabase.from('user_progress').upsert({user_id:uid,data:stateData,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    /* Save texts */
+    const mt=localStorage.getItem('castigat_montexte');
+    if(mt)await _supabase.from('user_texts').upsert({user_id:uid,data:JSON.parse(mt),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    /* Save monologues progress */
+    const mp=localStorage.getItem('castigat_monologues_progress');
+    if(mp)await _supabase.from('user_monologues').upsert({user_id:uid,data:JSON.parse(mp),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  }catch(e){console.log('Cloud save error',e)}
+};
+
+const loadFromCloud=async()=>{
+  try{
+    const{data:{user}}=await _supabase.auth.getUser();
+    if(!user)return null;
+    const uid=user.id;
+    /* Load main progress */
+    const{data:prog}=await _supabase.from('user_progress').select('data').eq('user_id',uid).single();
+    if(prog&&prog.data){
+      localStorage.setItem(SAVE_KEY,JSON.stringify(prog.data));
+    }
+    /* Load texts */
+    const{data:texts}=await _supabase.from('user_texts').select('data').eq('user_id',uid).single();
+    if(texts&&texts.data){
+      localStorage.setItem('castigat_montexte',JSON.stringify(texts.data));
+    }
+    /* Load monologues */
+    const{data:mono}=await _supabase.from('user_monologues').select('data').eq('user_id',uid).single();
+    if(mono&&mono.data){
+      localStorage.setItem('castigat_monologues_progress',JSON.stringify(mono.data));
+    }
+    return prog?.data||null;
+  }catch(e){console.log('Cloud load error',e);return null}
+};
+
+
 /* ── Cloudinary Config ── */
 const CLOUDINARY_CLOUD='dsecqyf3w';
 const CLOUDINARY_PRESET='vidéos de castigat';
@@ -6990,46 +7032,6 @@ function Profile({st,setSt}){
             <button onClick={()=>setConfirmReset(false)} style={{padding:'8px 16px',fontSize:10,borderRadius:8,background:'var(--bg-card)',border:'1px solid var(--line)',color:'var(--text-2)',cursor:'pointer'}}>Annuler</button>
             <button onClick={()=>{localStorage.removeItem(SAVE_KEY);setSt({...defaultSt});setConfirmReset(false)}} style={{padding:'8px 16px',fontSize:10,borderRadius:8,background:'rgba(220,80,80,.15)',border:'1px solid rgba(220,80,80,.3)',color:'#dc5050',fontWeight:700,cursor:'pointer'}}>Oui, tout supprimer</button>
 
-/* ── Cloud Sync: save/load progress to Supabase ── */
-const saveToCloud=async(stateData)=>{
-  try{
-    const{data:{user}}=await _supabase.auth.getUser();
-    if(!user)return;
-    const uid=user.id;
-    /* Save main progress */
-    await _supabase.from('user_progress').upsert({user_id:uid,data:stateData,updated_at:new Date().toISOString()},{onConflict:'user_id'});
-    /* Save texts */
-    const mt=localStorage.getItem('castigat_montexte');
-    if(mt)await _supabase.from('user_texts').upsert({user_id:uid,data:JSON.parse(mt),updated_at:new Date().toISOString()},{onConflict:'user_id'});
-    /* Save monologues progress */
-    const mp=localStorage.getItem('castigat_monologues_progress');
-    if(mp)await _supabase.from('user_monologues').upsert({user_id:uid,data:JSON.parse(mp),updated_at:new Date().toISOString()},{onConflict:'user_id'});
-  }catch(e){console.log('Cloud save error',e)}
-};
-
-const loadFromCloud=async()=>{
-  try{
-    const{data:{user}}=await _supabase.auth.getUser();
-    if(!user)return null;
-    const uid=user.id;
-    /* Load main progress */
-    const{data:prog}=await _supabase.from('user_progress').select('data').eq('user_id',uid).single();
-    if(prog&&prog.data){
-      localStorage.setItem(SAVE_KEY,JSON.stringify(prog.data));
-    }
-    /* Load texts */
-    const{data:texts}=await _supabase.from('user_texts').select('data').eq('user_id',uid).single();
-    if(texts&&texts.data){
-      localStorage.setItem('castigat_montexte',JSON.stringify(texts.data));
-    }
-    /* Load monologues */
-    const{data:mono}=await _supabase.from('user_monologues').select('data').eq('user_id',uid).single();
-    if(mono&&mono.data){
-      localStorage.setItem('castigat_monologues_progress',JSON.stringify(mono.data));
-    }
-    return prog?.data||null;
-  }catch(e){console.log('Cloud load error',e);return null}
-};
 
           </div>
         </div>}
