@@ -5567,7 +5567,7 @@ function CoachChat({st,setSt,onClose}){
   };
 
   return(
-    <div className="safe-b fade-up" style={{padding:'68px 20px 100px'}}>
+    <div className="safe-b fade-up" style={{padding:'68px 20px 140px'}}>
       <div className="mw">
         <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:20}}>{I.chL({size:16})} Retour</button>
         <div style={{textAlign:'center',marginBottom:20}}>
@@ -5596,7 +5596,7 @@ function CoachChat({st,setSt,onClose}){
           <div ref={chatEndRef}/>
         </div>
 
-        <div style={{display:'flex',gap:8}}>
+        <div style={{display:'flex',gap:8,position:'fixed',bottom:72,left:0,right:0,zIndex:60,background:'var(--bg)',padding:'10px 20px',maxWidth:480,margin:'0 auto'}}>
           <input type="text" placeholder="Votre message…" value={msg} onChange={(e)=>setMsg(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey)sendMessage()}} style={{flex:1,padding:'12px 14px',borderRadius:12,border:'1px solid var(--line)',background:'var(--bg-raised)',color:'var(--text)',fontSize:12,fontFamily:'inherit'}}/>
           <button onClick={sendMessage} style={{padding:'12px 20px',borderRadius:12,background:'var(--gold)',color:'#07070b',fontWeight:700,fontSize:12,cursor:'pointer',border:'none',whiteSpace:'nowrap'}}>Envoyer</button>
         </div>
