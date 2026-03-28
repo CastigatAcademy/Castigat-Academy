@@ -333,7 +333,7 @@ const renderIcon=(iconName,props={})=>{
 
 /* ═══ CONFETTI ═══ */
 function Confetti({count=40,duration=3000,tada=true}){
-  const[show,setShow]=useState(true);
+  const[show,setShow]=useState(()=>{if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches||navigator.standalone)return false;return true;});
   const[tadaVisible,setTadaVisible]=useState(tada);
   useEffect(()=>{const t=setTimeout(()=>setShow(false),duration);return()=>clearTimeout(t)},[]);
   useEffect(()=>{if(tada){const t=setTimeout(()=>setTadaVisible(false),2200);return()=>clearTimeout(t)}},[]);
