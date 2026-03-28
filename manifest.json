@@ -2,7 +2,7 @@
   "name": "Castigat Academy",
   "short_name": "Castigat",
   "description": "L'école de théâtre en ligne — Apprenez le théâtre comme un jeu",
-  "start_url": "/",
+  "start_url": "/castigat-academy.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0F0F23",
