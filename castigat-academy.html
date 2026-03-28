@@ -114,6 +114,14 @@ async function saveVideoSubmission(data){
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* Hide install prompt when app is already installed as PWA */
+@media all and (display-mode: standalone) {
+  #install-prompt-overlay { display: none !important; }
+}
+@media all and (display-mode: fullscreen) {
+  #install-prompt-overlay { display: none !important; }
+}
+
 :root {
   --bg:#05050a;--bg-card:#0c0c14;--bg-hover:#13131e;--bg-raised:#181824;
   --gold:#e0b84e;--gold-light:#ebc35e;--gold-dim:#9a7d3e;--gold-glow:rgba(224,184,78,0.1);
@@ -7174,10 +7182,6 @@ function TutoOverlay({step,onNext,onDone}){
 
 /* ═══ PWA INSTALL PROMPT ═══ */
 function InstallPrompt({st}){
-    /* If running as installed PWA, never show */
-    if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)return null;
-    if(navigator.standalone)return null;
-
   const[show,setShow]=useState(()=>{
     if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)return false;
     if(navigator.standalone)return false;
@@ -7231,7 +7235,11 @@ function InstallPrompt({st}){
     }
   };
 
-  return(
+  
+    /* If already installed as PWA, don't show install prompt */
+    const isStandalone=window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+    if(!show||isStandalone)return null;
+return(
     <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:99,animation:'slideUp .4s cubic-bezier(.22,1,.36,1) forwards'}}>
       <div style={{background:'linear-gradient(180deg,var(--bg-raised) 0%,var(--bg) 100%)',borderTop:'1px solid var(--line)',padding:'24px 20px 32px',margin:0}}>
         <div style={{display:'flex',alignItems:'center',gap:16,maxWidth:500,margin:'0 auto',marginBottom:16}}>
