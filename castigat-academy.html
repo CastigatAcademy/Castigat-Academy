@@ -5542,7 +5542,7 @@ function CoachChat({st,setSt,onClose}){
   useEffect(()=>{(async()=>{
     /* 1. Determine user identifier */
     const{data}=await _supabase.auth.getSession();
-    if(data.session?.user?.email){emailRef.current=data.session.user.email;}
+    if(data.session?.user?.email){await loadFromCloud();emailRef.current=data.session.user.email;}
     else{
       const fallback=st.email||(typeof st.user==='string'?st.user:st.user?.prenom||st.user?.name)||st.pseudo||localStorage.getItem('castigat_chat_id');
       if(fallback){emailRef.current=fallback;}
@@ -7046,6 +7046,48 @@ function Profile({st,setSt}){
           <div style={{display:'flex',gap:8,justifyContent:'center'}}>
             <button onClick={()=>setConfirmReset(false)} style={{padding:'8px 16px',fontSize:10,borderRadius:8,background:'var(--bg-card)',border:'1px solid var(--line)',color:'var(--text-2)',cursor:'pointer'}}>Annuler</button>
             <button onClick={()=>{localStorage.removeItem(SAVE_KEY);setSt({...defaultSt});setConfirmReset(false)}} style={{padding:'8px 16px',fontSize:10,borderRadius:8,background:'rgba(220,80,80,.15)',border:'1px solid rgba(220,80,80,.3)',color:'#dc5050',fontWeight:700,cursor:'pointer'}}>Oui, tout supprimer</button>
+
+/* ── Cloud Sync: save/load progress to Supabase ── */
+const saveToCloud=async(stateData)=>{
+  try{
+    const{data:{user}}=await _supabase.auth.getUser();
+    if(!user)return;
+    const uid=user.id;
+    /* Save main progress */
+    await _supabase.from('user_progress').upsert({user_id:uid,data:stateData,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    /* Save texts */
+    const mt=localStorage.getItem('castigat_montexte');
+    if(mt)await _supabase.from('user_texts').upsert({user_id:uid,data:JSON.parse(mt),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    /* Save monologues progress */
+    const mp=localStorage.getItem('castigat_monologues_progress');
+    if(mp)await _supabase.from('user_monologues').upsert({user_id:uid,data:JSON.parse(mp),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  }catch(e){console.log('Cloud save error',e)}
+};
+
+const loadFromCloud=async()=>{
+  try{
+    const{data:{user}}=await _supabase.auth.getUser();
+    if(!user)return null;
+    const uid=user.id;
+    /* Load main progress */
+    const{data:prog}=await _supabase.from('user_progress').select('data').eq('user_id',uid).single();
+    if(prog&&prog.data){
+      localStorage.setItem(SAVE_KEY,JSON.stringify(prog.data));saveToCloud(prog.data);
+    }
+    /* Load texts */
+    const{data:texts}=await _supabase.from('user_texts').select('data').eq('user_id',uid).single();
+    if(texts&&texts.data){
+      localStorage.setItem('castigat_montexte',JSON.stringify(texts.data));
+    }
+    /* Load monologues */
+    const{data:mono}=await _supabase.from('user_monologues').select('data').eq('user_id',uid).single();
+    if(mono&&mono.data){
+      localStorage.setItem('castigat_monologues_progress',JSON.stringify(mono.data));
+    }
+    return prog?.data||null;
+  }catch(e){console.log('Cloud load error',e);return null}
+};
+
           </div>
         </div>}
       </div>
@@ -7080,7 +7122,7 @@ function Profile({st,setSt}){
 /* ═══ LOCALSTORAGE ═══ */
 const SAVE_KEY="castigat_academy_save";
 /* Plan URL param handler */
-(function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));}window.history.replaceState({},"",window.location.pathname);}})();
+(function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));saveToCloud(d);}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));saveToCloud({plan:p});}window.history.replaceState({},"",window.location.pathname);}})();
 function loadState(){
   try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s)}catch(e){}
   return null;
@@ -7090,7 +7132,7 @@ function saveState(st){
 }
 
 function updateSRS(st,setSt,itemId,correct){
-  const today=new Date().toDateString();
+  const today=new Date().toDateString();saveToCloud(clean);
   const item=(st.srs||{})[itemId]||{nextReview:today,interval:1,ease:2.5,wrong:0};
   if(correct){
     item.interval=Math.ceil(item.interval*item.ease);
