@@ -7053,6 +7053,8 @@ function Profile({st,setSt}){
 */
 /* ═══ LOCALSTORAGE ═══ */
 const SAVE_KEY="castigat_academy_save";
+/* Plan URL param handler */
+(function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));}window.history.replaceState({},"",window.location.pathname);}})();
 function loadState(){
   try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s)}catch(e){}
   return null;
