@@ -4626,7 +4626,7 @@ function AvantScene({onClose,st}){
       lfo.start();
       filter.connect(master);
       /* Slow fade in over 5 seconds */
-      master.gain.linearRampToValueAtTime(0.14,ctx.currentTime+5);
+      master.gain.linearRampToValueAtTime(0.38,ctx.currentTime+5);
       ambientRef.current=ctx;ambientGainRef.current=master;
       setMusicOn(true);
     }catch(e){console.log("Audio context error",e)}
@@ -7323,7 +7323,7 @@ function App(){
   /* CGU from profile */
   if(st.showCGU) return <CGU onClose={()=>setSt(p=>({...p,showCGU:false}))}/>;
 
-  if(!st.onb)return<Onboard done={(i,user)=>{const initXp=LEVELS[i]?.xp||0;SFX.success();setSt(p=>({...p,onb:true,xp:initXp,initialXp:initXp,lv:i,user,streak:1,lastActiveDate:new Date().toDateString(),seenTuto:false}));setTutoStep(0)}}/>;
+  if(!st.onb)return<Onboard done={(i,user)=>{SFX.success();window.scrollTo(0,0);setSt(p=>({...p,onb:true,xp:0,lv:0,user,streak:1,lastActiveDate:new Date().toDateString(),seenTuto:false}));setTutoStep(0)}}/>;
   const answerDailyQ=(qId,optId,val,cat)=>{
     setSt(p=>{
       const pulse=p.dailyPulse||{answers:[],lastAnswerDate:null};
