@@ -81,6 +81,10 @@ window.addEventListener('beforeinstallprompt', function(e){
 /* ── Supabase Client Init ── */
 const SUPABASE_URL='https://ewvzcagorcsimdljazkn.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_cXOU-pPxOR5zX-fX60AooA_ZvynKw9I';
+/* Disable browser scroll restoration (fixes PWA reopening at bottom) */
+if('scrollRestoration' in history) history.scrollRestoration='manual';
+window.scrollTo(0,0);
+
 const _supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 /* ── Cloudinary Config ── */
@@ -2701,11 +2705,12 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
     if(isActive&&allNodes[i].isUnlocked&&!allNodes[i].isDone&&currentIdx===-1) currentIdx=i;
   }
 
-  useEffect(()=>{
+  /* Auto-scroll disabled on load to prevent page jumping */
+  /* useEffect(()=>{
     if(currentNodeRef.current){
       currentNodeRef.current.scrollIntoView({behavior:'smooth',block:'center'});
     }
-  },[]);
+  },[]); */
 
   /* Build positioned nodes for sinuous path */
   const W=320;const CX=W/2;const AMP=80;const ROW=90;
