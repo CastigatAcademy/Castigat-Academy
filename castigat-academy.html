@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Castigat Academy</title>
 
 <!-- PWA Meta Tags -->
@@ -407,7 +407,9 @@ function Spotlight3D({size=200}){
 const SFX={
   play:(freq=520,dur=.12,type='sine',vol=.04)=>{
     try{
-      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+let _sfxCtx=null;
+function getSfxCtx(){if(!_sfxCtx)_sfxCtx=new(window.AudioContext||window.webkitAudioContext)();if(_sfxCtx.state==='suspended')_sfxCtx.resume();return _sfxCtx;}
+      const ctx=getSfxCtx();
       const osc=ctx.createOscillator();const gain=ctx.createGain();
       const filter=ctx.createBiquadFilter();
       filter.type='lowpass';filter.frequency.value=2000;
@@ -2176,7 +2178,7 @@ function Onboard({done:onDone}){
     if(!form.prenom.trim())return"Veuillez renseigner votre prénom.";
     if(!form.nom.trim())return"Veuillez renseigner votre nom.";
     if(!form.birth)return"Veuillez renseigner votre date de naissance.";
-    if(!form.email.trim()||!form.email.includes('@'))return"Adresse email invalide.";
+    if(!form.email.trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))return"Adresse email invalide.";
     if(!form.password||form.password.length<6)return"Le mot de passe doit contenir au moins 6 caractères.";
     if(!form.cgu)return"Veuillez accepter les CGU.";
     return null;
@@ -5535,6 +5537,7 @@ function CoachChat({st,setSt,onClose}){
   const[messages,setMessages]=useState([]);
   const[loading,setLoading]=useState(true);
   const chatEndRef=useRef(null);
+  useEffect(()=>{chatEndRef.current?.scrollIntoView({behavior:'smooth'})},[messages]);
   const emailRef=useRef('');
   const ivRef=useRef(null);
 
@@ -6748,8 +6751,8 @@ function ExV({mod,st,setSt,back}){
                 <p style={{fontSize:16,fontWeight:800,marginTop:4}}>29,90€<span style={{fontSize:9,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
               </div>
             </div>
-            <button onClick={()=>{window.open('https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201','_blank');setShowPremiumModal(false);SFX.success()}} className="btn-gold btn-pulse" style={{width:'100%',padding:'13px 0',fontSize:12,marginBottom:8}}>Standard — 4 jours gratuits puis 9,90€/mois</button>
-            <button onClick={()=>{window.open('https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202','_blank');setShowPremiumModal(false);SFX.levelUp()}} style={{width:'100%',padding:'12px 0',fontSize:11,fontWeight:700,color:'#ab47bc',borderRadius:10,background:'rgba(171,71,188,.08)',border:'1px solid rgba(171,71,188,.2)',cursor:'pointer',marginBottom:8}}>Premium — 29,90€/mois</button>
+            <button onClick={()=>{window.open('https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201','_blank','noopener,noreferrer');setShowPremiumModal(false);SFX.success()}} className="btn-gold btn-pulse" style={{width:'100%',padding:'13px 0',fontSize:12,marginBottom:8}}>Standard — 4 jours gratuits puis 9,90€/mois</button>
+            <button onClick={()=>{window.open('https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202','_blank','noopener,noreferrer');setShowPremiumModal(false);SFX.levelUp()}} style={{width:'100%',padding:'12px 0',fontSize:11,fontWeight:700,color:'#ab47bc',borderRadius:10,background:'rgba(171,71,188,.08)',border:'1px solid rgba(171,71,188,.2)',cursor:'pointer',marginBottom:8}}>Premium — 29,90€/mois</button>
             <button onClick={()=>setShowPremiumModal(false)} style={{fontSize:10,color:'var(--text-3)',padding:'8px 0'}}>Plus tard</button>
           </div>
         </div>}
@@ -6977,7 +6980,7 @@ function Profile({st,setSt}){
             {id:"standard",name:"Standard",price:"9,90€/mois",trial:"4 jours gratuits",highlight:true,features:["Tout le parcours (12 niveaux)","Toutes les analyses de scène","Avant-Scène & Connexion","Mon Texte & Mon Monologue","Bilan personnalisé","Bibliothèque complète"]},
             {id:"premium",name:"Premium",price:"29,90€/mois",highlight:false,features:["Tout Standard","Coach personnel par chat","Retours vidéo personnalisés","Corrections de vos monologues","Programme sur mesure","Accès prioritaire nouveautés"]}
           ].map(plan=>(
-            <button key={plan.id} onClick={()=>{if(plan.id==="standard")window.open('https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201','_blank');else if(plan.id==="premium")window.open('https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202','_blank');}}
+            <button key={plan.id} onClick={()=>{if(plan.id==="standard")window.open('https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201','_blank','noopener,noreferrer');else if(plan.id==="premium")window.open('https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202','_blank','noopener,noreferrer');}}
               style={{padding:14,borderRadius:12,background:plan.id==="premium"?'rgba(171,71,188,.06)':plan.highlight?'rgba(200,164,78,.08)':'var(--bg-card)',border:st.plan===plan.id?(plan.id==="premium"?'2px solid #ab47bc':plan.highlight?'2px solid var(--gold)':'2px solid var(--emerald)'):'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',flexDirection:'column',textAlign:'left'}}>
               <p style={{fontSize:11,fontWeight:700,marginBottom:4,color:plan.id==="premium"?'#ab47bc':plan.highlight?'var(--gold)':'var(--text)'}}>{plan.name}</p>
               <p style={{fontSize:10,fontWeight:600,marginBottom:4,color:st.plan===plan.id?'var(--gold)':'var(--text-2)'}}>{plan.price}</p>
@@ -7072,7 +7075,7 @@ const loadFromCloud=async()=>{
     /* Load main progress */
     const{data:prog}=await _supabase.from('user_progress').select('data').eq('user_id',uid).single();
     if(prog&&prog.data){
-      localStorage.setItem(SAVE_KEY,JSON.stringify(prog.data));saveToCloud(prog.data);
+      localStorage.setItem(SAVE_KEY,JSON.stringify(prog.data));
     }
     /* Load texts */
     const{data:texts}=await _supabase.from('user_texts').select('data').eq('user_id',uid).single();
@@ -7096,7 +7099,6 @@ const loadFromCloud=async()=>{
 }
 
 /* ═══ APP ═══ */
-/* ═══ DEV: pre-fill onboarding DISABLED for production ═══ */
 /*
 (function(){
   const K="castigat_academy_save";
@@ -7132,7 +7134,7 @@ function saveState(st){
 }
 
 function updateSRS(st,setSt,itemId,correct){
-  const today=new Date().toDateString();saveToCloud(clean);
+  const today=new Date().toDateString();
   const item=(st.srs||{})[itemId]||{nextReview:today,interval:1,ease:2.5,wrong:0};
   if(correct){
     item.interval=Math.ceil(item.interval*item.ease);
@@ -7469,7 +7471,7 @@ function App(){
   );
 }
 
-try{ReactDOM.createRoot(document.getElementById("root")).render(<App/>)}catch(e){document.getElementById("root").innerHTML='<pre style="color:red;padding:20px;font-size:12px">'+e.message+'\n'+e.stack+'</pre>'}
+try{ReactDOM.createRoot(document.getElementById("root")).render(<App/>)}catch(e){document.getElementById("root");const pre=document.createElement('pre');pre.style.cssText='color:red;padding:20px;font-size:12px';pre.textContent=e.message+'\n'+e.stack;document.getElementById("root").appendChild(pre)}
 </script>
 <script>window.onerror=function(msg,src,line,col,err){
   /* Don't destroy the app for "Script error" (CORS-masked, not actionable) */
