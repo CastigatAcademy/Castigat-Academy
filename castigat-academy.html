@@ -7174,6 +7174,10 @@ function TutoOverlay({step,onNext,onDone}){
 
 /* ═══ PWA INSTALL PROMPT ═══ */
 function InstallPrompt({st}){
+    /* If running as installed PWA, never show */
+    if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)return null;
+    if(navigator.standalone)return null;
+
   const[show,setShow]=useState(()=>{
     if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)return false;
     if(navigator.standalone)return false;
