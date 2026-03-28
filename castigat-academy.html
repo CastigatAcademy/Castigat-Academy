@@ -7177,7 +7177,12 @@ function TutoOverlay({step,onNext,onDone}){
 
 /* ═══ PWA INSTALL PROMPT ═══ */
 function InstallPrompt({st}){
-  const[show,setShow]=useState(true);
+  const[show,setShow]=useState(()=>{
+    if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)return false;
+    if(navigator.standalone)return false;
+    if(localStorage.getItem('pwa_installed')||localStorage.getItem('castigat_install_dismissed'))return false;
+    return true;
+  });
   const[isIOS,setIsIOS]=useState(false);
 
   useEffect(()=>{
@@ -7199,7 +7204,7 @@ function InstallPrompt({st}){
       const dismissTime=parseInt(dismissed);
       const now=Date.now();
       const daysPassed=(now-dismissTime)/(1000*60*60*24);
-      if(daysPassed<3){setShow(false);return}
+      if(daysPassed<365){setShow(false);return}
     }
 
     /* Show after 3 seconds */
