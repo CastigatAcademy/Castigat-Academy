@@ -5540,15 +5540,15 @@ function CoachChat({st,setSt,onClose}){
     }
     /* 2. Load messages now that emailRef is set */
     if(emailRef.current){
-      const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
-      if(!res.error&&res.data)setMessages(res.data);
+      const res=await _supabase.from('messages').select('*').order('created_at',{ascending:true});
+      if(!res.error&&res.data){const filtered=res.data.filter(m=>m.student_email===emailRef.current);setMessages(filtered);}
     }
     setLoading(false);
     /* 3. Start polling AFTER emailRef is set */
     ivRef.current=setInterval(async()=>{
       if(!emailRef.current)return;
-      const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
-      if(!res.error&&res.data)setMessages(res.data);
+      const res=await _supabase.from('messages').select('*').order('created_at',{ascending:true});
+      if(!res.error&&res.data){const filtered=res.data.filter(m=>m.student_email===emailRef.current);setMessages(filtered);}
     },8000);
   })();
   return()=>{if(ivRef.current)clearInterval(ivRef.current);};
@@ -5575,12 +5575,10 @@ function CoachChat({st,setSt,onClose}){
       read:false
     }]);
     if(!error){
+      /* Optimistic update: add message to state immediately */
+      const newMsg={id:'temp_'+Date.now(),student_email:emailRef.current,student_name:(typeof st.user==='string'?st.user:st.user?.prenom||st.user?.name)||st.pseudo||'Anonyme',sender:'student',content:msg.trim(),read:false,created_at:new Date().toISOString()};
+      setMessages(prev=>[...prev,newMsg]);
       setMsg("");
-      /* Reload messages after short delay for DB consistency */
-      await new Promise(r=>setTimeout(r,300));
-      const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
-      console.log("[CoachChat] reload after send:",emailRef.current,"found:",res.data?.length);
-      if(!res.error&&res.data)setMessages(res.data);
     }
   };
 
