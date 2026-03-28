@@ -5525,17 +5525,21 @@ function CoachChat({st,setSt,onClose}){
   const[messages,setMessages]=useState([]);
   const[loading,setLoading]=useState(true);
   const chatEndRef=useRef(null);
-  const emailRef=useRef(st.email||'');
+  const emailRef=useRef('');
 
-  /* Get email from Supabase session once, then load messages */
+  /* Get email or generate device ID for chat identification */
   useEffect(()=>{(async()=>{
     const{data}=await _supabase.auth.getSession();
-    if(data.session?.user?.email)emailRef.current=data.session.user.email;
-    /* Load immediately after getting email */
-    if(emailRef.current){
-      const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
-      if(!res.error&&res.data)setMessages(res.data);
+    if(data.session?.user?.email){emailRef.current=data.session.user.email;}
+    else{
+      /* No auth session: use st.email, st.user, or a device-based ID */
+      const fallback=st.email||st.user||st.pseudo||localStorage.getItem('castigat_chat_id');
+      if(fallback){emailRef.current=fallback;}
+      else{const newId='device_'+Math.random().toString(36).substr(2,9);localStorage.setItem('castigat_chat_id',newId);emailRef.current=newId;}
     }
+    /* Load messages */
+    const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
+    if(!res.error&&res.data)setMessages(res.data);
     setLoading(false);
   })();
   const iv=setInterval(async()=>{
@@ -5545,15 +5549,22 @@ function CoachChat({st,setSt,onClose}){
   },8000);
   return()=>clearInterval(iv);
   },[]);
-  useEffect(()=>{if(chatEndRef.current)chatEndRef.current.scrollIntoView({behavior:'smooth'});},[messages]);
-
   const sendMessage=async()=>{
     if(!msg.trim())return;
+    /* Ensure emailRef has a value - use auth, st fields, or device ID */
+    if(!emailRef.current){
+      const currentUser=await _supabase.auth.getUser();
+      if(currentUser.data?.user?.email)emailRef.current=currentUser.data.user.email;
+      else{
+        const fallback=st.email||st.user||st.pseudo||localStorage.getItem('castigat_chat_id');
+        if(fallback)emailRef.current=fallback;
+        else{const newId='device_'+Math.random().toString(36).substr(2,9);localStorage.setItem('castigat_chat_id',newId);emailRef.current=newId;}
+      }
+    }
     const currentUser=await _supabase.auth.getUser();
-    if(!emailRef.current&&currentUser.data?.user?.email)emailRef.current=currentUser.data.user.email;
     const{error}=await _supabase.from('messages').insert([{
       user_id:currentUser.data?.user?.id||null,
-      student_email:emailRef.current||'',
+      student_email:emailRef.current,
       student_name:st.user||st.pseudo||currentUser.data?.user?.user_metadata?.display_name||'Anonyme',
       sender:'student',
       content:msg.trim(),
@@ -7167,6 +7178,8 @@ function InstallPrompt({st}){
   },[]);
 
   useEffect(()=>{
+    /* Skip if already installed as PWA */
+    if(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches||navigator.standalone){setShow(false);return;}
     if(!st.onb||!show)return;
     if(!deferredPrompt&&!isIOS)return;/* Only show if available or iOS */
 
