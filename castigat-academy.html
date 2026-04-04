@@ -2276,7 +2276,7 @@ function Onboard({done:onDone}){
   );
 
   /* Step 0 — Welcome */
-  if(step===0&&!showInstallStep) return(
+  if(step===0&&!showInstallStep&&!showNotifStep) return(
     <div style={{minHeight:'100vh',background:'#07070c',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative',overflow:'hidden'}}>
       {/* Dot pattern background */}
       <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px)',backgroundSize:'24px 24px',pointerEvents:'none'}}/>
@@ -6836,6 +6836,42 @@ function Profile({st,setSt}){
   const[confirmReset,setConfirmReset]=useState(false);
   const[adminTaps,setAdminTaps]=useState(0);
   const[adminTimer,setAdminTimer]=useState(null);
+  const[showSupport,setShowSupport]=useState(false);
+  const[showBug,setShowBug]=useState(false);
+  const[supportForm,setSupportForm]=useState({subject:'',message:''});
+  const[bugForm,setBugForm]=useState({title:'',description:''});
+  const[submitState,setSubmitState]=useState({loading:false,success:false,error:''});
+  const submitSupport=async()=>{
+    if(!supportForm.subject.trim()||!supportForm.message.trim())return;
+    setSubmitState({loading:true,success:false,error:''});
+    try{
+      const{data:{user}}=await _supabase.auth.getUser();
+      const{error}=await _supabase.from('support_requests').insert([{
+        user_id:user?.id||null,email:user?.email||st.user?.email||null,
+        subject:supportForm.subject.trim(),message:supportForm.message.trim()
+      }]);
+      if(error)throw error;
+      setSubmitState({loading:false,success:true,error:''});
+      setSupportForm({subject:'',message:''});
+      setTimeout(()=>{setShowSupport(false);setSubmitState({loading:false,success:false,error:''})},2000);
+    }catch(e){setSubmitState({loading:false,success:false,error:'Erreur : '+(e.message||'envoi impossible')})}
+  };
+  const submitBug=async()=>{
+    if(!bugForm.title.trim()||!bugForm.description.trim())return;
+    setSubmitState({loading:true,success:false,error:''});
+    try{
+      const{data:{user}}=await _supabase.auth.getUser();
+      const{error}=await _supabase.from('bug_reports').insert([{
+        user_id:user?.id||null,email:user?.email||st.user?.email||null,
+        title:bugForm.title.trim(),description:bugForm.description.trim(),
+        page:window.location.pathname,user_agent:navigator.userAgent
+      }]);
+      if(error)throw error;
+      setSubmitState({loading:false,success:true,error:''});
+      setBugForm({title:'',description:''});
+      setTimeout(()=>{setShowBug(false);setSubmitState({loading:false,success:false,error:''})},2000);
+    }catch(e){setSubmitState({loading:false,success:false,error:'Erreur : '+(e.message||'envoi impossible')})}
+  };
   const lv=getLv(st.xp),tier=getTier(lv);
   const tE=Object.values(PR).flat().length,tC=Object.values(CU).flat().length;
   return(
@@ -7020,6 +7056,82 @@ function Profile({st,setSt}){
           style={{width:'100%',padding:'10px 0',fontSize:10,color:'var(--text-2)',display:'flex',alignItems:'center',justifyContent:'center',gap:4,marginBottom:8}}>
           {I.info({size:12})} Conditions générales d'utilisation
         </button>
+
+        {/* Contact Support & Report Bug */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:12}}>
+          <button onClick={()=>{setShowSupport(true);setSubmitState({loading:false,success:false,error:''})}}
+            style={{padding:'12px 8px',fontSize:10,fontWeight:700,color:'var(--text)',display:'flex',alignItems:'center',justifyContent:'center',gap:6,borderRadius:10,border:'1px solid var(--line)',background:'var(--bg-card)',cursor:'pointer'}}>
+            {I.mail({size:13})} Contacter le support
+          </button>
+          <button onClick={()=>{setShowBug(true);setSubmitState({loading:false,success:false,error:''})}}
+            style={{padding:'12px 8px',fontSize:10,fontWeight:700,color:'var(--text)',display:'flex',alignItems:'center',justifyContent:'center',gap:6,borderRadius:10,border:'1px solid var(--line)',background:'var(--bg-card)',cursor:'pointer'}}>
+            {I.alert?I.alert({size:13}):I.info({size:13})} Signaler un bug
+          </button>
+        </div>
+
+        {/* Support Modal */}
+        {showSupport&&<div onClick={()=>setShowSupport(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.75)',backdropFilter:'blur(6px)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:440,background:'var(--bg-card)',border:'1px solid var(--line)',borderRadius:16,padding:24,maxHeight:'90vh',overflowY:'auto'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+              <h2 className="heading" style={{fontSize:18,margin:0}}>Contacter le support</h2>
+              <button onClick={()=>setShowSupport(false)} style={{background:'transparent',border:'none',color:'var(--text-2)',cursor:'pointer',padding:4,fontSize:20,lineHeight:1}}>×</button>
+            </div>
+            {submitState.success?
+              <div style={{padding:20,textAlign:'center'}}>
+                <div style={{fontSize:36,marginBottom:10}}>✅</div>
+                <p style={{fontSize:13,fontWeight:700,color:'var(--emerald)',marginBottom:6}}>Message envoyé !</p>
+                <p style={{fontSize:11,color:'var(--text-2)'}}>Nous vous répondrons dans les plus brefs délais.</p>
+              </div>
+            :<>
+              <p style={{fontSize:11,color:'var(--text-2)',marginBottom:16,lineHeight:1.5}}>Une question, un besoin d'aide ? Écrivez-nous, on vous répond rapidement.</p>
+              <div style={{marginBottom:12}}>
+                <label className="input-label">Sujet</label>
+                <input className="input-field" type="text" placeholder="Ex : Problème d'abonnement" value={supportForm.subject} onChange={e=>setSupportForm({...supportForm,subject:e.target.value})} maxLength="100"/>
+              </div>
+              <div style={{marginBottom:12}}>
+                <label className="input-label">Votre message</label>
+                <textarea className="input-field" placeholder="Décrivez votre demande…" value={supportForm.message} onChange={e=>setSupportForm({...supportForm,message:e.target.value})} maxLength="1500" rows="5" style={{minHeight:100,fontFamily:'inherit',resize:'vertical'}}/>
+              </div>
+              {submitState.error&&<p style={{fontSize:10,color:'#dc5050',marginBottom:10}}>{submitState.error}</p>}
+              <button onClick={submitSupport} disabled={submitState.loading||!supportForm.subject.trim()||!supportForm.message.trim()}
+                style={{width:'100%',padding:'12px 0',fontSize:12,fontWeight:700,color:'var(--bg-1)',borderRadius:10,border:'none',background:'var(--gold)',cursor:'pointer',opacity:(submitState.loading||!supportForm.subject.trim()||!supportForm.message.trim())?.5:1}}>
+                {submitState.loading?'Envoi…':'Envoyer'}
+              </button>
+            </>}
+          </div>
+        </div>}
+
+        {/* Bug Modal */}
+        {showBug&&<div onClick={()=>setShowBug(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.75)',backdropFilter:'blur(6px)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:440,background:'var(--bg-card)',border:'1px solid var(--line)',borderRadius:16,padding:24,maxHeight:'90vh',overflowY:'auto'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+              <h2 className="heading" style={{fontSize:18,margin:0}}>Signaler un bug</h2>
+              <button onClick={()=>setShowBug(false)} style={{background:'transparent',border:'none',color:'var(--text-2)',cursor:'pointer',padding:4,fontSize:20,lineHeight:1}}>×</button>
+            </div>
+            {submitState.success?
+              <div style={{padding:20,textAlign:'center'}}>
+                <div style={{fontSize:36,marginBottom:10}}>🐛</div>
+                <p style={{fontSize:13,fontWeight:700,color:'var(--emerald)',marginBottom:6}}>Bug signalé !</p>
+                <p style={{fontSize:11,color:'var(--text-2)'}}>Merci, on regarde ça au plus vite.</p>
+              </div>
+            :<>
+              <p style={{fontSize:11,color:'var(--text-2)',marginBottom:16,lineHeight:1.5}}>Un truc qui ne marche pas ? Dites-nous tout, on corrige.</p>
+              <div style={{marginBottom:12}}>
+                <label className="input-label">Titre du problème</label>
+                <input className="input-field" type="text" placeholder="Ex : L'exercice ne se lance pas" value={bugForm.title} onChange={e=>setBugForm({...bugForm,title:e.target.value})} maxLength="100"/>
+              </div>
+              <div style={{marginBottom:12}}>
+                <label className="input-label">Description détaillée</label>
+                <textarea className="input-field" placeholder="Que faisiez-vous ? Qu'attendiez-vous ? Qu'est-ce qui s'est passé ?" value={bugForm.description} onChange={e=>setBugForm({...bugForm,description:e.target.value})} maxLength="2000" rows="6" style={{minHeight:120,fontFamily:'inherit',resize:'vertical'}}/>
+              </div>
+              {submitState.error&&<p style={{fontSize:10,color:'#dc5050',marginBottom:10}}>{submitState.error}</p>}
+              <button onClick={submitBug} disabled={submitState.loading||!bugForm.title.trim()||!bugForm.description.trim()}
+                style={{width:'100%',padding:'12px 0',fontSize:12,fontWeight:700,color:'var(--bg-1)',borderRadius:10,border:'none',background:'var(--gold)',cursor:'pointer',opacity:(submitState.loading||!bugForm.title.trim()||!bugForm.description.trim())?.5:1}}>
+                {submitState.loading?'Envoi…':'Envoyer le signalement'}
+              </button>
+            </>}
+          </div>
+        </div>}
 
         <button onClick={()=>{setSt(p=>({...p,onb:false,user:null}))}}
           style={{width:'100%',padding:'12px 0',fontSize:11,color:'var(--text-2)',display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginBottom:6,borderRadius:10,border:'1px solid rgba(255,255,255,.06)',background:'rgba(255,255,255,.02)'}}>
