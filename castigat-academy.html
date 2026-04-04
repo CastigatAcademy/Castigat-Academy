@@ -5743,9 +5743,11 @@ function Feed({st,setSt}){
   const tip=["Échauffez-vous TOUJOURS avant de jouer.","Le silence est votre meilleur ami sur scène.","Respirez par le ventre, pas par la poitrine.","Regardez votre partenaire dans les yeux.","Le corps ne ment jamais.","Moins c'est plus. La sobriété est une force.","Enregistrez-vous régulièrement pour progresser."][today%7];
 
   const[coachChat,setCoachChat]=useState(null);
+  const[showChallenge,setShowChallenge]=useState(false);
   if(monTexte) return <MonTexte st={st} setSt={setSt} onClose={()=>setMonTexte(false)}/>;
   if(warmup) return <Warmup onClose={()=>setWarmup(false)} st={st} setSt={setSt}/>;
   if(avantScene) return <AvantScene onClose={()=>setAvantScene(false)} st={st}/>;
+  if(showChallenge) return <DictionChallenge onClose={()=>setShowChallenge(false)} st={st} setSt={setSt}/>;
   if(sceneAn) return <SceneAnalysis analysis={sceneAn} st={st} setSt={setSt} onClose={()=>setSceneAn(null)}/>;
   if(coachChat) return <CoachChat st={st} setSt={setSt} onClose={()=>setCoachChat(null)}/>;
 
