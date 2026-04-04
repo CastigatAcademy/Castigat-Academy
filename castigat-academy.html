@@ -5590,8 +5590,11 @@ function CoachChat({st,setSt,onClose}){
     const{data}=await _supabase.auth.getSession();
     if(data.session?.user?.email){await loadFromCloud();emailRef.current=data.session.user.email;}
     else{
-      const fallback=st.email||(typeof st.user==='string'?st.user:st.user?.prenom||st.user?.name)||st.pseudo||localStorage.getItem('castigat_chat_id');
-      if(fallback){emailRef.current=fallback;}
+      /* Priority: auth email > st.email > stored device ID > new device ID */
+      const storedId=localStorage.getItem('castigat_chat_id');
+      const emailFallback=st.email||(typeof st.user==='string'&&!st.user.startsWith('{')?st.user:null);
+      if(emailFallback){emailRef.current=emailFallback;localStorage.setItem('castigat_chat_id',emailFallback);}
+      else if(storedId){emailRef.current=storedId;}
       else{const nid='device_'+Math.random().toString(36).substr(2,9);localStorage.setItem('castigat_chat_id',nid);emailRef.current=nid;}
     }
     /* 2. Load messages now that emailRef is set */
@@ -5616,8 +5619,10 @@ function CoachChat({st,setSt,onClose}){
       const currentUser=await _supabase.auth.getUser();
       if(currentUser.data?.user?.email)emailRef.current=currentUser.data.user.email;
       else{
-        const fallback=st.email||(typeof st.user==='string'?st.user:st.user?.prenom||st.user?.name)||st.pseudo||localStorage.getItem('castigat_chat_id');
-        if(fallback)emailRef.current=fallback;
+        const storedId2=localStorage.getItem('castigat_chat_id');
+        const emailFb2=st.email||(typeof st.user==='string'&&!st.user.startsWith('{')?st.user:null);
+        if(emailFb2){emailRef.current=emailFb2;localStorage.setItem('castigat_chat_id',emailFb2);}
+        else if(storedId2){emailRef.current=storedId2;}
         else{const newId='device_'+Math.random().toString(36).substr(2,9);localStorage.setItem('castigat_chat_id',newId);emailRef.current=newId;}
       }
     }
