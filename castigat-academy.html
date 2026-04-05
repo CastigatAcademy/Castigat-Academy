@@ -6059,31 +6059,38 @@ function Feed({st,setSt}){
     <div className="safe-b fade-up" style={{padding:'68px 20px 100px'}}>
       <div className="mw">
         <h1 className="heading" style={{fontSize:26,marginBottom:4}}>Outils</h1>
-        <p className="body" style={{fontSize:12,marginBottom:24}}>Vos outils de travail du comédien</p>
+        <p className="body" style={{fontSize:12,marginBottom:20}}>Vos outils de travail du comédien</p>
 
-        {/* Tool previews — locked */}
-        <div style={{position:'relative',marginBottom:14}}>
-          <div style={{filter:'blur(4px)',opacity:.4,pointerEvents:'none'}}>
-            <div className="card" style={{padding:18,marginBottom:10,display:'flex',alignItems:'center',gap:14}}>
-              <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.headphones({size:18,sw:1.6,style:{color:'#07070b'}})}</div>
-              <div><p className="label-gold" style={{marginBottom:3}}>ÉCHAUFFEMENT VOCAL</p><p style={{fontSize:11,fontWeight:700}}>Préparez votre voix</p></div>
-            </div>
-            <div className="card" style={{padding:18,marginBottom:10,display:'flex',alignItems:'center',gap:14}}>
-              <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.compass({size:18,sw:1.6,style:{color:'#fff'}})}</div>
-              <div><p className="label" style={{color:'var(--violet)',marginBottom:3}}>AVANT-SCÈNE</p><p style={{fontSize:11,fontWeight:700}}>Préparez-vous avant de jouer</p></div>
-            </div>
-            <div className="card" style={{padding:18,marginBottom:10,display:'flex',alignItems:'center',gap:14}}>
-              <div style={{width:42,height:42,borderRadius:12,background:'rgba(200,164,78,.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.book({size:18,sw:1.6,style:{color:'var(--gold)'}})}</div>
-              <div><p className="label-gold" style={{marginBottom:3}}>MON TEXTE</p><p style={{fontSize:11,fontWeight:700}}>Travaillez vos textes</p></div>
-            </div>
+        {/* Unlock banner */}
+        <div style={{padding:'14px 16px',borderRadius:14,background:'linear-gradient(135deg,rgba(167,139,250,.12),rgba(139,92,246,.06))',border:'1px solid rgba(167,139,250,.25)',marginBottom:18,display:'flex',alignItems:'center',gap:12}}>
+          <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.crown({size:16})}</div>
+          <div style={{flex:1}}>
+            <p style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:2}}>Débloquez tous les outils</p>
+            <p style={{fontSize:10,color:'var(--text-3)'}}>Passez à Standard ou Coach dans votre Profil</p>
           </div>
-          <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:2}}>
-            <div className="card-v" style={{padding:24,textAlign:'center',maxWidth:280,backdropFilter:'blur(8px)'}}>
-              <div style={{width:44,height:44,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>{I.crown({size:20})}</div>
-              <p className="heading" style={{fontSize:16,marginBottom:6}}>Débloquez tous les outils</p>
-              <p className="body" style={{fontSize:10,marginBottom:14}}>Échauffement vocal, avant-scène, textes — tous les outils du comédien.</p>
-              <p style={{fontSize:9,color:'var(--violet)',marginBottom:6}}>Passez à Standard ou Coach dans votre Profil</p>
-            </div>
+        </div>
+
+        {/* Tool previews — visible but locked */}
+        <div style={{opacity:.55,pointerEvents:'none',position:'relative'}}>
+          <div className="card" style={{padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,position:'relative'}}>
+            <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--coral-dim,rgba(248,113,113,.3)),var(--coral))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.zap({size:18,sw:1.6,style:{color:'#fff'}})}</div>
+            <div style={{flex:1}}><p className="label" style={{color:'var(--coral)',marginBottom:3}}>CHALLENGE DICTION</p><p style={{fontSize:11,fontWeight:700}}>60 secondes chrono</p></div>
+            <div style={{width:22,height:22,borderRadius:6,background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.lock?I.lock({size:12,style:{color:'var(--text-3)'}}):<span style={{fontSize:11,color:'var(--text-3)'}}>🔒</span>}</div>
+          </div>
+          <div className="card" style={{padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,position:'relative'}}>
+            <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.compass({size:18,sw:1.6,style:{color:'#fff'}})}</div>
+            <div style={{flex:1}}><p className="label" style={{color:'var(--violet)',marginBottom:3}}>AVANT-SCÈNE</p><p style={{fontSize:11,fontWeight:700}}>Préparez-vous avant de jouer</p></div>
+            <div style={{width:22,height:22,borderRadius:6,background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.lock?I.lock({size:12,style:{color:'var(--text-3)'}}):<span style={{fontSize:11,color:'var(--text-3)'}}>🔒</span>}</div>
+          </div>
+          <div className="card" style={{padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,position:'relative'}}>
+            <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.headphones({size:18,sw:1.6,style:{color:'#07070b'}})}</div>
+            <div style={{flex:1}}><p className="label-gold" style={{marginBottom:3}}>ÉCHAUFFEMENT VOCAL</p><p style={{fontSize:11,fontWeight:700}}>Préparez votre voix</p></div>
+            <div style={{width:22,height:22,borderRadius:6,background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.lock?I.lock({size:12,style:{color:'var(--text-3)'}}):<span style={{fontSize:11,color:'var(--text-3)'}}>🔒</span>}</div>
+          </div>
+          <div className="card" style={{padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,position:'relative'}}>
+            <div style={{width:42,height:42,borderRadius:12,background:'rgba(200,164,78,.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.book({size:18,sw:1.6,style:{color:'var(--gold)'}})}</div>
+            <div style={{flex:1}}><p className="label-gold" style={{marginBottom:3}}>MON TEXTE</p><p style={{fontSize:11,fontWeight:700}}>Travaillez vos textes</p></div>
+            <div style={{width:22,height:22,borderRadius:6,background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.lock?I.lock({size:12,style:{color:'var(--text-3)'}}):<span style={{fontSize:11,color:'var(--text-3)'}}>🔒</span>}</div>
           </div>
         </div>
       </div>
