@@ -2998,6 +2998,9 @@ function Home({st,setSt,go,setMod,setExam}){
   const order=[lv.id,...LEVELS.filter((_,i)=>i<li).reverse().map(l=>l.id),...LEVELS.filter((_,i)=>i>li&&st.xp>=_.xp).map(l=>l.id)];
   let nP=null,nC=null;
   for(const lid of order){if(!nP)nP=(PR[lid]||[]).find(m=>!st.doneEx.includes(m.id));if(!nC)nC=(CU[lid]||[]).find(m=>!st.doneCu.includes(m.id));if(nP&&nC)break}
+  /* Check if current level exercises are all done but exam not passed yet */
+  const allPrDone=!nP&&(PR[lv.id]||[]).length>0;
+  const examAvailable=allPrDone&&nx&&EXAMS[lv.id]&&!(st.passedExams||[]).includes(lv.id);
   /* Find next scene analysis for user tier — skip already done */
   const tier=lv.tier;
   const doneSAIds=st.doneSA||[];
@@ -3052,14 +3055,23 @@ function Home({st,setSt,go,setMod,setExam}){
         </div>
 
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
-          {nP&&<button data-tuto="tuto-exercice" className="card obj-3d" onClick={()=>{setMod({...nP,sec:"pr"});go("practice")}} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(200,164,78,.08),var(--bg-card))',border:'1px solid rgba(200,164,78,.15)'}}>
+          {nP?<button data-tuto="tuto-exercice" className="card obj-3d" onClick={()=>{setMod({...nP,sec:"pr"});go("practice")}} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(200,164,78,.08),var(--bg-card))',border:'1px solid rgba(200,164,78,.15)'}}>
             <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:10,boxShadow:'0 6px 20px rgba(200,164,78,.2)'}}>
               <span className="emoji" style={{fontSize:'20px'}}>{nP.icon}</span>
             </div>
             <p className="label-gold" style={{marginBottom:4,fontSize:9}}>EXERCICE</p>
             <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>{nP.title}</p>
             <div style={{display:'flex',alignItems:'center',gap:3,marginTop:10,color:'var(--gold)',fontSize:10,fontWeight:700}}>{I.zap({size:11})}+{nP.xp} XP</div>
-          </button>}
+          </button>
+          :examAvailable?<button className="card obj-3d" onClick={()=>setExam(lv.id)} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(74,222,128,.08),var(--bg-card))',border:'1px solid rgba(74,222,128,.15)'}}>
+            <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,rgba(74,222,128,.2),rgba(74,222,128,.6))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:10,boxShadow:'0 6px 20px rgba(74,222,128,.2)'}}>
+              {I.trophy({size:20,sw:1.6,style:{color:'#07070b'}})}
+            </div>
+            <p className="label" style={{color:'var(--emerald)',marginBottom:4,fontSize:9}}>EXAMEN DE NIVEAU</p>
+            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>Passer à {nx.name}</p>
+            <div style={{display:'flex',alignItems:'center',gap:3,marginTop:10,color:'var(--emerald)',fontSize:10,fontWeight:700}}>{I.zap({size:11})} Débloquer le niveau</div>
+          </button>
+          :null}
           {nC&&<button data-tuto="tuto-culture" className="card obj-3d" onClick={()=>{setMod({...nC,sec:"cu"});go("culture")}} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:'1px solid rgba(167,139,250,.12)'}}>
             <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:10,boxShadow:'0 6px 20px rgba(167,139,250,.2)'}}>
               <span className="emoji" style={{fontSize:'20px'}}>{nC.icon}</span>
