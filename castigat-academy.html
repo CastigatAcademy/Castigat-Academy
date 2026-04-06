@@ -7672,6 +7672,24 @@ function App(){
     })();
   },[]);
 
+  /* Validate passedExams — remove exams if the level content isn't actually complete */
+  useEffect(()=>{
+    if(!st.onb||!st.passedExams||st.passedExams.length===0)return;
+    const validExams=st.passedExams.filter(levelId=>{
+      const level=LEVELS.find(l=>l.id===levelId);
+      if(!level)return false;
+      const prDone=(PR[levelId]||[]).length===0||(PR[levelId]||[]).every(m=>st.doneEx.includes(m.id));
+      const cuDone=(CU[levelId]||[]).length===0||(CU[levelId]||[]).every(m=>st.doneCu.includes(m.id));
+      const tierSAs=SCENE_ANALYSES.filter(sa=>sa.tier===level.tier);
+      const saDone=tierSAs.length===0||tierSAs.every(sa=>(st.doneSA||[]).includes(sa.id));
+      return prDone&&cuDone&&saDone;
+    });
+    if(validExams.length!==st.passedExams.length){
+      console.log('passedExams cleaned:',st.passedExams,'→',validExams);
+      setSt(p=>({...p,passedExams:validExams}));
+    }
+  },[st.onb]);
+
   /* Badge detection — check for new badges on every state change */
   useEffect(()=>{
     if(!st.onb)return;
