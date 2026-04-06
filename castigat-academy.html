@@ -6750,7 +6750,7 @@ function ExV({mod,st,setSt,back}){
               <p className="heading" style={{fontSize:16,marginBottom:4}}>Feedback personnalisé</p>
               <p className="body" style={{fontSize:10,marginBottom:4}}>Retour d'un metteur en scène pro sous 48h.</p>
               <p style={{fontSize:9,color:'var(--violet)',fontWeight:700,marginBottom:14}}>Premium</p>
-              {mod.premium?(
+              {(st.plan==="premium"||st.plan==="coach")?(
                 <>
                   {uploadPhase==="ready"&&(
                     <label style={{width:'100%',cursor:'pointer'}}>
