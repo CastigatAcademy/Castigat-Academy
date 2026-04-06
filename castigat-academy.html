@@ -97,7 +97,7 @@ _supabase.auth.onAuthStateChange(function(event, session){
       try{
         var pending = JSON.parse(pendingRaw);
         if(pending.uid === session.user.id){
-          _supabase.from('profiles').update({subscription_tier:pending.plan,plan_started_at:new Date().toISOString()}).eq('id',session.user.id).then(function(){
+          _supabase.from('profiles').update({subscription_tier:pending.plan,plan:pending.plan,plan_started_at:new Date().toISOString()}).eq('id',session.user.id).then(function(){
             localStorage.removeItem('pending_plan_update');
           });
         }
@@ -7211,7 +7211,7 @@ const SAVE_KEY="castigat_academy_save";
 /* Plan URL param handler */
 (function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));saveToCloud(d);}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));saveToCloud({plan:p});}
 /* Also update profils table so plan is visible in Supabase dashboard */
-(async()=>{try{var usr=await _supabase.auth.getUser();if(usr.data.user){localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:usr.data.user.id}));await _supabase.from('profiles').update({subscription_tier:p,plan_started_at:new Date().toISOString()}).eq('id',usr.data.user.id);localStorage.removeItem('pending_plan_update');}else{localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:'pending'}));}}catch(e){console.log('profils plan update error',e)}})();
+(async()=>{try{var usr=await _supabase.auth.getUser();if(usr.data.user){localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:usr.data.user.id}));await _supabase.from('profiles').update({subscription_tier:p,plan:p,plan_started_at:new Date().toISOString()}).eq('id',usr.data.user.id);localStorage.removeItem('pending_plan_update');}else{localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:'pending'}));}}catch(e){console.log('profils plan update error',e)}})();
 window.history.replaceState({},"",window.location.pathname);}})();
 function loadState(){
   try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s)}catch(e){}
