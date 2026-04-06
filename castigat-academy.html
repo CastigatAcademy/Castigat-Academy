@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Castigat Academy</title>
-  
+
 <!-- PWA Meta Tags -->
 <meta name="description" content="L'école de théâtre en ligne — Apprenez le théâtre comme un jeu">
-<meta name="theme-color" content="#6D28D9"
+<meta name="theme-color" content="#6D28D9">
 <meta name="background-color" content="#0F0F23">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -7194,7 +7194,7 @@ const SAVE_KEY="castigat_academy_save";
 /* Plan URL param handler */
 (function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));saveToCloud(d);}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));saveToCloud({plan:p});}
 /* Also update profils table so plan is visible in Supabase dashboard */
-(async()=>{try{var usr=await _supabase.auth.getUser();if(usr.data.user){await _supabase.from('profils').update({plan:p}).eq('id',usr.data.user.id);}}catch(e){console.log('profils plan update error',e)}})();
+(async()=>{try{var usr=await _supabase.auth.getUser();if(usr.data.user){await _supabase.from('profiles').update({plan:p,plan_started_at:new Date().toISOString()}).eq('id',usr.data.user.id);}}catch(e){console.log('profils plan update error',e)}})();
 window.history.replaceState({},"",window.location.pathname);}})();
 function loadState(){
   try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s)}catch(e){}
@@ -7203,6 +7203,40 @@ function loadState(){
 function saveState(st){
   try{const{showCGU,...clean}=st;localStorage.setItem(SAVE_KEY,JSON.stringify(clean))}catch(e){}
 }
+
+/* ═══ SESSION TRACKING ═══ */
+/* Track time spent on app, session count, last active — updates profils in Supabase */
+(function(){
+  var SESSION_START=Date.now();
+  /* Update profils on load (session count + last_active) */
+  (async()=>{
+    try{
+      var usr=await _supabase.auth.getUser();
+      if(!usr.data.user)return;
+      var uid=usr.data.user.id;
+      var{data:prof}=await _supabase.from('profiles').select('session_count').eq('id',uid).single();
+      var count=(prof&&prof.session_count)||0;
+      await _supabase.from('profiles').update({last_active:new Date().toISOString(),session_count:count+1}).eq('id',uid);
+    }catch(e){console.log('session tracking init error',e)}
+  })();
+  /* Update total_minutes when user leaves */
+  function saveSessionTime(){
+    var mins=Math.round((Date.now()-SESSION_START)/60000);
+    if(mins<1)return;
+    (async()=>{
+      try{
+        var usr=await _supabase.auth.getUser();
+        if(!usr.data.user)return;
+        var uid=usr.data.user.id;
+        var{data:prof}=await _supabase.from('profiles').select('total_minutes').eq('id',uid).single();
+        var total=(prof&&prof.total_minutes)||0;
+        await _supabase.from('profiles').update({total_minutes:total+mins}).eq('id',uid);
+      }catch(e){}
+    })();
+  }
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')saveSessionTime();});
+  window.addEventListener('beforeunload',saveSessionTime);
+})();
 
 function updateSRS(st,setSt,itemId,correct){
   const today=new Date().toDateString();
