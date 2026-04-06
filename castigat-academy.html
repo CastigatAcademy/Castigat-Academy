@@ -86,41 +86,49 @@ if('scrollRestoration' in history) history.scrollRestoration='manual';
 window.scrollTo(0,0);
 
 const _supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const SAVE_KEY="castigat_academy_save";
 
 /* ── Cloud Sync: save/load progress to Supabase ── */
-const saveToCloud=async(stateData)=>{
-/* PENDING PLAN UPDATE (mobile Stripe redirect fix) */
-_supabase.auth.onAuthStateChange(function(event, session){
-  if(session && session.user){
-    var pendingRaw = localStorage.getItem('pending_plan_update');
-    if(pendingRaw){
-      try{
-        var pending = JSON.parse(pendingRaw);
-        if(pending.uid === session.user.id){
-          _supabase.from('profiles').update({plan:pending.plan,plan_started_at:new Date().toISOString()}).eq('id',session.user.id).then(function(){
-            localStorage.removeItem('pending_plan_update');
-          });
-        }
-      }catch(e){localStorage.removeItem('pending_plan_update');}
-    }
-  }
-});
 
+/* Debounce helper — prevents flooding Supabase with updates */
+let _cloudSaveTimer=null;
+let _lastCloudSave=0;
+const CLOUD_SAVE_DEBOUNCE=5000; /* 5 seconds between cloud saves */
+
+const saveToCloud=async(stateData)=>{
   try{
     const{data:{user}}=await _supabase.auth.getUser();
-    if(!user)return;
+    if(!user){console.log('Cloud save skipped: no auth user');return;}
     const uid=user.id;
-    /* Sync profile info to dashboard */
-    await _supabase.from('profiles').update({plan:stateData.plan||'free',pseudo:stateData.pseudo||null,current_level:stateData.lv||0,last_active:new Date().toISOString()}).eq('id',uid);
+    /* Sync profile info to Supabase dashboard — ALL fields */
+    const profileUpdate={
+      id:uid,
+      plan:stateData.plan||'free',
+      pseudo:stateData.pseudo||(stateData.user&&stateData.user.pseudo)||null,
+      avatar:(stateData.user&&stateData.user.avatar)||null,
+      current_level:stateData.lv||0,
+      last_active:new Date().toISOString()
+    };
+    const{error:profErr}=await _supabase.from('profiles').upsert(profileUpdate,{onConflict:'id'});
+    if(profErr)console.error('profiles upsert error:',profErr);
     /* Save main progress */
-    await _supabase.from('user_progress').upsert({user_id:uid,data:stateData,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    const{error:progErr}=await _supabase.from('user_progress').upsert({user_id:uid,data:stateData,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(progErr)console.error('user_progress upsert error:',progErr);
     /* Save texts */
     const mt=localStorage.getItem('castigat_montexte');
-    if(mt)await _supabase.from('user_texts').upsert({user_id:uid,data:JSON.parse(mt),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(mt){const{error:txtErr}=await _supabase.from('user_texts').upsert({user_id:uid,data:JSON.parse(mt),updated_at:new Date().toISOString()},{onConflict:'user_id'});if(txtErr)console.error('user_texts upsert error:',txtErr);}
     /* Save monologues progress */
     const mp=localStorage.getItem('castigat_monologues_progress');
-    if(mp)await _supabase.from('user_monologues').upsert({user_id:uid,data:JSON.parse(mp),updated_at:new Date().toISOString()},{onConflict:'user_id'});
-  }catch(e){console.log('Cloud save error',e)}
+    if(mp){const{error:monoErr}=await _supabase.from('user_monologues').upsert({user_id:uid,data:JSON.parse(mp),updated_at:new Date().toISOString()},{onConflict:'user_id'});if(monoErr)console.error('user_monologues upsert error:',monoErr);}
+    _lastCloudSave=Date.now();
+    console.log('Cloud save OK',new Date().toLocaleTimeString());
+  }catch(e){console.error('Cloud save error',e)}
+};
+
+/* Debounced version — call this from auto-save to avoid spamming */
+const saveToCloudDebounced=(stateData)=>{
+  if(_cloudSaveTimer)clearTimeout(_cloudSaveTimer);
+  _cloudSaveTimer=setTimeout(()=>{saveToCloud(stateData)},CLOUD_SAVE_DEBOUNCE);
 };
 
 const loadFromCloud=async()=>{
@@ -146,6 +154,25 @@ const loadFromCloud=async()=>{
     return prog?.data||null;
   }catch(e){console.log('Cloud load error',e);return null}
 };
+
+/* ── PENDING PLAN UPDATE (mobile Stripe redirect fix) ── */
+/* This runs ONCE at startup, outside saveToCloud, so it always registers */
+_supabase.auth.onAuthStateChange(function(event, session){
+  if(session && session.user){
+    var pendingRaw = localStorage.getItem('pending_plan_update');
+    if(pendingRaw){
+      try{
+        var pending = JSON.parse(pendingRaw);
+        if(pending.uid === session.user.id || pending.uid === 'pending'){
+          _supabase.from('profiles').update({plan:pending.plan,plan_started_at:new Date().toISOString()}).eq('id',session.user.id).then(function(){
+            localStorage.removeItem('pending_plan_update');
+            console.log('Pending plan update applied:',pending.plan);
+          });
+        }
+      }catch(e){localStorage.removeItem('pending_plan_update');}
+    }
+  }
+});
 
 
 /* ── Cloudinary Config ── */
@@ -2265,7 +2292,16 @@ function Onboard({done:onDone}){
     try{
       const{data,error}=await _supabase.auth.signInWithPassword({email:form.email.trim(),password:form.password});
       if(error){setFormErr(error.message==='Invalid login credentials'?'Email ou mot de passe incorrect.':error.message);setFormLoading(false);return}
-      /* Restore user profile from Supabase */
+      /* Try to restore full progress from cloud */
+      const cloudData=await loadFromCloud();
+      if(cloudData&&cloudData.onb){
+        /* User has existing cloud data — restore it fully */
+        localStorage.setItem(SAVE_KEY,JSON.stringify(cloudData));
+        setFormLoading(false);
+        window.location.reload(); /* Reload to pick up restored state */
+        return;
+      }
+      /* No cloud data — new onboarding flow */
       const displayName=data.user?.user_metadata?.display_name||data.user?.email?.split('@')[0]||'';
       setFormLoading(false);
       onDone({user:displayName,email:data.user.email,pseudo:displayName});
@@ -7224,33 +7260,42 @@ function saveState(st){
 }
 
 /* ═══ SESSION TRACKING ═══ */
-/* Track time spent on app, session count, last active — updates profils in Supabase */
+/* Track time spent on app, session count, last active — updates profiles in Supabase */
+/* FIX: Wait for auth to be ready before tracking, instead of running immediately */
 (function(){
   var SESSION_START=Date.now();
-  /* Update profils on load (session count + last_active) */
-  (async()=>{
+  var _sessionTracked=false;
+  var _currentUid=null;
+
+  /* Use onAuthStateChange to wait for auth to be ready */
+  _supabase.auth.onAuthStateChange(async function(event, session){
+    if(!session||!session.user)return;
+    _currentUid=session.user.id;
+    /* Only track session once per page load */
+    if(_sessionTracked)return;
+    _sessionTracked=true;
     try{
-      var usr=await _supabase.auth.getUser();
-      if(!usr.data.user)return;
-      var uid=usr.data.user.id;
+      var uid=session.user.id;
       var{data:prof}=await _supabase.from('profiles').select('session_count').eq('id',uid).single();
       var count=(prof&&prof.session_count)||0;
       await _supabase.from('profiles').update({last_active:new Date().toISOString(),session_count:count+1}).eq('id',uid);
+      console.log('Session tracked: count='+(count+1));
     }catch(e){console.log('session tracking init error',e)}
-  })();
+  });
+
   /* Update total_minutes when user leaves */
   function saveSessionTime(){
     var mins=Math.round((Date.now()-SESSION_START)/60000);
-    if(mins<1)return;
+    if(mins<1||!_currentUid)return;
+    /* Use navigator.sendBeacon for reliable delivery on page close */
     (async()=>{
       try{
-        var usr=await _supabase.auth.getUser();
-        if(!usr.data.user)return;
-        var uid=usr.data.user.id;
+        var uid=_currentUid;
         var{data:prof}=await _supabase.from('profiles').select('total_minutes').eq('id',uid).single();
         var total=(prof&&prof.total_minutes)||0;
         await _supabase.from('profiles').update({total_minutes:total+mins}).eq('id',uid);
-      }catch(e){}
+        console.log('Session time saved:',mins,'min (total:'+(total+mins)+')');
+      }catch(e){console.log('session time save error',e)}
     })();
   }
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')saveSessionTime();});
@@ -7515,8 +7560,8 @@ function App(){
     }
   },[st.xp,st.doneEx.length,st.doneCu.length,st.streak,st.perf,st.vid,st.warmups,st.avantScenes,st.connexions,st.challenges,st.totalBreaths]);
 
-  /* Auto-save on state change */
-  useEffect(()=>{if(st.onb)saveState(st)},[st]);
+  /* Auto-save on state change — localStorage + cloud (debounced) */
+  useEffect(()=>{if(st.onb){saveState(st);saveToCloudDebounced(st)}},[st]);
 
   /* ═══ DAILY PULSE — Question quotidienne ═══ */
   const dailyPulse=st.dailyPulse||{answers:[],lastAnswerDate:null};
