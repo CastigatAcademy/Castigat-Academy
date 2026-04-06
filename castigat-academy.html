@@ -6747,8 +6747,8 @@ function ExV({mod,st,setSt,back}){
                 <p style={{fontSize:16,fontWeight:800,marginTop:4}}>29,90€<span style={{fontSize:9,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
               </div>
             </div>
-            <button onClick={()=>{window.open('https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201','_blank','noopener,noreferrer');setShowPremiumModal(false);SFX.success()}} className="btn-gold btn-pulse" style={{width:'100%',padding:'13px 0',fontSize:12,marginBottom:8}}>Standard — 4 jours gratuits puis 9,90€/mois</button>
-            <button onClick={()=>{window.open('https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202','_blank','noopener,noreferrer');setShowPremiumModal(false);SFX.levelUp()}} style={{width:'100%',padding:'12px 0',fontSize:11,fontWeight:700,color:'#ab47bc',borderRadius:10,background:'rgba(171,71,188,.08)',border:'1px solid rgba(171,71,188,.2)',cursor:'pointer',marginBottom:8}}>Premium — 29,90€/mois</button>
+            <button onClick={()=>{SFX.success();window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201';}} className="btn-gold btn-pulse" style={{width:'100%',padding:'13px 0',fontSize:12,marginBottom:8}}>Standard — 4 jours gratuits puis 9,90€/mois</button>
+            <button onClick={()=>{SFX.levelUp();window.location.href='https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202';}} style={{width:'100%',padding:'12px 0',fontSize:11,fontWeight:700,color:'#ab47bc',borderRadius:10,background:'rgba(171,71,188,.08)',border:'1px solid rgba(171,71,188,.2)',cursor:'pointer',marginBottom:8}}>Premium — 29,90€/mois</button>
             <button onClick={()=>setShowPremiumModal(false)} style={{fontSize:10,color:'var(--text-3)',padding:'8px 0'}}>Plus tard</button>
           </div>
         </div>}
@@ -7012,7 +7012,7 @@ function Profile({st,setSt}){
             {id:"standard",name:"Standard",price:"9,90€/mois",trial:"4 jours gratuits",highlight:true,features:["Tout le parcours (12 niveaux)","Toutes les analyses de scène","Avant-Scène & Connexion","Mon Texte & Mon Monologue","Bilan personnalisé","Bibliothèque complète"]},
             {id:"premium",name:"Premium",price:"29,90€/mois",highlight:false,features:["Tout Standard","Coach personnel par chat","Retours vidéo personnalisés","Corrections de vos monologues","Programme sur mesure","Accès prioritaire nouveautés"]}
           ].map(plan=>(
-            <button key={plan.id} onClick={()=>{if(plan.id==="standard")window.open('https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201','_blank','noopener,noreferrer');else if(plan.id==="premium")window.open('https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202','_blank','noopener,noreferrer');}}
+            <button key={plan.id} onClick={()=>{if(plan.id==="standard")window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201';else if(plan.id==="premium")window.location.href='https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202';}}
               style={{padding:14,borderRadius:12,background:plan.id==="premium"?'rgba(171,71,188,.06)':plan.highlight?'rgba(200,164,78,.08)':'var(--bg-card)',border:st.plan===plan.id?(plan.id==="premium"?'2px solid #ab47bc':plan.highlight?'2px solid var(--gold)':'2px solid var(--emerald)'):'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',flexDirection:'column',textAlign:'left'}}>
               <p style={{fontSize:11,fontWeight:700,marginBottom:4,color:plan.id==="premium"?'#ab47bc':plan.highlight?'var(--gold)':'var(--text)'}}>{plan.name}</p>
               <p style={{fontSize:10,fontWeight:600,marginBottom:4,color:st.plan===plan.id?'var(--gold)':'var(--text-2)'}}>{plan.price}</p>
@@ -7192,7 +7192,10 @@ function Profile({st,setSt}){
 /* ═══ LOCALSTORAGE ═══ */
 const SAVE_KEY="castigat_academy_save";
 /* Plan URL param handler */
-(function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));saveToCloud(d);}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));saveToCloud({plan:p});}window.history.replaceState({},"",window.location.pathname);}})();
+(function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));saveToCloud(d);}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));saveToCloud({plan:p});}
+/* Also update profils table so plan is visible in Supabase dashboard */
+(async()=>{try{var usr=await _supabase.auth.getUser();if(usr.data.user){await _supabase.from('profils').update({plan:p}).eq('id',usr.data.user.id);}}catch(e){console.log('profils plan update error',e)}})();
+window.history.replaceState({},"",window.location.pathname);}})();
 function loadState(){
   try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s)}catch(e){}
   return null;
