@@ -2261,7 +2261,7 @@ function Top({xp,streak,passedExams}){
           <span className="emoji" style={{fontSize:'20px'}}>{lv.icon}</span>
           <div>
             <p className="label-gold" style={{marginBottom:3}}>{lv.name}</p>
-            <div style={{width:64}}><Bar val={inL} max={forN} h={2.5}/></div>
+            <div style={{width:64}}><Bar val={Math.min(inL,forN)} max={forN} h={2.5}/></div>
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:14}}>
@@ -2788,119 +2788,125 @@ function TierBanner({tierId,unlocked}){
   );
 }
 
-/* ═══ PROGRESSION PATH ═══ */
+/* ═══ PROGRESSION PATH (Bubble Grid) ═══ */
 function ProgressPath({st,go,setMod,setExam,setSceneAn}){
   const lv=getLv(st.xp,st.passedExams);
   const currentNodeRef=useRef(null);
   const[showPrevLevels,setShowPrevLevels]=useState(false);
-  /* The level the user started at (from onboarding test) */
-  const startLevelIdx=st.lv||0;
-  /* Map each level to a scene analysis */
+  const currentLevelIdx=LEVELS.indexOf(lv);
+  const startLevelIdx=Math.min(st.lv||0,currentLevelIdx);
   const LEVEL_SA={figurant:"sa1",apprenti:"sa2",dimanche:"sa3",amateur:"sa4",pensionnaire:"sa5",societaire:"sa6",interprete:"sa7",artiste:"sa8",metteur:"sa9"};
-  const allNodes=[];
-  let prevTier=null;
+
+  /* ── Build level sections ── */
+  const levelSections=[];
   let globalNodeIdx=0;
+  let prevTier=null;
   LEVELS.forEach((level,li)=>{
-    /* Skip previous levels unless user toggled them */
     if(li<startLevelIdx&&!showPrevLevels)return;
     const tier=getTier(level);
-    if(!prevTier||prevTier.id!==tier.id){allNodes.push({type:"tier",tier,levelIdx:li});prevTier=tier}
-    allNodes.push({type:"sublevel",level,levelIdx:li});
+    const showTierBanner=!prevTier||prevTier.id!==tier.id;
+    prevTier=tier;
     const prM=PR[level.id]||[],cuM=CU[level.id]||[];
-    const merged=[];let pi=0,ci=0;
-    while(pi<prM.length||ci<cuM.length){if(pi<prM.length){merged.push({...prM[pi],sec:"pr"});pi++}if(ci<cuM.length){merged.push({...cuM[ci],sec:"cu"});ci++}}
-    /* Insert scene analysis node roughly in the middle of the level */
     const saId=LEVEL_SA[level.id];
     const saObj=saId?SCENE_ANALYSES.find(s=>s.id===saId):null;
+    /* Merge exercises interleaved for sequential unlock */
+    const merged=[];let pi=0,ci=0;
+    while(pi<prM.length||ci<cuM.length){if(pi<prM.length){merged.push({...prM[pi],sec:"pr"});pi++}if(ci<cuM.length){merged.push({...cuM[ci],sec:"cu"});ci++}}
+    /* Insert scene analysis in the middle */
     const insertAt=saObj?Math.floor(merged.length/2):null;
-    let nodeCount=0;
+    const allItems=[];let nodeCount=0;
+    /* All bubbles in a level are accessible once the level is unlocked — no sequential gating */
+    const prevLevelId=li>0?LEVELS[li-1].id:null;
+    const examGated=li>LEVELS.indexOf(lv)&&prevLevelId&&EXAMS[prevLevelId]&&!(st.passedExams||[]).includes(prevLevelId);
+    const levelOpen=!examGated;
     merged.forEach((m,mi)=>{
       const isDone=m.sec==="pr"?st.doneEx.includes(m.id):st.doneCu.includes(m.id);
-      /* Unlock logic: first node always unlocked, monologues unlock by total exercise count, rest requires previous done */
-      const isMonologue=m.cat==="Monologue";
-      const totalExDone=st.doneEx.length;
-      /* Monologue thresholds: 1st at 3 ex, 2nd at 8, 3rd at 15, 4th at 22, then every +8 */
-      const monoThresholds=[3,8,15,22,30,38,46,54,62,70,78,86];
-      const monoIdx=isMonologue?(()=>{const allMonos=Object.values(PR).flat().filter(e=>e.cat==="Monologue");return allMonos.findIndex(e=>e.id===m.id)})():-1;
-      const monoUnlocked=isMonologue&&monoIdx>=0&&monoIdx<monoThresholds.length?totalExDone>=monoThresholds[monoIdx]:false;
-      /* Exercises from levels below test level are always unlocked */
-      const belowTestLevel=li<startLevelIdx;
-      /* Nodes in levels above current are gated by the previous level's exam */
-      const prevLevelId=li>0?LEVELS[li-1].id:null;
-      const examGated=li>LEVELS.indexOf(lv)&&prevLevelId&&EXAMS[prevLevelId]&&!(st.passedExams||[]).includes(prevLevelId);
-      const isUnlocked=examGated?false:(isDone||belowTestLevel||globalNodeIdx===0||(isMonologue?monoUnlocked:(()=>{
-        const prevNodes=allNodes.filter(n=>n.type==="node"||n.type==="scene_analysis");
-        if(prevNodes.length===0)return true;
-        const lastPrev=prevNodes[prevNodes.length-1];
-        return lastPrev.isDone;
-      })()));
-      allNodes.push({type:"node",mod:m,isDone,isUnlocked,levelIdx:li,nodeIdx:globalNodeIdx++,total:merged.length,level});
+      const isUnlocked=levelOpen;
+      allItems.push({type:"node",mod:m,isDone,isUnlocked,globalIdx:globalNodeIdx++});
       nodeCount++;
-      /* Insert scene analysis after the midpoint */
       if(saObj&&nodeCount===insertAt){
         const saDone=(st.doneSA||[]).includes(saObj.id);
-        /* SA unlocked only if previous node is done */
-        const prevNodes=allNodes.filter(n=>n.type==="node"||n.type==="scene_analysis");
-        const lastPrev=prevNodes.length>0?prevNodes[prevNodes.length-1]:null;
-        const saUnlocked=saDone||(lastPrev?lastPrev.isDone:true);
-        allNodes.push({type:"scene_analysis",sa:saObj,isDone:saDone,isUnlocked:saUnlocked,levelIdx:li,nodeIdx:globalNodeIdx++,level});
+        allItems.push({type:"sa",sa:saObj,isDone:saDone,isUnlocked:levelOpen,globalIdx:globalNodeIdx++});
       }
     });
-    /* Add exam node at end of each level (except last) */
+    /* Level stats */
+    const totalItems=allItems.length;
+    const doneItems=allItems.filter(it=>it.isDone).length;
+    /* Exam */
+    let exam=null;
     if(li<LEVELS.length-1&&EXAMS[level.id]){
       const nextLv=LEVELS[li+1];
       const allDone=merged.every(m=>m.sec==="pr"?st.doneEx.includes(m.id):st.doneCu.includes(m.id));
       const tierSAs=SCENE_ANALYSES.filter(sa=>sa.tier===level.tier);
       const allSADone=tierSAs.length===0||tierSAs.every(sa=>(st.doneSA||[]).includes(sa.id));
       const examReady=st.xp>=level.xp&&allDone&&allSADone;
-      const examPassed=st.xp>=nextLv.xp;
-      allNodes.push({type:"exam",levelId:level.id,level,nextLevel:nextLv,examReady,examPassed});
+      const examPassed=(st.passedExams||[]).includes(level.id);
+      exam={levelId:level.id,level,nextLevel:nextLv,examReady,examPassed};
     }
+    levelSections.push({level,li,tier,showTierBanner,allItems,totalItems,doneItems,exam,isCurrent:level.id===lv.id});
   });
-  let currentIdx=-1;
-  let lastDoneIdx=-1;
-  for(let i=0;i<allNodes.length;i++){
-    const isActive=allNodes[i].type==="node"||allNodes[i].type==="scene_analysis";
-    if(isActive&&allNodes[i].isDone) lastDoneIdx=i;
-    if(isActive&&allNodes[i].isUnlocked&&!allNodes[i].isDone&&currentIdx===-1) currentIdx=i;
+
+  /* Find the global current node — first undone item in current level */
+  let currentGlobalIdx=-1;
+  for(const sec of levelSections){
+    if(sec.isCurrent){
+      for(const it of sec.allItems){
+        if(it.isUnlocked&&!it.isDone&&currentGlobalIdx===-1){currentGlobalIdx=it.globalIdx;break;}
+      }
+      break;
+    }
   }
 
-  /* Auto-scroll disabled on load to prevent page jumping */
-  /* useEffect(()=>{
-    if(currentNodeRef.current){
-      currentNodeRef.current.scrollIntoView({behavior:'smooth',block:'center'});
-    }
-  },[]); */
-
-  /* Build positioned nodes for sinuous path */
-  const W=320;const CX=W/2;const AMP=80;const ROW=90;
-  const posNodes=[];let row=0;
-  allNodes.forEach((node,idx)=>{
-    if(node.type==="tier"||node.type==="sublevel"||node.type==="exam"){posNodes.push({...node,idx,x:CX,y:row*ROW,isLayout:true});row++;return;}
-    /* Sinuous S-curve: nodes swing left-right */
-    const cycle=node.nodeIdx%6;
-    const t=cycle/5;
-    const xOff=Math.sin(t*Math.PI*2)*AMP;
-    posNodes.push({...node,idx,x:CX+xOff,y:row*ROW,isLayout:false});
-    row++;
-  });
-  const totalH=row*ROW+40;
-
-  /* SVG path between consecutive activity nodes */
-  const activityNodes=posNodes.filter(n=>!n.isLayout);
-  const pathSegments=[];
-  for(let i=1;i<activityNodes.length;i++){
-    const a=activityNodes[i-1],b=activityNodes[i];
-    const isDone=b.isDone;const isCur=b.idx===currentIdx;
-    const col=isDone?(b.type==="scene_analysis"?'var(--coral)':b.mod?.sec==="cu"?'var(--violet)':'var(--gold)'):isCur?'var(--gold)':'var(--line)';
-    const opa=isDone?.6:isCur?.8:.15;
-    const my=(a.y+b.y)/2;
-    pathSegments.push({d:`M${a.x},${a.y} C${a.x},${my} ${b.x},${my} ${b.x},${b.y}`,col,opa,done:isDone||isCur});
-  }
+  /* ── Bubble component (glass design, white emojis) ── */
+  const Bubble=({item,isCurrent,onClick})=>{
+    const isSA=item.type==="sa";
+    const isCul=!isSA&&item.mod?.sec==="cu";
+    const isVideo=!isSA&&item.mod?.type==="video";
+    const icon=isSA?"📜":item.mod.icon;
+    const title=isSA?item.sa.title:item.mod.title;
+    const cat=isSA?"Analyse":isCul?"Culture":item.mod.cat;
+    const accentCol=isSA?'var(--coral)':isCul?'var(--violet)':'var(--gold)';
+    const accentRgba=isSA?'232,116,90':isCul?'167,139,250':'200,164,78';
+    const done=item.isDone;const locked=!item.isUnlocked;
+    const sz=isVideo?54:46;
+    /* Outer ring size */
+    const ring=sz+8;
+    return(
+      <div onClick={onClick} ref={isCurrent?currentNodeRef:null}
+        style={{display:'flex',flexDirection:'column',alignItems:'center',width:78,cursor:done||isCurrent?'pointer':locked?'default':'pointer',
+          opacity:done?1:isCurrent?1:item.isUnlocked?.65:.25,transition:'all .35s ease'}}>
+        {/* Outer glow ring */}
+        <div style={{width:ring,height:ring,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',
+          background:done?`linear-gradient(145deg,rgba(${accentRgba},.15),rgba(${accentRgba},.04))`:isCurrent?`linear-gradient(145deg,rgba(${accentRgba},.1),rgba(${accentRgba},.02))`:'transparent',
+          padding:4}}>
+          {/* Inner circle */}
+          <div style={{width:sz,height:sz,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',
+            background:done?`linear-gradient(145deg,rgba(${accentRgba},.35),rgba(${accentRgba},.12))`:isCurrent?`rgba(${accentRgba},.08)`:'rgba(255,255,255,.03)',
+            border:done?`2px solid rgba(${accentRgba},.5)`:isCurrent?`2.5px solid rgba(${accentRgba},.6)`:`1.5px solid ${locked?'rgba(255,255,255,.04)':`rgba(${accentRgba},.15)`}`,
+            boxShadow:isCurrent?`0 0 0 4px rgba(${accentRgba},.08),0 0 20px rgba(${accentRgba},.15)`:done?`0 2px 10px rgba(${accentRgba},.1),inset 0 1px 1px rgba(255,255,255,.05)`:'none',
+            backdropFilter:'blur(8px)',
+            animation:isCurrent?'pathPulse 2.5s ease-in-out infinite':'none'}}>
+            {isCurrent&&<span style={{position:'absolute',top:-30,zIndex:5}}><MiniChar avatar={st.user?.avatar||"dramaturge"} size={20}/></span>}
+            <span className="emoji" style={{fontSize:isVideo?18:15,filter:locked&&!done?'grayscale(1) brightness(0.3)':'none'}}>{locked&&!done?"🔒":icon}</span>
+          </div>
+          {/* Check badge */}
+          {done&&<span style={{position:'absolute',bottom:1,right:1,width:15,height:15,borderRadius:'50%',
+            background:'linear-gradient(135deg,var(--emerald),#34d399)',
+            display:'flex',alignItems:'center',justifyContent:'center',fontSize:8,color:'#fff',fontWeight:900,
+            border:'2px solid var(--bg)',boxShadow:'0 2px 6px rgba(74,222,128,.3)'}}>✓</span>}
+        </div>
+        <p style={{fontSize:7.5,fontWeight:700,color:done?accentCol:isCurrent?'var(--text)':item.isUnlocked?'var(--text-2)':'var(--text-3)',
+          lineHeight:1.2,marginTop:4,textAlign:'center',maxWidth:74,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</p>
+        <p style={{fontSize:6.5,color:done?'var(--emerald)':isCurrent?accentCol:'var(--text-3)',fontWeight:done||isCurrent?700:500,marginTop:1,letterSpacing:'.02em'}}>
+          {done?"TERMINÉ":isCurrent?"▶ GO":cat}
+        </p>
+      </div>
+    );
+  };
 
   return(
-    <div style={{position:'relative',width:W,margin:'0 auto',minHeight:totalH,padding:'0 0 16px'}}>
-      {/* Button to show previous levels */}
+    <div style={{maxWidth:360,margin:'0 auto',padding:'0 0 16px'}}>
+      {/* Toggle previous levels */}
       {startLevelIdx>0&&!showPrevLevels&&(
         <button onClick={()=>setShowPrevLevels(true)} style={{width:'100%',padding:'10px 0',marginBottom:12,borderRadius:10,border:'1px solid var(--line)',background:'var(--bg-card)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
           <span style={{fontSize:10,color:'var(--text-2)',fontWeight:600}}>Voir les niveaux précédents ({startLevelIdx})</span>
@@ -2913,105 +2919,107 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
           <span style={{fontSize:9,color:'var(--gold)'}}>▲</span>
         </button>
       )}
-      {/* Dotted connectors between nodes */}
-      <svg style={{position:'absolute',top:0,left:0,width:W,height:totalH,pointerEvents:'none',zIndex:0}}>
-        {activityNodes.slice(1).map((b,i)=>{
-          const a=activityNodes[i];
-          const steps=5;const dots=[];
-          for(let t=1;t<=steps;t++){
-            const frac=t/(steps+1);
-            const mx=(a.x+b.x)/2;const my=(a.y+b.y)/2;
-            const px=a.x*(1-frac)*(1-frac)*1+2*mx*frac*(1-frac)+b.x*frac*frac;
-            const py=a.y+frac*(b.y-a.y);
-            dots.push({x:px,y:py});
-          }
-          const isDone=b.isDone;const isCur=b.idx===currentIdx;
-          const col=isDone?'var(--text-3)':isCur?'var(--text-3)':'var(--line)';
-          const opa=isDone?.5:isCur?.4:.2;
-          return dots.map((dot,di)=>(
-            <circle key={i+"-"+di} cx={dot.x} cy={dot.y} r={1.5} fill={col} opacity={opa}/>
-          ));
-        })}
-      </svg>
 
-      {/* Render nodes */}
-      {posNodes.map((node,pidx)=>{
-        if(node.type==="exam"){
-          return(<div key={"exam"+pidx} style={{position:'absolute',top:node.y-18,left:0,right:0,display:'flex',justifyContent:'center',zIndex:2}}>
-            <button disabled={!node.examReady&&!node.examPassed} onClick={()=>{if(node.examReady&&!node.examPassed)setExam(node.levelId)}}
-              style={{padding:'8px 18px',borderRadius:12,
-                background:node.examPassed?'linear-gradient(135deg,rgba(74,222,128,.1),rgba(74,222,128,.03))':node.examReady?'linear-gradient(135deg,rgba(200,164,78,.1),rgba(200,164,78,.03))':'var(--bg-card)',
-                border:node.examPassed?'1.5px solid var(--emerald)':node.examReady?'1.5px solid var(--gold)':'1.5px solid var(--line)',
-                cursor:node.examReady&&!node.examPassed?'pointer':'default',opacity:node.examReady||node.examPassed?1:.3,
-                display:'flex',alignItems:'center',gap:8,transition:'all .3s',backdropFilter:'blur(8px)'}}>
-              <span className="emoji" style={{fontSize:14}}>{node.examPassed?"✅":node.examReady?"✏️":"🔒"}</span>
-              <div style={{textAlign:'left'}}>
-                <p style={{fontSize:9,fontWeight:800,color:node.examPassed?'var(--emerald)':node.examReady?'var(--gold)':'var(--text-3)',letterSpacing:'.05em'}}>
-                  {node.examPassed?"RÉUSSI":"EXAMEN"}</p>
-                <p style={{fontSize:8,color:'var(--text-3)'}}>{node.level.name} → {node.nextLevel.name}</p>
-              </div>
-            </button>
-          </div>);
-        }
-        if(node.type==="tier"){
-          const unlocked=st.xp>=LEVELS.find(l=>l.tier===node.tier.id)?.xp;
-          return(<div key={"t"+pidx} style={{position:'absolute',top:node.y-8,left:0,right:0,zIndex:2}}>
-            <TierBanner tierId={node.tier.id} unlocked={unlocked}/>
-          </div>);
-        }
-        if(node.type==="sublevel"){
-          const unlocked=st.xp>=node.level.xp;const isCur=node.level.id===lv.id;
-          return(<div key={"s"+pidx} style={{position:'absolute',top:node.y-12,left:0,right:0,zIndex:2}}>
-            <div style={{display:'flex',alignItems:'center',gap:10,padding:'6px 14px',borderRadius:12,background:isCur?'rgba(200,164,78,.06)':'transparent',opacity:unlocked?1:.35}}>
-              <span className="emoji" style={{fontSize:16}}>{unlocked?node.level.icon:"🔒"}</span>
-              <div><p style={{fontSize:11,fontWeight:700,color:isCur?'var(--gold)':'var(--text)'}}>{node.level.name}</p><p style={{fontSize:9,color:'var(--text-3)'}}>{node.level.desc}</p></div>
-            </div>
-          </div>);
-        }
-        /* ── Scene Analysis node ── */
-        if(node.type==="scene_analysis"){
-          const sa=node.sa;const isCur=node.idx===currentIdx;const showAvatar=currentIdx>=0?isCur:(lastDoneIdx>=0&&node.idx===lastDoneIdx);
-          const isFuture=node.isUnlocked&&!node.isDone&&!isCur;
-          const nodeOpacity=isCur?1:node.isDone?.5:isFuture?.65:node.isUnlocked?.65:.25;
-          return(
-            <div key={sa.id} ref={isCur?currentNodeRef:null} style={{position:'absolute',top:node.y-24,left:node.x-50,width:100,zIndex:3,textAlign:'center',opacity:nodeOpacity,transition:'opacity .3s'}}>
-              <button onClick={()=>{
-                if((node.isDone||isCur)&&setSceneAn){setSceneAn(sa)}
-                else if(node.isUnlocked){alert("Qui va piano va sano 🎭\nTerminez d'abord les exercices précédents !")}
-              }}
-                className={"path-node"+(node.isDone?" done analysis":isCur?" current analysis":node.isUnlocked?" unlocked analysis":" locked")}
-                style={{cursor:node.isDone||isCur?'pointer':node.isUnlocked?'pointer':'default',margin:'0 auto',boxShadow:isCur?'0 0 24px rgba(232,116,90,.3)':node.isDone?'0 4px 16px rgba(232,116,90,.15)':'none'}}>
-                {showAvatar&&<span className="path-avatar"><MiniChar avatar={st.user?.avatar||"dramaturge"} size={22}/></span>}
-                <span className="emoji" style={{fontSize:14}}>📜</span>
-                {node.isDone&&<span style={{position:'absolute',bottom:-2,right:-2,width:14,height:14,borderRadius:'50%',background:'var(--emerald)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:8,color:'#fff',fontWeight:900,border:'2px solid var(--bg)'}}>✓</span>}
-              </button>
-              <p style={{fontSize:8,fontWeight:700,color:node.isDone?'var(--coral)':isCur?'var(--text)':node.isUnlocked?'var(--text-2)':'var(--text-3)',lineHeight:1.3,marginTop:4}}>{sa.title}</p>
-              {node.isDone?<p style={{fontSize:6,fontWeight:700,color:'var(--emerald)',marginTop:1}}>TERMINÉ ✓</p>
-              :isCur?<p style={{fontSize:7,fontWeight:700,color:'var(--coral)',marginTop:2,animation:'pathPulse 2s ease-in-out infinite',letterSpacing:'.06em'}}>▶ ANALYSER</p>
-              :<p style={{fontSize:7,color:'var(--coral)',fontWeight:600,opacity:.7}}>ANALYSE</p>}
-            </div>
-          );
-        }
-        /* ── Regular exercise / culture node ── */
-        const n=node;const isCur=n.idx===currentIdx;const showAvatar=currentIdx>=0?isCur:(lastDoneIdx>=0&&n.idx===lastDoneIdx);const isV=n.mod.type==="video";const isCul=n.mod.sec==="cu";
-        const isFuture=n.isUnlocked&&!n.isDone&&!isCur;
-        const nodeOpacity=isCur?1:n.isDone?.5:isFuture?.65:n.isUnlocked?.65:.25;
-        const glowCol=isCul?'rgba(167,139,250,.3)':'rgba(200,164,78,.3)';
+      {/* ── Level sections ── */}
+      {levelSections.map((sec,si)=>{
+        const{level,allItems,totalItems,doneItems,exam,isCurrent:isCurrentLevel,showTierBanner,tier}=sec;
+        const progress=totalItems>0?Math.round(doneItems/totalItems*100):0;
+        const levelUnlocked=st.xp>=level.xp||(sec.li<=currentLevelIdx);
+        const isComplete=doneItems===totalItems&&totalItems>0;
+
         return(
-          <div key={n.mod.id} ref={isCur?currentNodeRef:null} style={{position:'absolute',top:n.y-24,left:n.x-50,width:100,zIndex:3,textAlign:'center',opacity:nodeOpacity,transition:'opacity .3s'}}>
-            <button onClick={()=>{
-              if(n.isDone||isCur){setMod({...n.mod});go(n.mod.sec==="pr"?"practice":"culture")}
-              else if(n.isUnlocked){alert("Qui va piano va sano 🎭\nTerminez d'abord les exercices précédents !")}
-            }}
-              className={"path-node"+(n.isDone?" done":isCur?" current":n.isUnlocked?" unlocked":" locked")+(isV?" milestone":"")+(isCul?" culture":"")}
-              style={{cursor:n.isDone||isCur?'pointer':n.isUnlocked?'pointer':'default',margin:'0 auto',boxShadow:isCur?`0 0 24px ${glowCol}`:n.isDone?`0 4px 16px ${glowCol.replace('.3','.12')}`:'none'}}>
-              {showAvatar&&<span className="path-avatar"><MiniChar avatar={st.user?.avatar||"dramaturge"} size={22}/></span>}
-              <span className="emoji" style={{fontSize:isV?18:14}}>{n.mod.icon}</span>
-              {n.isDone&&<span style={{position:'absolute',bottom:-2,right:-2,width:14,height:14,borderRadius:'50%',background:'var(--emerald)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:8,color:'#fff',fontWeight:900,border:'2px solid var(--bg)'}}>✓</span>}
-            </button>
-            <p style={{fontSize:8,fontWeight:700,color:n.isDone?(isCul?'var(--violet)':'var(--gold)'):isCur?'var(--text)':n.isUnlocked?'var(--text-2)':'var(--text-3)',lineHeight:1.3,marginTop:4}}>{n.mod.title}</p>
-            {n.isDone&&<p style={{fontSize:6,fontWeight:700,color:'var(--emerald)',marginTop:1}}>TERMINÉ ✓</p>}
-            {isCur&&!n.isDone&&<p style={{fontSize:7,fontWeight:700,color:isCul?'var(--violet)':'var(--gold)',marginTop:2,animation:'pathPulse 2s ease-in-out infinite',letterSpacing:'.06em'}}>▶ COMMENCER</p>}
+          <div key={level.id}>
+            {/* Tier banner */}
+            {showTierBanner&&<div style={{marginBottom:8}}><TierBanner tierId={tier.id} unlocked={levelUnlocked}/></div>}
+
+            {/* Level card */}
+            <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',
+              background:isCurrentLevel?'linear-gradient(180deg,rgba(200,164,78,.04),var(--bg-card))':'var(--bg-card)',
+              border:isCurrentLevel?'1.5px solid rgba(200,164,78,.2)':'1px solid var(--line)',
+              opacity:levelUnlocked?1:.4,transition:'opacity .3s'}}>
+
+              {/* Level header */}
+              <div style={{padding:'14px 16px 10px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid var(--line)'}}>
+                <div style={{width:40,height:40,borderRadius:12,background:isCurrentLevel?'linear-gradient(135deg,rgba(200,164,78,.15),rgba(200,164,78,.05))':'rgba(255,255,255,.03)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <span className="emoji" style={{fontSize:20}}>{levelUnlocked?level.icon:"🔒"}</span>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+                    <p style={{fontSize:13,fontWeight:800,color:isCurrentLevel?'var(--gold)':'var(--text)'}}>{level.name}</p>
+                    <p style={{fontSize:10,fontWeight:700,color:isComplete?'var(--emerald)':'var(--text-3)'}}>{doneItems}/{totalItems}</p>
+                  </div>
+                  <div style={{height:4,borderRadius:2,background:'var(--line)',overflow:'hidden'}}>
+                    <div style={{height:'100%',borderRadius:2,width:progress+'%',background:isComplete?'var(--emerald)':'linear-gradient(90deg,var(--gold),var(--gold-light))',transition:'width .5s ease'}}/>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bubble grid — grouped by category */}
+              {(()=>{
+                const exercises=allItems.filter(it=>it.type==="node"&&it.mod.sec==="pr");
+                const culture=allItems.filter(it=>it.type==="node"&&it.mod.sec==="cu");
+                const analyses=allItems.filter(it=>it.type==="sa");
+                const renderGroup=(items,label,color,colorRgba)=>{
+                  if(items.length===0)return null;
+                  return(
+                    <div style={{marginBottom:12}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,padding:'0 6px',marginBottom:10}}>
+                        <div style={{height:1,flex:1,background:`linear-gradient(90deg,transparent,rgba(${colorRgba},.15))`}}/>
+                        <p style={{fontSize:7.5,fontWeight:800,color,letterSpacing:'.12em',textTransform:'uppercase',whiteSpace:'nowrap'}}>{label}</p>
+                        <div style={{height:1,flex:1,background:`linear-gradient(90deg,rgba(${colorRgba},.15),transparent)`}}/>
+                      </div>
+                      <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:'16px 6px'}}>
+                        {items.map(item=>{
+                          const isCur=item.globalIdx===currentGlobalIdx;
+                          const handleClick=()=>{
+                            if(item.type==="sa"){if(item.isDone||item.isUnlocked){setSceneAn&&setSceneAn(item.sa)}}
+                            else{if(item.isDone||item.isUnlocked){setMod({...item.mod});go(item.mod.sec==="pr"?"practice":"culture")}}
+                          };
+                          return <Bubble key={item.type==="sa"?item.sa.id:item.mod.id} item={item} isCurrent={isCur} onClick={handleClick}/>;
+                        })}
+                      </div>
+                    </div>
+                  );
+                };
+                return(
+                  <div style={{padding:'14px 8px 6px'}}>
+                    {renderGroup(exercises,"Exercices",'var(--gold)','200,164,78')}
+                    {renderGroup(culture,"Culture",'var(--violet)','167,139,250')}
+                    {renderGroup(analyses,"Analyse",'var(--coral)','232,116,90')}
+                  </div>
+                );
+              })()}
+
+              {/* Exam button at bottom of level */}
+              {exam&&(
+                <div style={{padding:'4px 14px 16px',display:'flex',justifyContent:'center'}}>
+                  <button disabled={!exam.examReady&&!exam.examPassed} onClick={()=>{if(exam.examReady&&!exam.examPassed)setExam(exam.levelId)}}
+                    style={{width:'100%',maxWidth:260,padding:'11px 16px',borderRadius:12,
+                      background:exam.examPassed?'linear-gradient(135deg,rgba(74,222,128,.06),rgba(74,222,128,.01))':exam.examReady?'linear-gradient(135deg,rgba(200,164,78,.08),rgba(200,164,78,.02))':'rgba(255,255,255,.01)',
+                      border:exam.examPassed?'1.5px solid rgba(74,222,128,.4)':exam.examReady?'1.5px solid rgba(200,164,78,.4)':'1.5px dashed rgba(255,255,255,.06)',
+                      cursor:exam.examReady&&!exam.examPassed?'pointer':'default',
+                      opacity:exam.examReady||exam.examPassed?1:.35,
+                      display:'flex',alignItems:'center',justifyContent:'center',gap:10,transition:'all .3s',
+                      backdropFilter:'blur(4px)'}}>
+                    <span className="emoji" style={{fontSize:16}}>{exam.examPassed?"✅":exam.examReady?"🎭":"🔒"}</span>
+                    <div style={{textAlign:'left'}}>
+                      <p style={{fontSize:10,fontWeight:800,color:exam.examPassed?'var(--emerald)':exam.examReady?'var(--gold)':'var(--text-3)',letterSpacing:'.04em'}}>
+                        {exam.examPassed?"EXAMEN RÉUSSI":exam.examReady?"PASSER L'EXAMEN":"EXAMEN"}</p>
+                      <p style={{fontSize:8,color:'var(--text-3)',marginTop:2}}>{exam.examPassed?`${level.name} → ${exam.nextLevel.name} ✓`:exam.examReady?`Débloquer ${exam.nextLevel.name}`:`Complétez tout pour débloquer`}</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Elegant connector between levels */}
+            {si<levelSections.length-1&&(
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',margin:'-4px 0 6px',gap:3}}>
+                <div style={{width:1.5,height:8,borderRadius:1,background:isComplete?'rgba(74,222,128,.4)':'rgba(255,255,255,.06)'}}/>
+                <div style={{width:6,height:6,borderRadius:'50%',background:isComplete?'rgba(74,222,128,.3)':'rgba(255,255,255,.06)',boxShadow:isComplete?'0 0 8px rgba(74,222,128,.2)':'none'}}/>
+                <div style={{width:1.5,height:8,borderRadius:1,background:isComplete?'rgba(74,222,128,.4)':'rgba(255,255,255,.06)'}}/>
+              </div>
+            )}
           </div>
         );
       })}
@@ -3108,8 +3116,8 @@ function Home({st,setSt,go,setMod,setExam}){
             </div>
             <div style={{textAlign:'right'}}><p className="heading" style={{fontSize:22,color:'var(--gold)'}}>{st.xp}</p><p className="label-gold">XP</p></div>
           </div>
-          <Bar val={inL} max={forN} h={4}/>
-          <p style={{fontSize:9,color:'var(--text-3)',marginTop:6}}>{nx?`${forN-inL} XP → ${nx.name}`:"Niveau maximum !"}</p>
+          <Bar val={Math.min(inL,forN)} max={forN} h={4}/>
+          <p style={{fontSize:9,color:'var(--text-3)',marginTop:6}}>{nx?(inL>=forN?`✏️ Passez l'examen → ${nx.name}`:`${forN-inL} XP → ${nx.name}`):"Niveau maximum !"}</p>
         </div>
 
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
