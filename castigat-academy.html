@@ -111,7 +111,7 @@ _supabase.auth.onAuthStateChange(function(event, session){
     if(!user)return;
     const uid=user.id;
     /* Sync profile info to dashboard */
-    await _supabase.from('profiles').update({plan:st.plan||'free',pseudo:st.pseudo||null,current_level:st.lv||0,last_active:new Date().toISOString()}).eq('id',uid);
+    await _supabase.from('profiles').update({plan:stateData.plan||'free',pseudo:stateData.pseudo||null,current_level:stateData.lv||0,last_active:new Date().toISOString()}).eq('id',uid);
     /* Save main progress */
     await _supabase.from('user_progress').upsert({user_id:uid,data:stateData,updated_at:new Date().toISOString()},{onConflict:'user_id'});
     /* Save texts */
