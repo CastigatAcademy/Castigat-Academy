@@ -1,5 +1,5 @@
 /* ═══ Castigat Academy — Service Worker ═══ */
-const CACHE_NAME = 'castigat-academy-v6';
+const CACHE_NAME = 'castigat-academy-v7';
 const OFFLINE_URL = '/castigat-academy.html';
 
 // Assets to pre-cache on install
