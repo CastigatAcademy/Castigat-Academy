@@ -73,6 +73,22 @@ window.addEventListener('beforeinstallprompt', function(e){
   // The app will show an install button when this is available
 });
 </script>
+
+<!-- PostHog Analytics -->
+<script>
+!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageviewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+posthog.init('phc_w3oXvkYXFMTjxHfaNcmVSao4xsJCvxVBJ6eYriMHLq6S',{
+  api_host:'https://eu.i.posthog.com',
+  person_profiles:'identified_only',
+  capture_pageview:true,
+  capture_pageleave:true,
+  session_recording:{maskAllInputs:false,maskTextSelector:''},
+  autocapture:true
+});
+/* Helper global pour tracker facilement */
+window._track=function(event,props){try{posthog.capture(event,props||{})}catch(e){}};
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
@@ -3867,6 +3883,7 @@ function Warmup({onClose,st,setSt}){
   };
 
   const startExercise=()=>{
+    _track('exercise_started',{exercise_id:ex.id,exercise_title:ex.title,category:ex.cat});
     setTimer(0);setPhase("active");setTranscript("");setWordResults([]);setScore(null);setMicError("");
     if(recRef.current&&listening){resumeListening()}
     else{startListening()}
@@ -3875,6 +3892,7 @@ function Warmup({onClose,st,setSt}){
   const finishExercise=()=>{
     pauseListening();
     const s=score||{correct:0,total:normalize(ex.phrase).split(" ").length};
+    _track('exercise_completed',{exercise_id:ex.id,exercise_title:ex.title,category:ex.cat,score_pct:s.total>0?Math.round((s.correct||0)/s.total*100):0,duration:timer});
     setHistory(h=>[...h,{id:ex.id,title:ex.title,correct:s.correct||0,total:s.total,pct:s.total>0?Math.round((s.correct||0)/s.total*100):0,time:timer,cat:ex.cat}]);
     setPhase("rest");
   };
@@ -6886,7 +6904,7 @@ function ExV({mod,st,setSt,back}){
                 <p className="heading" style={{fontSize:16,marginBottom:4}}>Feedback personnalisé</p>
                 <p className="body" style={{fontSize:10,marginBottom:4}}>Retour d'un metteur en scène pro sous 48h.</p>
                 <p style={{fontSize:9,color:'var(--violet)',fontWeight:700,marginBottom:14}}>Premium</p>
-                <button className="btn-v" style={{width:'100%',padding:'11px 0',fontSize:11,opacity:.9}} onClick={()=>setShowPremiumModal(true)}>{I.crown({size:14})} Passer à Premium</button>
+                <button className="btn-v" style={{width:'100%',padding:'11px 0',fontSize:11,opacity:.9}} onClick={()=>{_track('paywall_viewed',{current_plan:st.plan,xp:st.xp,exercises_done:(st.doneEx||[]).length,source:'exercise_view'});setShowPremiumModal(true)}}>{I.crown({size:14})} Passer à Premium</button>
               </>)}
             </>):(<><span style={{color:'var(--emerald)'}}>{I.check({size:28})}</span><p className="heading" style={{fontSize:16,color:'var(--emerald)',marginTop:4}}>Vidéo envoyée !</p><p className="body" style={{fontSize:10,marginTop:2}}>{videoFileName || "Votre vidéo"} — Retour sous 48h.</p></>)}
           </div>
@@ -6918,8 +6936,8 @@ function ExV({mod,st,setSt,back}){
                 <p style={{fontSize:16,fontWeight:800,marginTop:4}}>29,90€<span style={{fontSize:9,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
               </div>
             </div>
-            <button onClick={()=>{SFX.success();window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201';}} className="btn-gold btn-pulse" style={{width:'100%',padding:'13px 0',fontSize:12,marginBottom:8}}>Standard — 4 jours gratuits puis 9,90€/mois</button>
-            <button onClick={()=>{SFX.levelUp();window.location.href='https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202';}} style={{width:'100%',padding:'12px 0',fontSize:11,fontWeight:700,color:'#ab47bc',borderRadius:10,background:'rgba(171,71,188,.08)',border:'1px solid rgba(171,71,188,.2)',cursor:'pointer',marginBottom:8}}>Premium — 29,90€/mois</button>
+            <button onClick={()=>{_track('plan_clicked',{plan:'standard',price:9.90,source:'paywall_modal'});SFX.success();window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201';}} className="btn-gold btn-pulse" style={{width:'100%',padding:'13px 0',fontSize:12,marginBottom:8}}>Standard — 4 jours gratuits puis 9,90€/mois</button>
+            <button onClick={()=>{_track('plan_clicked',{plan:'premium',price:29.90,source:'paywall_modal'});SFX.levelUp();window.location.href='https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202';}} style={{width:'100%',padding:'12px 0',fontSize:11,fontWeight:700,color:'#ab47bc',borderRadius:10,background:'rgba(171,71,188,.08)',border:'1px solid rgba(171,71,188,.2)',cursor:'pointer',marginBottom:8}}>Premium — 29,90€/mois</button>
             <button onClick={()=>setShowPremiumModal(false)} style={{fontSize:10,color:'var(--text-3)',padding:'8px 0'}}>Plus tard</button>
           </div>
         </div>}
@@ -7183,7 +7201,7 @@ function Profile({st,setSt}){
             {id:"standard",name:"Standard",price:"9,90€/mois",trial:"4 jours gratuits",highlight:true,features:["Tout le parcours (12 niveaux)","Toutes les analyses de scène","Avant-Scène & Connexion","Mon Texte & Mon Monologue","Bilan personnalisé","Bibliothèque complète"]},
             {id:"premium",name:"Premium",price:"29,90€/mois",highlight:false,features:["Tout Standard","Coach personnel par chat","Retours vidéo personnalisés","Corrections de vos monologues","Programme sur mesure","Accès prioritaire nouveautés"]}
           ].map(plan=>(
-            <button key={plan.id} onClick={()=>{if(plan.id==="standard")window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201';else if(plan.id==="premium")window.location.href='https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202';}}
+            <button key={plan.id} onClick={()=>{if(plan.id==="standard"){_track('plan_clicked',{plan:'standard',price:9.90,source:'profile'});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201';}else if(plan.id==="premium"){_track('plan_clicked',{plan:'premium',price:29.90,source:'profile'});window.location.href='https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202';}}}
               style={{padding:14,borderRadius:12,background:plan.id==="premium"?'rgba(171,71,188,.06)':plan.highlight?'rgba(200,164,78,.08)':'var(--bg-card)',border:st.plan===plan.id?(plan.id==="premium"?'2px solid #ab47bc':plan.highlight?'2px solid var(--gold)':'2px solid var(--emerald)'):'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',flexDirection:'column',textAlign:'left'}}>
               <p style={{fontSize:11,fontWeight:700,marginBottom:4,color:plan.id==="premium"?'#ab47bc':plan.highlight?'var(--gold)':'var(--text)'}}>{plan.name}</p>
               <p style={{fontSize:10,fontWeight:600,marginBottom:4,color:st.plan===plan.id?'var(--gold)':'var(--text-2)'}}>{plan.price}</p>
@@ -7363,7 +7381,7 @@ function Profile({st,setSt}){
 /* ═══ LOCALSTORAGE ═══ */
 /* SAVE_KEY is already defined in the main <script> block above */
 /* Plan URL param handler */
-(function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));saveToCloud(d);}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));saveToCloud({plan:p});}
+(function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){_track('plan_activated',{plan:p,price:p==='standard'?9.90:29.90});var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));saveToCloud(d);}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));saveToCloud({plan:p});}
 /* Also update profils table so plan is visible in Supabase dashboard */
 (async()=>{try{var usr=await _supabase.auth.getUser();if(usr.data.user){localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:usr.data.user.id}));await _supabase.from('profiles').update({plan:p,plan_started_at:new Date().toISOString()}).eq('id',usr.data.user.id);localStorage.removeItem('pending_plan_update');}else{localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:'pending'}));}}catch(e){console.log('profils plan update error',e)}})();
 window.history.replaceState({},"",window.location.pathname);}})();
@@ -7607,7 +7625,7 @@ function App(){
   const[exam,setExam]=useState(null);
   const[badgePopup,setBadgePopup]=useState(null);
   const[tutoStep,setTutoStep]=useState(0);
-  const go=t=>{if(t!==tab)setMod(null);setTab(t);window.scrollTo(0,0)};
+  const go=t=>{_track('tab_navigated',{tab:t,from:tab,plan:st.plan});if(t!==tab)setMod(null);setTab(t);window.scrollTo(0,0)};
 
   /* Scroll to top when opening/closing an exercise or switching exam */
   useEffect(()=>{window.scrollTo(0,0)},[mod,exam]);
@@ -7713,6 +7731,14 @@ function App(){
   /* Auto-save on state change — localStorage + cloud (debounced) */
   useEffect(()=>{if(st.onb){saveState(st);saveToCloudDebounced(st)}},[st]);
 
+  /* PostHog — session start + identify returning users */
+  useEffect(()=>{
+    if(st.onb&&st.user){
+      posthog.identify(st.user.pseudo||'anonymous',{plan:st.plan,xp:st.xp,level:st.lv,exercises_done:(st.doneEx||[]).length,streak:st.streak,avatar:st.user.avatar,goal:st.user.goal});
+      _track('session_started',{plan:st.plan,xp:st.xp,level:st.lv,exercises_done:(st.doneEx||[]).length,returning:!!st.lastActiveDate});
+    }
+  },[]);
+
   /* ═══ DAILY PULSE — Question quotidienne ═══ */
   const dailyPulse=st.dailyPulse||{answers:[],lastAnswerDate:null};
   const todayStr=new Date().toDateString();
@@ -7725,7 +7751,7 @@ function App(){
   /* CGU from profile */
   if(st.showCGU) return <CGU onClose={()=>setSt(p=>({...p,showCGU:false}))}/>;
 
-  if(!st.onb)return<Onboard done={(i,user)=>{SFX.success();window.scrollTo(0,0);setSt(p=>({...p,onb:true,xp:0,lv:0,user,streak:1,lastActiveDate:new Date().toDateString(),seenTuto:false}));setTutoStep(0)}}/>;
+  if(!st.onb)return<Onboard done={(i,user)=>{SFX.success();window.scrollTo(0,0);_track('onboarding_completed',{avatar:user?.avatar,goal:user?.goal,experience:user?.exp});if(user?.pseudo)posthog.identify(user.pseudo,{name:user.pseudo,avatar:user.avatar,goal:user.goal,experience:user.exp});setSt(p=>({...p,onb:true,xp:0,lv:0,user,streak:1,lastActiveDate:new Date().toDateString(),seenTuto:false}));setTutoStep(0)}}/>;
   const answerDailyQ=(qId,optId,val,cat)=>{
     setSt(p=>{
       const pulse=p.dailyPulse||{answers:[],lastAnswerDate:null};
