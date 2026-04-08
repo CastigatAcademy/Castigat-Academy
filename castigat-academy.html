@@ -223,7 +223,7 @@ async function saveVideoSubmission(data){
   return{result,error};
 }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* Hide install prompt when app is already installed as PWA */
 @media all and (display-mode: standalone) {
@@ -281,6 +281,9 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;color:inhe
 @keyframes hero-text-in{0%{opacity:0;transform:translateY(30px) scale(.95);filter:blur(8px)}100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
 @keyframes btn-glow{0%,100%{box-shadow:0 4px 24px rgba(200,164,78,.2),0 0 0 0 rgba(200,164,78,0)}50%{box-shadow:0 8px 40px rgba(200,164,78,.4),0 0 60px rgba(200,164,78,.15)}}
 @keyframes btn-scale-in{0%{opacity:0;transform:scale(.8)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes star-burst-up{0%{transform:translate(0,0) scale(1) rotate(0deg);opacity:1}40%{opacity:1}100%{transform:translate(var(--bx),var(--by)) scale(.1) rotate(var(--br,180deg));opacity:0}}
+@keyframes star-trail{0%{transform:translateY(0) scaleY(1);opacity:.9}100%{transform:translateY(-120vh) scaleY(3);opacity:0}}
+@keyframes tip-fade-out{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.92)}}
 @keyframes text-reveal{0%{opacity:0;letter-spacing:.4em;filter:blur(6px)}100%{opacity:1;letter-spacing:.14em;filter:blur(0)}}
 @keyframes text-fade-up{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes flicker{0%,100%{opacity:.9}10%{opacity:.85}20%{opacity:1}40%{opacity:.95}60%{opacity:1}80%{opacity:.88}}
@@ -316,6 +319,11 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;color:inhe
 .btn-outline{border:1.5px solid rgba(212,168,67,.25);color:var(--gold);font-weight:600;border-radius:12px;transition:all .25s;backdrop-filter:blur(8px)}
 .btn-outline:hover{background:var(--gold-glow);border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow)}
 .btn-v{background:linear-gradient(135deg,var(--violet-dim),var(--violet));color:#fff;font-weight:700;border-radius:12px;box-shadow:0 4px 24px var(--violet-glow),0 1px 0 rgba(255,255,255,.1) inset}
+.back-bar{position:sticky;top:0;left:0;right:0;z-index:40;padding:12px 20px;background:rgba(7,7,11,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.back-bar button{display:flex;align-items:center;gap:6px;color:var(--text-2);font-size:13px;font-weight:600;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);transition:all .2s}
+.back-bar button:active{background:rgba(255,255,255,.08);transform:scale(.96)}
+:root.light .back-bar{background:rgba(255,255,255,.92)}
+:root.light .back-bar button{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.1);color:var(--text-2)}
 .emoji,.em,.em-lg,.em-xl{display:inline-flex;align-items:center;justify-content:center;filter:grayscale(1) brightness(0) invert(1)}
 .em-sm{font-size:14px}
 .em{display:inline-flex;align-items:center;justify-content:center;filter:grayscale(1) brightness(0) invert(1)}
@@ -441,7 +449,41 @@ const I={
   briefcase:p=><Ic {...p} d="M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z M12 9h0 M12 13h0"/>,
   drum:p=><Ic {...p} d="M6 6h2v12H6z M8 6v12l7-2v-8z M15 6v12h2V6z M5 18h14 M4.5 5.5l2-2 M19.5 5.5l-2-2"/>,
   castle:p=><Ic {...p} d="M4 21V9h1V4h2v5h2V3h2v6h2V3h2v6h2V4h2v5h1v12M4 10h2v2H4z M6 10h2v2H6z M14 10h2v2h-2z M16 10h2v2h-2z M8 16h8v2H8z"/>,
+  sun:p=><Ic {...p} d="M12 17a5 5 0 100-10 5 5 0 000 10z M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42"/>,
+  moon:p=><Ic {...p} d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>,
+  clipboard:p=><Ic {...p} d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2 M9 2h6a1 1 0 011 1v1a1 1 0 01-1 1H9a1 1 0 01-1-1V3a1 1 0 011-1z"/>,
+  music:p=><Ic {...p} d="M9 18V5l12-2v13 M9 18a3 3 0 11-6 0 3 3 0 016 0z M21 16a3 3 0 11-6 0 3 3 0 016 0z"/>,
+  graduation:p=><Ic {...p} d="M22 10l-10-5L2 10l10 5 10-5z M6 12v5c0 2 2.7 3 6 3s6-1 6-3v-5"/>,
+  palette:p=><Ic {...p} d="M12 2a10 10 0 00-1 19.95c.6.05 1-.4 1-1v-.8c0-.8-.7-1.4-.9-2.2-.2-.7.5-1.5 1.4-1.5H16a4 4 0 004-4c0-5-4.5-9-8-9.45z M7.5 11a1.5 1.5 0 100-3 1.5 1.5 0 000 3z M12 8a1.5 1.5 0 100-3 1.5 1.5 0 000 3z M16.5 11a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>,
+  thought:p=><Ic {...p} d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z M8 9h.01 M12 9h.01 M16 9h.01"/>,
+  tent:p=><Ic {...p} d="M12 2L2 22h20L12 2z M12 2v20 M4.5 18h15"/>,
+  tv:p=><Ic {...p} d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z M17 2l-5 5-5-5"/>,
 };
+
+/* ═══ EMOJI → SVG ICON MAP ═══ */
+const EMOJI_MAP={
+  "🌿":"leaf","📖":"book","☀️":"sun","🎭":"masks","🏛️":"temple",
+  "🔥":"flame","💎":"gem","🎬":"film","👑":"crown","⭐":"star",
+  "✨":"sparkle","🌬️":"wind","🗣️":"voice","🏋":"body","🏋️":"body",
+  "🪞":"mirror","📹":"camera","📋":"clipboard","🔒":"lock",
+  "✅":"check","🔄":"refresh","🌙":"moon","🎪":"tent",
+  "💭":"thought","🎓":"graduation","✒️":"pen","🧠":"brain",
+  "🏃":"run","🏃‍♂️":"run","💡":"lightbulb","🎯":"target","⚔️":"sword",
+  "🥁":"drum","👥":"users","🍼":"star","🐣":"leaf",
+  "🔍":"search","🕯️":"flame","⚙️":"settings","👻":"sparkle",
+  "🎨":"palette","💪":"body","🪵":"temple","🐭":"search",
+  "🏆":"trophy","📚":"book","🧪":"brain","🦁":"crown",
+  "🌟":"star","🧨":"flame","💫":"sparkle","📺":"tv",
+  "🎤":"mic","🎶":"music","🧘":"body","🦋":"leaf",
+  "🐉":"flame","💨":"wind","👅":"voice","🥇":"medal",
+  "💥":"zap","📅":"cal","🏅":"medal","🎉":"sparkle",
+  "🎗️":"medal","🥁":"drum"
+};
+function EI({e,s=20,c="#fff"}){
+  const key=EMOJI_MAP[e];
+  if(key&&I[key])return I[key]({size:s,sw:1.5,style:{color:c}});
+  return React.createElement('span',{style:{fontSize:s+'px',lineHeight:1}},e);
+}
 
 /* ═══ ICON HELPER ═══ */
 const renderIcon=(iconName,props={})=>{
@@ -465,10 +507,7 @@ function Confetti({count=40,duration=3000,tada=true}){
       const shape=Math.random()>.5?'50%':'2px';
       return <div key={i} className="confetti-piece" style={{left:left+'%',width:size,height:size,background:color,borderRadius:shape,animationDuration:dur+'s',animationDelay:delay+'s'}}/>;
     })}
-    {tadaVisible&&<div style={{position:'fixed',top:'30%',left:'50%',transform:'translateX(-50%)',zIndex:201,textAlign:'center',animation:'tada-pop 0.6s ease-out forwards'}}>
-      <div style={{fontSize:'3rem',marginBottom:'0.3rem'}}>🎉</div>
-      <div style={{fontSize:'1.4rem',fontWeight:700,color:'var(--gold)',textShadow:'0 2px 12px rgba(200,164,78,0.5)',fontFamily:'var(--font-heading)'}}>Bravo !</div>
-    </div>}
+{/* tada overlay removed — was overlapping with result text */}
   </div>);
 }
 
@@ -538,6 +577,28 @@ function getSfxCtx(){if(!_sfxCtx)_sfxCtx=new(window.AudioContext||window.webkitA
   error:()=>{SFX.play(220,.15,'triangle',.03);setTimeout(()=>SFX.play(180,.2,'triangle',.025),120)},
   badge:()=>{SFX.play(523,.1,'sine',.03);setTimeout(()=>SFX.play(659,.1,'sine',.03),120);setTimeout(()=>SFX.play(784,.12,'sine',.03),240);setTimeout(()=>SFX.play(1047,.18,'sine',.025),380)},
   levelUp:()=>{SFX.play(392,.1,'sine',.03);setTimeout(()=>SFX.play(494,.1,'sine',.025),130);setTimeout(()=>SFX.play(587,.1,'sine',.025),260);setTimeout(()=>SFX.play(784,.16,'sine',.03),390)},
+  whoosh:()=>{
+    try{
+      let _sfxCtx=null;
+      function getSfxCtx(){if(!_sfxCtx)_sfxCtx=new(window.AudioContext||window.webkitAudioContext)();if(_sfxCtx.state==='suspended')_sfxCtx.resume();return _sfxCtx;}
+      const ctx=getSfxCtx();const now=ctx.currentTime;
+      /* White noise burst — swoosh texture */
+      const bufLen=ctx.sampleRate*0.7;const buf=ctx.createBuffer(1,bufLen,ctx.sampleRate);const d=buf.getChannelData(0);
+      for(let i=0;i<bufLen;i++)d[i]=(Math.random()*2-1)*(.6+.4*Math.sin(i/bufLen*Math.PI));
+      const noise=ctx.createBufferSource();noise.buffer=buf;
+      const noiseGain=ctx.createGain();noiseGain.gain.setValueAtTime(0,now);noiseGain.gain.linearRampToValueAtTime(.06,now+.08);noiseGain.gain.exponentialRampToValueAtTime(.001,now+.7);
+      const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.setValueAtTime(800,now);hp.frequency.exponentialRampToValueAtTime(6000,now+.5);
+      const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=8000;
+      noise.connect(hp);hp.connect(lp);lp.connect(noiseGain);noiseGain.connect(ctx.destination);
+      noise.start(now);noise.stop(now+.7);
+      /* Rising tone — acceleration feel */
+      const osc=ctx.createOscillator();osc.type='sine';osc.frequency.setValueAtTime(200,now);osc.frequency.exponentialRampToValueAtTime(1800,now+.5);
+      const oscGain=ctx.createGain();oscGain.gain.setValueAtTime(.025,now);oscGain.gain.linearRampToValueAtTime(.04,now+.15);oscGain.gain.exponentialRampToValueAtTime(.001,now+.55);
+      osc.connect(oscGain);oscGain.connect(ctx.destination);osc.start(now);osc.stop(now+.6);
+      /* Sparkle chime at the peak */
+      setTimeout(()=>{try{const c2=getSfxCtx();const n2=c2.currentTime;const o2=c2.createOscillator();o2.type='sine';o2.frequency.value=1200;const g2=c2.createGain();g2.gain.setValueAtTime(.03,n2);g2.gain.exponentialRampToValueAtTime(.001,n2+.3);o2.connect(g2);g2.connect(c2.destination);o2.start(n2);o2.stop(n2+.3);const o3=c2.createOscillator();o3.type='sine';o3.frequency.value=1600;const g3=c2.createGain();g3.gain.setValueAtTime(.02,n2);g3.gain.exponentialRampToValueAtTime(.001,n2+.25);o3.connect(g3);g3.connect(c2.destination);o3.start(n2);o3.stop(n2+.25)}catch(e){}},200);
+    }catch(e){}
+  },
 };
 
 /* ═══ CGU COMPONENT ═══ */
@@ -825,6 +886,12 @@ figurant:[
     text:"« Être ou ne pas être, telle est la question. Est-il plus noble pour l'âme de souffrir les coups de la fortune, ou de prendre les armes contre une mer de tourments ? »",
     author:"Shakespeare — Hamlet",
     instructions:["Lisez à voix haute 3 fois.","Identifiez l'intention : Hamlet hésite.","Travaillez la respiration et les pauses.","Filmez en plan moyen."],premium:false},
+  {id:"f_d2",title:"Articulation et précision",cat:"Diction",icon:"🗣️",dur:"10 min",xp:30,type:"ex",
+    steps:["Devant un miroir, prononcez les voyelles : a, e, i, o, u — bouche grande ouverte.","Maintenant les consonnes clés : d, t, p, b — voyez votre articulation.","Phrase : « Dis-moi dimanche pendant le repas. »","Lisez lentement, chaque syllabe marquée.","Accélérez progressivement sans perdre la clarté."],
+    tip:"La précision vocale change tout d'un mauvais acteur à un acteur crédible."},
+  {id:"f_i2",title:"De la parole à l'émotion",cat:"Intentions",icon:"🎭",dur:"15 min",xp:35,type:"ex",
+    steps:["Phrase simple : « Je veux partir. »","Dites-la comme quelqu'un qui est soulagé.","Dites-la comme quelqu'un qui supplie.","Dites-la comme menace calme.","Observez : le corps change avant la voix."],
+    tip:"L'intention précède toujours les mots — c'est l'ordre naturel du jeu."},
 ],
 apprenti:[
   {id:"a_r1",title:"Respiration costale",cat:"Respiration",icon:"🌬️",dur:"10 min",xp:30,type:"ex",
@@ -852,6 +919,9 @@ apprenti:[
     text:"Inventez un personnage. Donnez-lui un nom, une histoire, un secret. Parlez EN TANT QUE ce personnage face caméra — il se confie au public comme à un ami.",
     author:"Exercice d'improvisation — Castigat",
     instructions:["Inventez un personnage en 2 minutes.","Parlez en tant que lui/elle face caméra.","Laissez venir les émotions.","2 minutes minimum, une seule prise."],premium:false},
+  {id:"a_i2",title:"Les motifs cachés",cat:"Intentions",icon:"🎭",dur:"15 min",xp:45,type:"ex",
+    steps:["Scène : deux amis se saluent.","Mais l'un en veut à l'autre — sans le montrer.","Jouez : le sourire cache la rancœur.","Jouez la même scène : l'un cherche une faveur.","Le texte est identique, seule l'intention change tout."],
+    tip:"Les plus belles scènes jouent sur le contraste entre dit et ressenti."},
 ],
 dimanche:[
   {id:"di_r1",title:"Projection de base",cat:"Respiration",icon:"🌬️",dur:"12 min",xp:40,type:"ex",
@@ -879,6 +949,9 @@ dimanche:[
     text:"« Je t'écris cette lettre que tu ne liras jamais. Il y a des mots qu'on ne peut dire en face — ils brûlent trop. Alors je les pose ici, sur ce papier, comme on pose une valise trop lourde. Tu m'as appris que le silence aussi est un langage. »",
     author:"Texte original — Castigat",
     instructions:["Imaginez à qui cette lettre est adressée.","Lisez comme si vous la lisiez pour la première fois.","Trouvez les moments de retenue et de lâcher-prise.","Filmez en plan rapproché."],premium:false},
+  {id:"di_d2",title:"La diction porteuse",cat:"Diction",icon:"🗣️",dur:"12 min",xp:40,type:"ex",
+    steps:["Lisez un texte de 4 lignes normalement.","Maintenant, projetez — chaque mot doit porter jusqu'au fond.","Pas de cri : clarté absolue avec puissance.","Demandez à quelqu'un à 5 mètres si tout est audible.","La diction et la projection travaillent ensemble."],
+    tip:"Une diction claire sans projection échoue en grand théâtre — toujours les deux."},
 ],
 amateur:[
   {id:"am_r1",title:"Projection avancée",cat:"Respiration",icon:"🌬️",dur:"12 min",xp:45,type:"ex",
@@ -906,6 +979,9 @@ amateur:[
     text:"« Je ne suis pas ce que je suis ! Que ces mots résonnent. Car le théâtre est l'art de devenir autre, de se perdre pour mieux se retrouver. Chaque personnage que j'incarne me révèle une vérité que j'ignorais. »",
     author:"Exercice — Castigat",
     instructions:["Apprenez le texte par cœur.","Trouvez 3 intentions différentes.","Travaillez ruptures de rythme et silences.","Filmez 2 versions avec des choix différents."],premium:true},
+  {id:"am_d2",title:"La diction du doute",cat:"Diction",icon:"🗣️",dur:"12 min",xp:45,type:"ex",
+    steps:["Phrase : « Je ne sais pas si c'est une bonne idée. »","Dites-la avec certitude absolue.","Dites-la en hésitant vraiment — la diction balance.","Dites-la avec colère — consonnes dures.","La diction traduit l'état interne, jamais le texte seul."],
+    tip:"La meilleure diction est celle qu'on ne remarque pas — elle ne sert que l'intention."},
 ],
 pensionnaire:[
   {id:"pe_r1",title:"Le souffle du texte",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:50,type:"ex",
@@ -960,6 +1036,12 @@ societaire:[
     text:"« Il faut que je te dise quelque chose. Ça fait longtemps que je porte ça, et si je ne le dis pas maintenant, je ne le dirai jamais. Ce n'est pas un secret — c'est une vérité que j'ai eu peur de regarder en face. »",
     author:"Texte original — Castigat",
     instructions:["À qui parlez-vous ? Décidez avant de commencer.","L'aveu doit coûter quelque chose — on voit la difficulté.","Trouvez le moment exact où le personnage décide de parler.","Filmez en plan serré, regard caméra."],premium:true},
+  {id:"so_r2",title:"La respiration contrôlée en jeu",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:60,type:"ex",
+    steps:["Jouez une scène avec partenaire (ou enregistré).","Marquez à l'avance où vous respirez — avant chaque réplique.","Utilisez votre respiration comme un outil de mise en scène.","Accélérez les respirations en tension, ralentissez en calme.","La respiration visible du comédien enseigne le rythme au public."],
+    tip:"Mnouchkine dit que la respiration d'un acteur crée le rythme du spectacle."},
+  {id:"so_c3",title:"Le personnage via le corps entier",cat:"Corps",icon:"🏋",dur:"20 min",xp:65,type:"ex",
+    steps:["Créez un personnage : âge, profession, secret.","Trouvez son poids : lourd, léger, équilibré ?","Sa démarche : rapide, traînante, saccadée ?","Un tic, une posture : les mains, les épaules, le cou.","Tous ces détails créent une signature corporelle inconfondible."],
+    tip:"Le grand acteur crée une morphologie pour chaque rôle — comme un sculpteur."},
 ],
 interprete:[
   {id:"in_r1",title:"Voix et émotions liées",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:55,type:"ex",
@@ -984,6 +1066,12 @@ interprete:[
     text:"« Tu sais ce que c'est, toi, la solitude ? C'est pas être seul dans une pièce. C'est être entouré de gens et sentir que personne ne te voit vraiment. Alors tu joues. Tu joues tellement bien que tu finis par oublier qui tu es sous le masque. »",
     author:"Texte contemporain — Castigat",
     instructions:["Réécrivez avec vos mots d'abord.","Trouvez votre connexion personnelle.","La vérité, pas le jeu.","Filmez en plan serré pour les micro-expressions."],premium:true},
+  {id:"in_d2",title:"La diction de l'auteur moderne",cat:"Diction",icon:"🗣️",dur:"15 min",xp:55,type:"ex",
+    steps:["Prenez un texte de Florian Zeller (langage épuré, répétitions).","Trouvez son minimalisme : pas d'ornements vocaux.","Prenez un texte de Marivaux (artifice, préciosité).","Comparez : Zeller dépouille, Marivaux décore.","Adaptez votre diction à la musique de chaque auteur."],
+    tip:"L'interprète moderne doit servir l'économie de langage contemporain."},
+  {id:"in_im1",title:"L'improvisation de caractère",cat:"Improvisation",icon:"🎭",dur:"20 min",xp:60,type:"ex",
+    steps:["Tirez un personnage au hasard : boulanger, avocate, clochard.","Improvisez 3 minutes EN TANT QUE ce personnage.","Parlez de votre métier, votre vie, votre secret.","Pas de texte — juste l'essence du personnage.","L'improvisation teste votre capacité à ÊTRE, pas à réciter."],
+    tip:"Viola Spolin : « L'improvisation, c'est accepter ce qui vient, sans juge intérieur. »"},
 ],
 artiste:[
   {id:"ar_r1",title:"Voix et espace",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:60,type:"ex",
@@ -1041,6 +1129,9 @@ metteur:[
   {id:"me_im1",title:"L'improvisation contrainte",cat:"Improvisation",icon:"🎭",dur:"20 min",xp:70,type:"ex",
     steps:["Improvisez une scène de rupture amoureuse.","Contrainte : vous ne pouvez utiliser que des questions.","Recommencez : uniquement des phrases de 5 mots max.","Recommencez : sans jamais dire 'je'.","Les contraintes libèrent la créativité."],
     tip:"L'OuLiPo au théâtre : la contrainte comme moteur de création."},
+  {id:"me_r2",title:"Respiration et tempo",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:65,type:"ex",
+    steps:["Jouez une scène en tempo très lent — respiration ample.","Rejouez en tempo rapide — respiration saccadée.","Alternez : début lent (respiration profonde), milieu rapide (souffle court).","Notez comme la respiration crée le tempo involontairement.","Le metteur en scène utilise la respiration pour sculpter le rythme."],
+    tip:"La respiration visible du comédien EST le métronome du spectacle."},
 ],
 monstre:[
   {id:"mo_k1",title:"Préparation au casting",cat:"Pro",icon:"🎬",dur:"45 min",xp:150,type:"ex",
@@ -1068,6 +1159,9 @@ monstre:[
   {id:"mo_c1",title:"Le combat scénique",cat:"Corps",icon:"🏋",dur:"25 min",xp:80,type:"ex",
     steps:["Deux 'personnages' face à face (jouez les deux).","Gifle scénique : la main passe à 10 cm, le son vient du pied.","Poussée : le receveur fait le travail, pas le pousseur.","Chute : roulez sur le flanc, jamais sur le dos.","Au ralenti d'abord, puis en vitesse réelle."],
     tip:"Au théâtre, c'est toujours celui qui reçoit qui fait la violence, pas celui qui donne."},
+  {id:"mo_im1",title:"L'improvisation de jeu",cat:"Improvisation",icon:"🎭",dur:"20 min",xp:75,type:"ex",
+    steps:["Tirez deux mots au hasard : 'rage' et 'nostalgie'.","Improvisez un monologue de 2 minutes sur ces deux états.","Alternez entre eux : rage → nostalgie → rage.","Pas de préparation, juste le flux de conscience.","L'impro de jeu teste votre capacité à improviser sous pression."],
+    tip:"Un monstre peut improviser n'importe quoi — c'est ce qui définit le vrai comédien."},
 ],
 affiche:[
   {id:"af_s1",title:"Travail de mise en scène complet",cat:"Scène",icon:"🎬",dur:"45 min",xp:160,type:"ex",
@@ -1095,6 +1189,9 @@ affiche:[
   {id:"af_i2",title:"L'improvisation longue",cat:"Improvisation",icon:"🎭",dur:"30 min",xp:100,type:"ex",
     steps:["Choisissez un lieu : hôpital, école, aéroport.","Improvisez 10 minutes sans jamais vous arrêter.","Faites vivre 3 personnages minimum.","Créez un conflit, une résolution, une surprise.","L'impro longue est le marathon du comédien."],
     tip:"Les Theatresports de Keith Johnstone ont popularisé l'impro longue."},
+  {id:"af_s2",title:"La mise en scène du doute",cat:"Scène",icon:"🎬",dur:"30 min",xp:120,type:"ex",
+    steps:["Choisissez une scène ambigüe : deux personnages qui ne se disent pas la vérité.","Mise en scène option 1 : ils s'aiment secrètement.","Mise en scène option 2 : ils se haïssent en feignant l'amitié.","Même texte, deux mises en scène opposées.","Trouvez comment le placement, le rythme et les regards racontent l'histoire."],
+    tip:"La mise en scène révèle le non-dit — c'est son art fondamental."},
 ],
 etoile:[
   {id:"et_s1",title:"Le spectacle solo",cat:"Scène",icon:"🎬",dur:"60 min",xp:250,type:"ex",
@@ -1122,6 +1219,9 @@ etoile:[
   {id:"et_r1",title:"Diriger sa propre respiration",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:75,type:"ex",
     steps:["Reprenez un texte que vous maîtrisez.","Cartographiez chaque respiration : où, combien de temps, quelle profondeur.","Jouez en suivant votre partition respiratoire.","La respiration EST la mise en scène invisible.","Vous êtes désormais votre propre chef d'orchestre."],
     tip:"La respiration consciente est ce qui sépare l'amateur du professionnel."},
+  {id:"et_k2",title:"L'héritage artistique",cat:"Pro",icon:"📹",dur:"30 min",xp:150,type:"ex",
+    steps:["Identifiez 3 maîtres qui vous ont influencé : acteurs, metteurs, artistes.","Pour chacun, analysez : leur approche, leur signature, ce qu'ils vous ont enseigné.","Créez une 'lettre ouverte' vidéo à l'un d'eux — gratitude, apprentissages.","Filmez avec sincérité — c'est votre transmission.","L'étoile se définit par ce qu'elle transmet, pas ce qu'elle reçoit."],
+    tip:"Laurence Olivier, Anne Consigny, Lecoq — tous parlent de ceux qui les ont formés."},
 ],
 };
 
@@ -1217,6 +1317,12 @@ interprete:[
   {id:"h_in2",title:"Artaud & la cruauté",cat:"Techniques",icon:"🔥",dur:"12 min",xp:40,
     content:["Antonin Artaud (1896–1948) rêve d'un théâtre qui agit sur les sens comme une peste, un incendie, un choc physique. Son manifeste Le Théâtre et son Double (1938) est l'un des textes les plus influents de l'histoire du théâtre.","'Cruauté' ne signifie pas violence gratuite mais rigueur absolue, nécessité, mise à nu. C'est la cruauté de l'existence elle-même. Artaud veut un théâtre aussi inévitable qu'une opération chirurgicale.","Pour Artaud, le texte littéraire est un obstacle — le vrai théâtre est fait de cris, de souffles, de gestes, de lumières, de sons. Il rêve d'un 'langage physique' qui atteindrait directement le système nerveux du spectateur.","Son influence est immense malgré (ou à cause de) le fait qu'il n'a presque rien réalisé concrètement : le Living Theatre, Grotowski, Peter Brook, Jan Fabre, Romeo Castellucci — tous se réclament de lui. Son théâtre est plus un horizon qu'une méthode."],
     quiz:[{q:"Quel est le titre du manifeste d'Artaud publié en 1938 ?",o:["Le Théâtre Cruel","Le Théâtre et son Double","Vers un théâtre pauvre","L'Espace Vide"],a:1},{q:"Que signifie 'cruauté' chez Artaud ?",o:["Violence physique sur scène","Rigueur absolue et nécessité","Sadisme envers le public","Destruction du décor"],a:1},{q:"Pourquoi l'influence d'Artaud est-elle paradoxale ?",o:["Il a tout réalisé mais personne ne s'en souvient","Il n'a presque rien réalisé mais son influence est immense","Il a refusé d'être publié","Il ne parlait que de cinéma"],a:1}]},
+  {id:"h_in3",title:"Peter Brook et l'espace vide",cat:"Techniques",icon:"🎭",dur:"12 min",xp:45,
+    content:["Peter Brook (1925–2022), metteur en scène britannique, pose une question simple mais révolutionnaire : 'Je peux prendre n'importe quel espace vide et l'appeler une scène. Un homme traverse cet espace pendant que quelqu'un d'autre l'observe, et c'est tout ce dont j'ai besoin pour qu'un acte de théâtre commence.'","Pour Brook, le théâtre n'a besoin que de trois éléments : un acteur, un spectateur, et l'espace entre eux. Tout le reste — décor, costumes, lumière, musique — est optionnel. C'est une philosophie de la dépouille radicale qui libère à la fois le créateur et le spectateur.","Son livre L'Espace vide (1968) distingue quatre formes : le théâtre mortel (figé, sans vie), le sacré (rituel), le brut (populaire), et l'immédiat (vivant). Cette classification révolutionne la pensée théâtrale et influence des générations de metteurs en scène.","Aux Bouffes du Nord à Paris (1974–2010), il crée un théâtre universel et épuré. Le Mahabharata en 9 heures, La Tempête, Hamlet sont des explorations de l'essence théâtrale, cherchant toujours ce qui est nécessaire et enlevant tout ce qui est superflu."],
+    quiz:[{q:"Selon Peter Brook, qu'est-ce qui est absolument nécessaire pour faire du théâtre ?",o:["Décor, costumes et lumière","Un acteur, un spectateur et un espace","Un texte excellent","Des effets spéciaux"],a:1},{q:"En quelle année Peter Brook publie-t-il L'Espace vide ?",o:["1960","1968","1975","1985"],a:1},{q:"Combien de forme de théâtre Brook distingue-t-il dans sa théorie ?",o:["Deux","Trois","Quatre","Cinq"],a:2}]},
+  {id:"h_in4",title:"Le théâtre japonais — Nô et Kabuki",cat:"Histoire",icon:"🏯",dur:"13 min",xp:40,
+    content:["Le Nô est né au XIVe siècle au Japon. C'est un théâtre extrêmement codifié et épuré : mouvements lents et stylisés, masques magnifiques (chaque masque change l'énergie du personnage), textes poétiques dits sur une musique. Un spectacle dure 3-4 heures — généralement une tétralogie.","Les acteurs du Nô se transmettent le répertoire de père en fils depuis 700 ans. Il y a cinq écoles principales. Chaque geste a un sens précis, transmis de manière extrêmement fidèle. Le 'ma' (le silence, l'espace) est aussi important que l'action.","Le Kabuki est le contraire du Nô : explosif, spectaculaire, coloré. Né au XVIIe siècle avec des femmes qui dansaient en public (d'où son nom : ka=chanson, bu=danse, ki=technique). Les femmes ont été interdites, remplacées par des 'onnagata' (hommes jouant les rôles féminins).","Le Kabuki est populaire, dramatique, physique. Les acteurs surjouent volontairement. Les costumes sont magnifiques, le maquillage (kumadori) crée des masques de couleur. Deux choses en commun avec le Nô : la transmission de père en fils, et une vision du théâtre comme art rituel immuable."],
+    quiz:[{q:"Depuis combien de siècles le répertoire du Nô est-il transmis dans les familles ?",o:["3 siècles","5 siècles","7 siècles","10 siècles"],a:2},{q:"Qu'est-ce que le 'ma' dans le théâtre Nô ?",o:["Un costume","Le silence et l'espace entre les actions","Un masque spécial","Un type de musique"],a:1},{q:"Qu'est-ce qu'un 'onnagata' au Kabuki ?",o:["Une danseuse","Un homme jouant les rôles féminins","Un musicien","Un metteur en scène"],a:1}]},
 ],
 artiste:[
   {id:"h_ar1",title:"Le théâtre contemporain",cat:"Histoire",icon:"🌬️",dur:"12 min",xp:40,
@@ -1225,6 +1331,12 @@ artiste:[
   {id:"h_ar2",title:"Les grandes metteuses en scène",cat:"Auteurs",icon:"✒️",dur:"10 min",xp:35,
     content:["Ariane Mnouchkine (née en 1939) fonde le Théâtre du Soleil en 1964 à la Cartoucherie de Vincennes. Travail collectif, engagement politique, inspiration asiatique (kabuki, kathakali). Les Atrides, 1789, Le Dernier Caravansérail.","Pina Bausch (1940–2009) invente le Tanztheater à Wuppertal : ses danseurs parlent, crient, rient, pleurent. Café Müller, Le Sacre du printemps, Kontakthof — un langage universel qui touche aux tripes.","Katie Mitchell (née en 1964) pionnière du 'live cinema' : des caméras filment les acteurs en direct, le résultat est projeté en temps réel. Le spectateur voit à la fois le film ET sa fabrication. Technique bluffante.","Ces femmes ont prouvé que la mise en scène est un art de création à part entière — pas une simple 'illustration' du texte. Chacune a inventé un langage scénique qui n'existait pas avant elle."],
     quiz:[{q:"En quelle année Mnouchkine fonde-t-elle le Théâtre du Soleil ?",o:["1958","1964","1972","1980"],a:1},{q:"Qu'est-ce que le Tanztheater de Pina Bausch ?",o:["Du théâtre uniquement dansé","Une fusion de danse, théâtre, parole et émotion","Un ballet classique moderne","Du mime musical"],a:1},{q:"Quelle technique Katie Mitchell a-t-elle popularisée au théâtre ?",o:["Le masque neutre","Le live cinema (caméras en direct sur scène)","Le théâtre de rue","L'improvisation longue"],a:1}]},
+  {id:"h_ar3",title:"Grotowski et le théâtre pauvre",cat:"Techniques",icon:"🎭",dur:"12 min",xp:45,
+    content:["Jerzy Grotowski (1933–1999), metteur en scène polonais, pose une question radicale : que reste-t-il du théâtre si on enlève tout ? Pas de décor, pas de costume, pas de lumière élaborée, pas de musique, pas de maquillage. Réponse : l'acteur et le spectateur. C'est le 'théâtre pauvre'.","L'acteur grotowskien n'est pas un 'comédien' au sens classique. C'est un 'acteur saint' qui se donne totalement, sans protection, sans masque social. L'entraînement est spirituel autant que physique. Il s'agit d'un acte de vérité absolue, presque shamanique.","Les spectacles du Théâtre Laboratoire de Wrocław (Akropolis, Le Prince Constant, Apocalypsis cum Figuris) sont joués pour 40-60 spectateurs maximum. La proximité physique est absolue — les acteurs jouent parfois à 30 cm du public. C'est une rencontre humaine, pas un spectacle.","Après 1970, Grotowski abandonne le spectacle public pour le 'parathéâtre' puis 'l'art comme véhicule' — explorer les limites de la transformation humaine. Son influence est immense : formation de l'acteur, théâtre expérimental, réflexion spirituelle sur l'essence du théâtre."],
+    quiz:[{q:"Combien de spectateurs maximum voyaient les spectacles de Grotowski ?",o:["200","100","40-60","10"],a:2},{q:"Qu'est-ce qu'un 'acteur saint' chez Grotowski ?",o:["Un acteur religieux","Un acteur qui joue seulement des rôles divins","Un acteur qui se donne totalement, sans protection","Un acteur qui prie avant de jouer"],a:2},{q:"Qu'est-ce que Grotowski explore après 1970 ?",o:["Le théâtre cinématographique","L'art comme véhicule et la transformation humaine","Le théâtre pour enfants","Le doublage cinéma"],a:1}]},
+  {id:"h_ar4",title:"Le théâtre de boulevard",cat:"Histoire",icon:"🎪",dur:"10 min",xp:40,
+    content:["Le théâtre de boulevard naît au XIXe siècle à Paris, sur les grands boulevards (d'où son nom). C'est un théâtre de divertissement populaire, léger, rapide, mécanique — l'opposite du drame romantique lourd.","Les maîtres du boulevard : Eugène Labiche (La Poudre aux yeux, Un Chapeau de paille d'Italie), Émile Augier (Le Gendre de M. Poirier). Le style : intrigues savamment nouées, quiproquos, poursuites, transformations spectaculaires, fins heureuses où tout s'arrange.","La technique du boulevard : économie narrative, personnages typés mais non psychologiques, chutes de réplique précises, rythme effréné. Les intrigues s'empilent, les malentendus cascadent, tout doit rouler comme une mécanique bien huilée. Une pièce mal ficelée s'écroule ; une bien ficelée est indestructible.","L'influence du boulevard est immense : le cinéma comique français (Tati, Audiard), la comédie hollywoodienne, les films de Lubitsch. Mais le boulevard aussi s'est figé : ses conventions (le couple, la bourgeoisie bienveillante) semblent datées. Pourtant, le rire ne s'use jamais — et le boulevard reste un conservatoire du rire scénique."],
+    quiz:[{q:"D'où vient le nom 'théâtre de boulevard' ?",o:["Du nom d'un auteur","Des grands boulevards de Paris","D'une théorie dramatique","D'un quartier riche"],a:1},{q:"Quel est l'objectif primaire du théâtre de boulevard ?",o:["Explorer la psychologie humaine","Divertir et faire rire","Critiquer la société","Enseigner une morale"],a:1},{q:"Qui est un des maîtres du théâtre de boulevard ?",o:["Victor Hugo","Eugène Labiche","Alexandre Dumas","Gustave Flaubert"],a:1}]},
 ],
 metteur:[
   {id:"h_me1",title:"Peter Brook — l'espace vide",cat:"Techniques",icon:"🎭",dur:"12 min",xp:45,
@@ -1233,6 +1345,12 @@ metteur:[
   {id:"h_me2",title:"Grotowski — le théâtre pauvre",cat:"Techniques",icon:"🎭",dur:"12 min",xp:45,
     content:["Jerzy Grotowski (1933–1999), metteur en scène polonais, pose une question radicale : que reste-t-il si on enlève tout — décor, costume, lumière, musique ? Réponse : l'acteur et le spectateur. C'est le 'théâtre pauvre'.","L'acteur grotowskien est un 'acteur saint' qui se donne totalement, sans protection, sans masque social. L'entraînement est extrême : vocalement, physiquement, psychologiquement. Ce n'est pas de la performance — c'est un acte de vérité.","Ses spectacles au Théâtre Laboratoire de Wrocław (Akropolis, Le Prince Constant, Apocalypsis cum Figuris) sont joués pour 40-60 spectateurs maximum. La proximité est absolue — les acteurs jouent parfois à 30 cm du public.","Après 1970, Grotowski abandonne le spectacle pour le 'parathéâtre' puis 'l'art comme véhicule' — la rencontre humaine sans public. Son influence sur le théâtre expérimental, la formation de l'acteur, et la réflexion sur l'essence du théâtre est incommensurable."],
     quiz:[{q:"Quelle est la question fondamentale de Grotowski ?",o:["Comment remplir les salles ?","Que reste-t-il quand on enlève tout sauf l'acteur et le spectateur ?","Comment moderniser les classiques ?","Comment former des stars ?"],a:1},{q:"Combien de spectateurs maximum dans les spectacles de Grotowski ?",o:["200","100","40-60","10"],a:2},{q:"Qu'est-ce que Grotowski fait après 1970 ?",o:["Il fait du cinéma","Il abandonne le spectacle pour le parathéâtre","Il dirige un théâtre national","Il enseigne à l'université"],a:1}]},
+  {id:"h_me3",title:"Pina Bausch et le Tanztheater",cat:"Techniques",icon:"💃",dur:"13 min",xp:50,
+    content:["Pina Bausch (1940–2009) invente le Tanztheater (théâtre de danse) : elle rompt avec le ballet classique et la danse moderne pure. Elle mélange la danse, le théâtre, le cirque, la vie réelle. La danse n'a plus besoin d'être belle — elle doit être vraie.","Son langage : des mouvements quotidiens (marcher, s'asseoir, tomber) mélangés à des mouvements de danse ; des costumes ordinaires ou élaborés selon le spectacle ; une relation intime avec le public ; des thèmes universels (l'amour, la mort, la solitude, la joie).","Ses créations : Café Müller (1978 — les danseurs se déplacent dans l'obscurité comme somnambules), Kontakthof (1978 — une salle de danse pour adolescents et danseurs professionnels qui se croisent), The Rite of Spring (2005 — une réécriture viscérale du Sacre du printemps de Stravinsky).","Cie Tanztheater Wuppertal Pina Bausch : une école de vie où danser c'est parler de soi, de ses blessures, de ses joies. Après sa mort, la compagnie continue sous direction de Adolfo Fernández et Rainer Högger. Son héritage transforme la danse mondiale."],
+    quiz:[{q:"Qu'est-ce que le Tanztheater de Pina Bausch ?",o:["Ballet classique","Théâtre de danse mélangé à la vie réelle","Danse moderne pure","Cirque contemporain"],a:1},{q:"En quelle année Pina Bausch crée-t-elle Café Müller ?",o:["1968","1975","1978","1985"],a:2},{q:"Quel est le principe fondamental de Pina Bausch ?",o:["La danse doit être belle","La danse doit être vraie et exprimer la vie réelle","La danse doit respecter les règles classiques","La danse n'est qu'un divertissement"],a:1}]},
+  {id:"h_me4",title:"La dramaturgie contemporaine — Koltès, Lagarce, Mouawad",cat:"Dramaturgie",icon:"📖",dur:"12 min",xp:50,
+    content:["Bernard-Marie Koltès (1948–1989) : une urgence incandescente. Ses textes sont des cris qui refusent la linéarité narrative. Dans la solitude des champs de coton — une scène, deux personnages, une nuit d'attente chargée d'amour et de violence suspendue. Roberto Zucco — un assassin sans remords qui fascine. L'écriture est musicale, jamais neutre.","Jean-Luc Lagarce (1957–1995) : Juste la fin du monde raconte un homme mourant qui revient voir sa famille — mais le spectacle est surtout leurs réactions, leurs non-dits, leurs efforts. L'écriture est faite de bégaiements, de retours en arrière, de phrases qui se déploient mais ne se terminent jamais vraiment.","Wajdi Mouawad (né en 1968) : Incendies — une pièce monumentale sur la mémoire familiale, la vengeance, les secrets. Le texte est épique, avec des sauts temporels, des chœurs. Une théâtralité totale où le drame personnel devient cosmique.","La dramaturgie contemporaine : elle refuse le bien-faire traditionnel. Elle sème l'angoisse, la beauté, la confusion. Elle demande au spectateur de faire du sens lui-même, pas de lui livrer une histoire ficelée. C'est un théâtre où la forme ET le contenu sont politiques."],
+    quiz:[{q:"Quel est le sujet principal de 'Juste la fin du monde' de Lagarce ?",o:["Un assassin qui terrorise la ville","Un homme mourant qui revient voir sa famille","Une femme qui fuit sa maison","Un amour impossible entre deux hommes"],a:1},{q:"Qu'est-ce qui caractérise l'écriture de Koltès ?",o:["Elle est directe et transparente","Elle est musicale et refusant la linéarité","Elle suit les lois du drame classique","Elle est minimaliste"],a:1},{q:"Quel est l'effet d'une dramaturgie contemporaine sur le spectateur ?",o:["Elle lui fournit une histoire claire","Elle lui demande de faire du sens lui-même","Elle le repose avec une belle histoire","Elle l'endort"],a:1}]}
 ],
 monstre:[
   {id:"h_mo1",title:"Le métier de comédien",cat:"Industrie",icon:"🎭",dur:"15 min",xp:50,
@@ -1241,6 +1359,12 @@ monstre:[
   {id:"h_mo2",title:"L'écosystème du spectacle vivant",cat:"Industrie",icon:"🏛️",dur:"12 min",xp:40,
     content:["Le spectacle vivant en France : 250 000 emplois, 8 milliards d'euros de chiffre d'affaires. C'est un secteur économique majeur, pas seulement un 'hobby culturel'.","Les structures de diffusion : 5 Théâtres Nationaux (Comédie-Française, Odéon, Chaillot, Colline, TNS), 38 CDN (Centres Dramatiques Nationaux), 76 Scènes Nationales, des centaines de scènes conventionnées et de compagnies indépendantes.","Le financement : DRAC (Direction Régionale des Affaires Culturelles — État), collectivités territoriales (régions, départements, villes), billetterie (souvent moins de 30% du budget), mécénat privé (encore faible en France comparé aux pays anglo-saxons).","L'agent artistique prend 10% des cachets de l'artiste. C'est un allié indispensable pour accéder aux castings cinéma et TV. Au théâtre, le réseau personnel reste plus important que l'agent."],
     quiz:[{q:"Combien de Théâtres Nationaux existe-t-il en France ?",o:["3","5","7","10"],a:1},{q:"Quelle part du budget d'un théâtre public la billetterie représente-t-elle en moyenne ?",o:["Moins de 30%","50%","70%","90%"],a:0},{q:"Que signifie DRAC ?",o:["Direction Régionale des Arts et de la Culture","Direction Régionale des Affaires Culturelles","Département de Recherche en Art Contemporain","Délégation aux Relations Artistiques et Culturelles"],a:1}]},
+  {id:"h_mo3",title:"Le théâtre élisabéthain",cat:"Histoire",icon:"🏛️",dur:"12 min",xp:55,
+    content:["Le théâtre élisabéthain (1558–1603, règne d'Élisabeth Ire) est l'âge d'or du théâtre anglais. Shakespeare, Marlowe, Jonson écrivent dans un contexte de modernité politique, de confiance commerciale et de curiosité intellectuelle. Londres devient le centre du monde théâtral.","Le Globe Theatre (1599) incarne l'archétype : une structure circulaire, des galeries couvertes pour la noblesse, un parterre pour les 'groundlings' (le peuple debout), une scène sans décor illusionniste. Les pièces étaient jouées à la lumière du jour, sans décor changeable, avec rapidité de jeu.","Marlowe crée le personnage de Faust et repousse les limites de la rhétorique. Shakespeare invente le personnage psychologique complexe. Jonson crée une comédie de l'humeur (Each man in his humour) où les caractères sont des types reconnaissables. Trois voix, trois visions.","Le public était mixte : apprentis, marchands, noblesse, roi lui-même. Une vraie démocratie théâtrale. Et pourtant, les femmes ne jouaient pas — seuls les jeunes hommes glabre jouaient les rôles féminins. Ce qui nous paraît bizarre était la norme du temps."],
+    quiz:[{q:"En quelle période s'étend le théâtre élisabéthain ?",o:["1450–1500","1558–1603","1650–1700","1750–1800"],a:1},{q:"Quel était le nom du plus célèbre théâtre élisabéthain ?",o:["The Rose","The Swan","The Globe","The Fortune"],a:2},{q:"Qui était un des trois grands auteurs élisabéthains avec Shakespeare ?",o:["Molière","Marlowe","Corneille","Racine"],a:1}]},
+  {id:"h_mo4",title:"Les techniques de casting et audition",cat:"Industrie",icon:"🎭",dur:"12 min",xp:50,
+    content:["Le casting classique : le metteur en scène et l'assistant casting regardent les acteurs jouer une scène du texte (parfois improvisée, parfois mémorisée). L'audition dure 2–5 minutes. Le metteur en scène observe : la présence, la compréhension du texte, l'instinct, la chimie avec les autres candidats.","Le tirage au sort : une tendance qui émerge — notamment au CNSAD pour les entrées. Choisir les acteurs par tirage au sort plutôt que par 'talent' remet en question les biais du casting. Certains metteurs en scène l'utilisent pour libérer le processus créatif (pas de favoritisme) — d'autres y voient une démission du metteur en scène.","La self-tape (déjà vue) est devenue essentielle pour le cinéma et la TV. À l'époque du Covid, le théâtre aussi a dû s'adapter : casting par Zoom. Moins spontané, plus égalitaire (pas besoin de se déplacer à Paris), mais moins de présence physique.","L'enjeu éthique : combattre les biais (sexisme, racisme, âgisme, lookisme). Aveugle casting (pas de CV ni de photo, seulement la voix et le jeu). Diversité intentionnelle. Certains théâtres s'y engagent ; d'autres restent traditionnels. Le débat est encore ouvert."],
+    quiz:[{q:"Combien de temps dure en moyenne une audition théâtrale ?",o:["30 secondes","2–5 minutes","15–20 minutes","1 heure"],a:1},{q:"Qu'est-ce que l'aveugle casting ?",o:["Fermer les yeux pendant le jeu","Castings sans CV ni photo, basés sur la voix et le jeu","Auditionner que des acteurs aveugles","Une technique de Stanislavski"],a:1},{q:"Qu'est-ce qui a accéléré l'adoption du Zoom casting au théâtre ?",o:["La mode","La pandémie de Covid","L'économie d'argent","La préférence des acteurs"],a:1}]}
 ],
 affiche:[
   {id:"h_af1",title:"Créer son spectacle",cat:"Industrie",icon:"🎬",dur:"15 min",xp:50,
@@ -1252,6 +1376,9 @@ affiche:[
   {id:"h_af3",title:"L'écriture contemporaine",cat:"Auteurs",icon:"✒️",dur:"12 min",xp:45,
     content:["Bernard-Marie Koltès (1948–1989) : une écriture incandescente, musicale, nocturne. Dans la solitude des champs de coton, Roberto Zucco, Combat de nègre et de chiens. Koltès écrit sur la rencontre impossible, le désir, la marginalité. Ses phrases sont longues, sinueuses, comme un jazz verbal.","Jean-Luc Lagarce (1957–1995) : l'auteur le plus joué en France après Molière. Juste la fin du monde, Derniers remords avant l'oubli, Nous les héros. Son écriture est faite de répétitions, de parenthèses, de phrases qui se reprennent et se corrigent — comme la pensée réelle.","Wajdi Mouawad (né en 1968) : Incendies, Littoral, Forêts, Ciels — des fresques épiques sur la guerre, l'exil, la mémoire familiale. Un théâtre qui mêle mythologie, actualité politique et émotion brute. Il dirige le Théâtre de la Colline depuis 2016.","Joël Pommerat (né en 1963) : il n'écrit pas puis met en scène — il écrit PAR la mise en scène. Ses spectacles naissent en répétition. Ça ira (1) Fin de Louis est une réécriture de la Révolution française ; La Réunification des deux Corées explore l'amour sous toutes ses formes."],
     quiz:[{q:"Quel auteur contemporain est le plus joué en France après Molière ?",o:["Koltès","Lagarce","Mouawad","Pommerat"],a:1},{q:"Qu'est-ce qui caractérise l'écriture de Koltès ?",o:["Des phrases courtes et percutantes","Des phrases longues et musicales, comme du jazz","Du vers classique","De la prose minimaliste"],a:1},{q:"Quelle est la particularité de la méthode de Pommerat ?",o:["Il écrit seul pendant 5 ans","Il écrit PAR la mise en scène, en répétition","Il n'utilise que des classiques","Il travaille sans acteurs"],a:1}]},
+  {id:"h_af4",title:"Le théâtre engagé — Boal et le théâtre de l'opprimé",cat:"Techniques",icon:"🎭",dur:"12 min",xp:50,
+    content:["Augusto Boal (1931–2009), dramaturge brésilien, invente le 'Théâtre de l'Opprimé' dans les années 1960. Son conviction : le théâtre ne doit pas seulement divertir ou émouvoir, il doit transformer. Il doit donner une voix aux sans-voix et permettre au spectateur de devenir 'spect-acteur'.","Le jeu du Spect-Acteur : pendant la représentation, à un moment clé, le jeu s'arrête et les spectateurs peuvent monter sur scène pour remplacer un acteur et improviser une solution. Qu'auriez-vous fait à sa place ? Le théâtre devient un laboratoire d'action sociale.","Les Jeux dramatiques pour l'opprimé : des jeux de rôle collectifs qui permettent d'explorer des situations conflictuelles (patron/salarié, homme/femme, classe supérieure/classe inférieure). Le but n'est pas d'agir mais de PENSER, de comprendre les mécanismes de l'oppression, d'imaginer des résistances.","L'héritage de Boal : du Brésil au monde entier, le Théâtre de l'Opprimé inspire les mouvements féministes, antiracistes, écologistes. Il inspire aussi les processus de dialogue en entreprise et en politique. Le théâtre de Boal dit : tu es peut-être une victime, mais tu es aussi capable de changer les choses."],
+    quiz:[{q:"Quel est le contexte d'invention du Théâtre de l'Opprimé par Boal ?",o:["Les années 1950 aux USA","Les années 1960 au Brésil","Les années 1970 en Europe","Les années 1980 en Afrique"],a:1},{q:"Qu'est-ce qu'un spect-acteur selon Boal ?",o:["Un acteur qui regarde","Un spectateur qui peut remplacer un acteur et improviser une solution","Un professionnel qui ne joue pas","Un metteur en scène amateur"],a:1},{q:"Quel est le but des jeux dramatiques pour l'opprimé ?",o:["Divertir","Agir immédiatement pour changer le monde","Penser et comprendre les mécanismes de l'oppression","Évaluer la compétence des acteurs"],a:2}]}
 ],
 etoile:[
   {id:"h_et1",title:"Le festival d'Avignon",cat:"Industrie",icon:"🏛️",dur:"12 min",xp:45,
@@ -1263,6 +1390,9 @@ etoile:[
   {id:"h_et3",title:"Le théâtre de demain",cat:"Histoire",icon:"⭐",dur:"10 min",xp:50,
     content:["Le théâtre virtuel et augmenté : des compagnies expérimentent avec la réalité virtuelle (le spectateur porte un casque VR et évolue dans un décor virtuel), la réalité augmentée (des éléments numériques se superposent à la scène réelle), et la motion capture en temps réel.","L'intelligence artificielle au théâtre : des spectacles co-écrits par des IA, des acteurs numériques, des mises en scène générées algorithmiquement. La question n'est pas 'l'IA va-t-elle remplacer l'acteur ?' mais 'qu'est-ce que l'IA révèle de ce qui est irremplaçable chez l'acteur ?'","Le théâtre engagé du XXIe siècle : écoféminisme, décolonialité, handicap sur scène, neurodiversité. Le théâtre reflète et anticipe les mutations sociales. Des compagnies comme DV8, Gob Squad, Forced Entertainment repoussent les frontières.","Ce qui ne changera jamais : un être humain vivant devant d'autres êtres humains vivants, dans le même espace, au même moment. C'est irremplaçable par aucune technologie. Et c'est pour ça que le théâtre existe depuis 2 500 ans."],
     quiz:[{q:"Quelle question pose l'utilisation de l'IA au théâtre ?",o:["Comment remplacer les acteurs","Qu'est-ce qui est irremplaçable chez l'acteur","Comment réduire les coûts","Comment attirer les jeunes"],a:1},{q:"Depuis combien de temps le théâtre existe-t-il ?",o:["500 ans","1 000 ans","2 500 ans","5 000 ans"],a:2}]},
+  {id:"h_et4",title:"L'avenir du théâtre — numérique, immersif, post-dramatique",cat:"Histoire",icon:"⭐",dur:"12 min",xp:55,
+    content:["Le théâtre post-dramatique (terme de Hans-Thies Lehmann, 1999) : le drame n'est plus au centre. La psychologie du personnage, la progression linéaire, la vraisemblance — tout peut être déconstruit. La forme prime sur la narration. Des images se juxtaposent sans causalité logique. L'émotion naît du choc des formes.","Le théâtre immersif : le spectateur n'est plus assis face à la scène. Il est plongé dans l'univers du spectacle. Punchdrunk (Anglais) crée des mondes à explorer librement. Vous marchez dans les couloirs d'un hôtel hanté, découvrez des scènes privées, construisez votre propre narration. C'est du théâtre-jeu vidéo.","La réalité virtuelle et augmentée : des compagnies expérimentent le 'théâtre en VR'. Un spectateur porte un casque VR et incarne un personnage dans un monde virtuel. La frontière entre spectateur et acteur s'efface. Mais la question demeure : où est la présence humaine qui fonde le théâtre ?","Ce que l'avenir ne peut pas remplacer : deux êtres humains vivants, ici et maintenant, dans le même espace, créant ensemble un moment irremplaçable. Les technologies viendront enrichir cette essence — jamais la remplacer. Le théâtre vivra aussi longtemps que les humains voudront se rencontrer."],
+    quiz:[{q:"Que signifie 'post-dramatique' selon Lehmann ?",o:["Après la fin du drame","Le drame n'est plus au centre ; la forme prime","Drama supprimé complètement","Un nouveau genre dramatique"],a:1},{q:"Quel groupe crée du théâtre immersif explorable librement ?",o:["DV8","Gob Squad","Punchdrunk","Forced Entertainment"],a:2},{q:"Qu'est-ce qui restera irremplaçable au théâtre ?",o:["Les effets spéciaux","La réalité virtuelle","La présence humaine vivante dans le même espace","Les costumes technologiquement avancés"],a:2}]}
 ],
 };
 
@@ -1873,6 +2003,115 @@ const SCENE_ANALYSES=[
      {type:"libre",q:"Comment la langue de Koltès diffère-t-elle de la langue classique ? Quelles conséquences pour le jeu ?",
       ref:"Koltès écrit des phrases longues, sinueuses, qui s'enroulent sur elles-mêmes. Pas de vers, pas de césure — un flux continu comme un jazz. L'acteur ne peut pas 'poser' son texte comme du Racine. Il doit trouver le rythme intérieur de la pensée qui se construit en parlant. Le souffle est crucial : les phrases de Koltès demandent une endurance respiratoire et une musicalité qui vient du corps, pas de la métrique."},
    ]},
+
+  /* ── PRO ── */
+  {id:"sa19",tier:"pro",title:"L'affrontement du dealer et du client",source:"Koltès — Dans la solitude des champs de coton, ouverture",
+   context:"Deux inconnus se rencontrent dans un lieu indéterminé, la nuit. L'un est 'le Dealer' qui vend quelque chose, l'autre est 'le Client' qui désire quelque chose. Leur dialogue est un duel verbal où chacun teste l'autre, tâtonne, se retient. On ne sait jamais précisément ce qui se négocie : un produit, un secret, une confiance ? La pièce ouvre sur cet affrontement ambigu.",
+   extract:"LE DEALER : Si vous marchez dehors, à cette heure et en ce lieu, c'est que vous désirez quelque chose que vous n'avez pas, et cette chose, moi, je peux vous la fournir. LE CLIENT : Comment pouvez-vous savoir ce que je désire, vous qui ne me connaissez pas ? LE DEALER : Parce que je suis celui qui fournit ce que tous désirent.",
+   questions:[
+     {type:"qcm",q:"Quelle est la structure de puissance implicite entre le Dealer et le Client à l'ouverture ?",o:["Le Client domine","Le Dealer domine par l'info et la certitude","Ils sont égaux","Aucun ne sait rien"],a:1,
+      expl:"Le Dealer possède l'information (il sait ce que le Client désire avant que le Client lui-même le sache). Cette asymétrie crée un rapport de force. Le Dealer joue sur l'incertitude du Client. Koltès explore comment le pouvoir naît de la connaissance du désir d'autrui."},
+     {type:"qcm",q:"Quel est le rôle du lieu 'indéterminé' dans cette scène ?",o:["C'est un décor réaliste","Le lieu symbolise l'absence de cadre social, la 'solitude'","C'est une forêt","C'est un appartement"],a:1,
+      expl:"'Dans la solitude des champs de coton' — le titre suggère un non-lieu, l'absence de protection sociale. C'est un espace de rencontre brute, sans institutions. Cela force les deux personnages à négocier sans filet : juste deux êtres face à face. Le lieu abstrait amplifie l'intimité du combat."},
+     {type:"libre",q:"En tant que metteur en scène, comment utiliseriez-vous l'espace scénique pour montrer le jeu du Dealer et du Client ? Pensez aux distances, aux regards, à la mobilité.",
+      ref:"Possibilités : le Dealer peut rester immobile tandis que le Client tourne autour de lui (le Client est attiré et repoussé). Ou inversement. Les regards peuvent se croiser puis se dérober. Le Dealer peut avancer lentement vers le Client qui recule — jeu de prédation. Le texte n'indique aucune action, donc c'est à la mise en scène de créer la tension corporelle. Le silence entre les répliques devient crucial — c'est là que se joue le vrai rapport de force. Certaines mises en scène jouent l'érotisme latent de cette rencontre."},
+     {type:"argument",q:"Faut-il clarifier ce que le Dealer vend réellement, ou la pièce gagne-t-elle à rester ambiguë ?",
+      positions:[
+        {pour:"Clarifier aiderait le public à entrer dans la pièce. Savoir si c'est de la drogue, de l'amour, du pouvoir, etc., donnerait du sens aux enjeux. L'ambiguïté peut paraître prétentieuse."},
+        {contre:"L'ambiguïté EST la pièce. Koltès montre que tous les échanges humains fonctionnent selon cette logique : quelqu'un a quelque chose, quelqu'un d'autre le désire. La pièce est une méditation sur le désir plus qu'une intrigue."},
+        {synthese:"Chaque production peut choisir. Certaines clarifient (drogue), d'autres gardent le flou. Ce qui importe, c'est que les acteurs croient en l'enjeu, quelle que soit sa nature. L'ambiguïté fonctionne si elle sert la tension dramatique."}
+      ]},
+   ]},
+
+  {id:"sa20",tier:"pro",title:"Le retour de Lioubov Andréievna",source:"Tchekhov — La Cerisaie, Acte I",
+   context:"Lioubov Andréievna rentre de Paris pour sauver sa cerisaie, qu'elle doit vendre pour payer ses dettes. Elle revient dans sa maison de campagne après des années d'exil, retrouvant des serviteurs fidèles, son domaine en ruines, et un futur qui ne ressemble plus à son passé. C'est une scène de retrouvailles chargée d'émotion contenue et de non-dit tchekhkovien.",
+   extract:"LIOUBOV : Quelle joie de vous voir ! Comment allez-vous ? (Aux domestiques) Gardez mes bagages. Je vais rester ici. Cette maison, ces pièces... Je me demande si j'ai bien fait de partir. Les souvenirs me font mal. Mon Dieu, comme tout a changé !",
+   questions:[
+     {type:"qcm",q:"Quel est le conflit interne de Lioubov dans ce retour ?",o:["Elle déteste sa maison","Elle aime sa maison mais la situation financière la condamne","Elle veut vendre immédiatement","Elle a oublié d'où elle venait"],a:1,
+      expl:"Tchekhov crée une tension : Lioubov est heureuse de revenir ('Quelle joie') mais consciente de la catastrophe financière ('les souvenirs me font mal'). C'est du non-dit caractéristique de Tchekhov. Elle exprime l'attachement et la panique simultanément, sans clarifier."},
+     {type:"qcm",q:"Comment Tchekhov montre-t-il que l'époque aristocratique s'effondre ?",o:["Par des monologues politiques","Par le détail : 'Cette maison... changé'","Par des cris de désespoir","Par des explications théâtrales"],a:1,
+      expl:"Tchekhov n'explique jamais directement. Il montre par le contraste entre le passé (la cerisaie en fleur, la richesse) et le présent (l'argent manque, la maison se dégrade). Lioubov se demande 'comment tout a changé' — c'est la Russie qui change, pas juste sa situation financière. Le détail (les bagages, les serviteurs) crée la texture réaliste."},
+     {type:"libre",q:"Analysez les pauses dans cette tirade. Où situer les silences pour montrer l'émotion contenue de Lioubov ?",
+      ref:"'Quelle joie de vous voir' — sincère mais rapide, comme si elle se réfréne. Silence après. 'Comment allez-vous' — une question de courtoisie qui distance. Puis 'Je vais rester ici' — une décision qui n'en est pas une (elle doit rester). Nouvelle pause. 'Cette maison' — elle retient un sanglot. 'Je me demande' — vraie question, donc pause pour réfléchir. 'Les souvenirs me font mal' — la vraie phrase, prononcée bas. 'Mon Dieu, comme tout a changé' — résignation. Les silences sont plus importants que les mots chez Tchekhov."},
+     {type:"argument",q:"Lioubov est-elle sympathique ou irresponsable ? Comment jouer son personnage sans tomber dans le cliché de 'la pauvre aristocrate' ?",
+      positions:[
+        {pour:"Lioubov a gaspillé sa fortune en exil à Paris par faiblesse. Elle est irresponsable envers sa famille et ses serviteurs. Jouer son impuissance n'excuse pas sa faillite personnelle."},
+        {contre:"Lioubov est victime d'une époque qui s'effondre. Elle ne peut pas inventer les solutions — la Russie elle-même ne le peut pas. Son 'faiblesse' est celle d'une civilisation. La jouer avec dignité, c'est la rendre humaine."},
+        {synthese:"Tchekhov veut les deux : Lioubov est à la fois coupable (elle ne s'est pas battue) et victime (elle n'avait pas les outils). Jouer cette ambiguïté sans la trancher rend le personnage vivant. C'est une femme lucide sur ses échecs, mais qui ne peut pas changer."}
+      ]},
+   ]},
+
+  {id:"sa21",tier:"pro",title:"La tempête du Roi Lear",source:"Shakespeare (trad.) — Le Roi Lear, Acte III, scène 2",
+   context:"Le Roi Lear, déchu par ses filles, s'est enfui dans la tempête. Il rugit contre la nature, confondant sa colère personnelle avec le chaos du monde. Cette scène est l'apogée de sa folie — la limite entre le personnage humain et une force élémentaire. C'est une séquence poétique et viscérale.",
+   extract:"Courez la tempête ! Que la pluie te crève les yeux ! Frappez, tonnerre ! Je ne suis pas lié par la gratitude envers toi, ciel. Non, je suis une montagne qui défie les éclairs !",
+   questions:[
+     {type:"qcm",q:"Quel est le déplacement dramatique dans cette tirade ?",o:["Lear maudit la tempête","Lear s'identifie à la tempête","Lear chante les louanges du ciel","Lear demande pardon"],a:1,
+      expl:"Au début, Lear combat la tempête ('Courez la tempête'). À la fin, il s'identifie à une montagne, une force égale ou supérieure ('une montagne'). C'est le sommet de son hybris : il se croit de niveau avec la nature. Cette identification le rend invincible et fou en même temps."},
+     {type:"qcm",q:"Le langage de Lear dans cette scène est…",o:["Politique","Cosmique et mythologique","Juridique","Tendre"],a:1,
+      expl:"Shakespeare élève Lear au niveau du cosmos. Il ne parle pas de son royaume ou de ses filles — il parle du ciel, des éclairs, de la montagne. C'est une poésie de la démesure. Le personnage devient un archétype : l'homme révolté contre l'univers. Le langage monte jusqu'au sublime."},
+     {type:"libre",q:"Comment un acteur peut-il jouer la folie de Lear sans tomber dans la caricature ? Quels sont les signes physiques de sa transformation ?",
+      ref:"La vraie folie chez Shakespeare n'est pas l'hystérie — c'est une logique terrible. Lear pense vraiment qu'il est une montagne. L'acteur doit y croire. Physiquement : verticalité croissante, corps qui se dilate, regard qui 'sort' du visage vers un horizon lointain. La voix ne crie pas — elle résonne, profonde, comme si elle venait du sol. Les mains peuvent s'ouvrir en gestes de défi qui deviennent presque des gestes de grandiose acceptation. Le défi au ciel est aussi une forme d'amour violent."},
+     {type:"argument",q:"Lear est-il victime de ses circonstances ou responsable de sa chute ?",
+      positions:[
+        {pour:"Lear a commencé par une vanité extrême — demander à ses filles de le flatter. Il a rejeté celle qui l'aimait vraiment (Cordelia). Ses malheurs sont le résultat de ses choix mauvais."},
+        {contre:"Lear est un roi dans un univers hostile. Ses filles sont des monstres. La nature elle-même le persécute. C'est la condition humaine que Shakespeare montre : la vulnérabilité absolue. Lear n'a aucune chance."},
+        {synthese:"Shakespeare propose les deux : il y a une responsabilité de Lear (sa vanité initiale) ET une force écrasante qui le dépasse (l'ingratitude, la tempête). La grandeur du personnage vient de ce qu'il continue de crier malgré l'écrasement. C'est une tragédie, pas une simple moralité."}
+      ]},
+   ]},
+
+  {id:"sa22",tier:"pro",title:"La reconnaissance chez Ionesco",source:"Ionesco — La Cantatrice chauve, tableau I",
+   context:"M. et Mme Smith, un couple anglais ordinaire, se reconnaissent comme mari et femme qu'ils ne savaient pas être. Ils se parlent comme des étrangers, décrivant leurs faits et gestes du jour avec une absence totale d'émotion, comme des robots qui découvrent qu'ils sont mariés. C'est du théâtre de l'absurde : la vie conjugale réduite à un quiproquo métaphysique.",
+   extract:"MME SMITH : Tiens, comment ! C'est vous, cher ? Vous qui arriviez du bureau. Moi qui vous attendais patiemment depuis dix ans ! M. SMITH : Mais oui, c'est moi. Je venais d'en bas. MME SMITH : Ah, c'est vous ! Et voilà qu'on apprend qu'on est mari et femme.",
+   questions:[
+     {type:"qcm",q:"Quel est l'effet dramatique principal de cette scène ?",o:["Le suspense romantique","L'absurdité du mariage comme institution mécanique","L'amour retrouvé après des années","La nostalgie du couple"],a:1,
+      expl:"Ionesco déconstruit le mythe du couple. M. et Mme Smith se reconnaissent et en parlent avec l'indifférence de deux passants. 'Voilà qu'on apprend qu'on est mari et femme' — c'est une découverte administrative, pas émotionnelle. C'est un commentaire sur la routine conjugale dans la société de consommation."},
+     {type:"qcm",q:"Comment la langue d'Ionesco est-elle différente de celle du théâtre classique ?",o:["Elle est plus poétique","Elle refuse la logique du sens — les phrases vides deviennent pleines","Elle est plus érudite","Elle copie la vie avec réalisme"],a:1,
+      expl:"Ionesco écrit des dialogues plats, banals, vides. Mais cette platitude devient poignante — c'est l'inhumanité même du quotidien. Molière aurait rempli cette scène de sous-entendus. Ionesco la vide, et le vide dit tout."},
+     {type:"libre",q:"Proposez une direction de jeu pour cette scène. Comment jouer l'indifférence absolue sans ennuyer le public ?",
+      ref:"L'indifférence doit être jouée avec une précision absolue. Pas d'émotions feintes, pas de faux sourires. Les comédiens peuvent parler comme des robots, avec des pauses anormales, des gestes mécaniques. Mais l'absence d'émotion elle-même doit fasciner. Certaines mises en scène ajoutent des bruitages, du slapstick quotidien — faire bouillir l'eau, ranger des assiettes — comme si la vie domestique était un mécanisme. Le public rit parce qu'il reconnaît sa propre vie : la parole usée, les gestes répétés, l'absence de rencontre réelle même en couple."},
+     {type:"argument",q:"La Cantatrice chauve moque-t-elle surtout la classe bourgeoise ou la condition humaine en général ?",
+      positions:[
+        {pour:"Ionesco s'en prend à la bourgeoisie anglaise : ses conventions, ses bonnes manières creuses, son absence de spiritualité. C'est une satire sociale spécifique."},
+        {contre:"Ionesco parle de tous les hommes. Nous sommes tous des robots. La classe n'est qu'un décor. La pièce est une méditation existentielle sur le langage qui ne communique plus."},
+        {synthese:"Les deux niveaux de lecture coexistent. Ionesco peint la bourgeoisie, mais ce qu'il montre est universel. Toute classe peut devenir mécanique, tout couple peut devenir une routine. C'est pourquoi la pièce dépasse son contexte initial."}
+      ]},
+   ]},
+
+  {id:"sa23",tier:"pro",title:"Dom Juan face au Commandeur",source:"Molière — Dom Juan, Acte IV, scène 6",
+   context:"Dom Juan, le séducteur sans scrupules, a osé inviter la Statue du Commandeur (le père de l'une de ses victimes, enterré depuis longtemps) à dîner par dérision. La Statue arrive, accompagnée de signes surnaturels. C'est le moment où l'impie affronte le divin — mais Molière joue cette confrontation avec ambiguïté : Dom Juan reste séducteur jusqu'au bout.",
+   extract:"DOM JUAN : La Statue du Commandeur ! Ha ! quelle audace ! Approchez, approchez. (À Sganarelle) Approchez, approchez. Allons, que cette Statue parle ! Je veux voir ce qu'elle a à dire. (Riant) N'ayez pas peur. Ce n'est qu'un marbre.",
+   questions:[
+     {type:"qcm",q:"Quel est le registre du langage de Dom Juan face au surnaturel ?",o:["La terreur","Le déni rationnel","L'ironie blasphème","La prière"],a:2,
+      expl:"Dom Juan rit du surnaturel. Il traite la Statue comme un objet ('Ce n'est qu'un marbre'). C'est du blasphème ludique — il refuse le sacré. Molière montre un homme incapable de redouter, même face à la mort. C'est une forme d'hybris, mais jouée comme du charme."},
+     {type:"qcm",q:"Comment Molière mêle-t-il le comique et le tragique dans cette scène ?",o:["Il n'y a que du comique","Le comique de Dom Juan côtoie une menace réelle","Le tragique domine","Il n'y a que du tragique"],a:1,
+      expl:"Dom Juan fait rire par son audace, mais la Statue est réellement menaçante. Molière crée une tension : le public rit du personnage tout en ayant peur. C'est le génie du rôle — séduisant jusqu'au damnation."},
+     {type:"libre",q:"Comment jouer Dom Juan de sorte qu'on comprenne pourquoi les femmes tombent sous son charme ? Analysez les gestes, le ton, la présence.",
+      ref:"Dom Juan ne doit jamais être joué comme un 'beau gosse'. Son pouvoir est ailleurs : dans l'autorité (il ordonne 'Approchez'), dans l'insouciance face au danger (il rit), dans l'acceptation inconditionnelle du désir (il ne juge pas ses propres pulsions). C'est un homme libre — et c'est cette liberté qui attire. Physiquement : assurance absolue du corps, regards directs, mouvements économes mais décidés. La séduction n'est pas dans les gestes — elle est dans l'absence de honte. Il regarde chacun(e) comme si elle était l'univers, mais sans jamais s'engager émotionnellement."},
+     {type:"argument",q:"Dom Juan est-il un héros ou un monstre ? Peut-on le juger moralement ?",
+      positions:[
+        {pour:"Dom Juan brise des cœurs, abandonne des femmes, moque le divin. C'est un égoïste psychopathe qui mérite sa damnation. Molière le montre comme un danger social."},
+        {contre:"Dom Juan est un hédoniste qui refuse les conventions. Il dit la vérité — nous voulons tous le plaisir, nous mentons simplement mieux. Jauger Dom Juan c'est se jauger soi-même. Molière ne le condamne pas, il nous montre."},
+        {synthese:"Molière laisse la question ouverte. Dom Juan est séduisant ET dangereux. L'ambiguïté du rôle — à la fois jouable et inexcusable — est ce qui en fait un classique. Chaque époque le réinterprète selon ses propres peurs."}
+      ]},
+   ]},
+
+  {id:"sa24",tier:"pro",title:"Louis contemple son absence",source:"Lagarce — Juste la fin du monde, monologue d'ouverture",
+   context:"Louis, qui va mourir et revient chez sa famille pour la première fois en douze ans, ouvre la pièce avec un monologue long et sinueux. Il se demande comment annoncer la nouvelle, comment rompre le silence des années. C'est un monologue d'une densité émotionnelle contenue, un homme qui parle pour ne rien dire, qui annonce tout en se cachant.",
+   extract:"Je vais rentrer à la maison. C'est drôle parce que j'y suis allé une fois quand j'avais… non, ce n'est pas important. Et puis je suis revenu à nouveau, mais c'était différent. Je vais rentrer et je vais dire… quoi ? Que je suis venu dire quelque chose ?",
+   questions:[
+     {type:"qcm",q:"Quel est le vrai sujet de ce monologue ?",o:["Décrire la maison","Explorer l'impossibilité de communiquer","Raconter un voyage","Faire de la poésie"],a:1,
+      expl:"Louis ressasse son incapacité à parler. 'Je vais dire… quoi ?' — la phrase n'aboutit pas. C'est un monologue sur le silence, pas sur la parole. Lagarce montre un homme étouffé par ce qu'il doit révéler."},
+     {type:"qcm",q:"Comment le temps est-il structuré dans ce passage ?",o:["Passé simple","Enchevêtrement du passé et du présent","Futur prévisible","Pas de temps"],a:1,
+      expl:"Lagarce mélange les temps : 'j'y suis allé', 'je vais rentrer', 'je suis revenu'. C'est comme si Louis était déjà mort, déjà revenu, toujours en train de revenir. Le texte crée une éternité présente où le temps s'effondre."},
+     {type:"libre",q:"Analysez les répétitions dans ce monologue. Quel est l'effet psychologique de ces boucles textuelles ?",
+      ref:"'Je vais rentrer... je vais dire... quoi ?' — Louis tourne en cercle. Lagarce répète les structures pour montrer une pensée piégée. L'acteur doit sentir cette claustrophobie mentale. Chaque répétition ajoute une couche de panique contenue. Le public entend un homme qui étouffé. Les silences entre les boucles sont plus importants que les mots. C'est proche du flux de conscience, mais plus structuré, plus musical."},
+     {type:"argument",q:"La pièce gagne-t-elle à révéler la maladie de Louis dès le départ, ou à garder le secret jusqu'à la fin ?",
+      positions:[
+        {pour:"Révéler immédiatement crée la tension dramatique : chaque échange avec la famille devient une tempête émotionnelle contenue. Le secret avoué au spectateur crée une intimité."},
+        {contre:"Garder le secret jusqu'à la fin respecte l'expérience émotionnelle : le spectateur souffre avec Louis de cette impossibilité à dire. C'est plus vrai."},
+        {synthese:"Lagarce choisit de révéler partiellement dès le départ (le titre lui-même l'indique). Ce n'est pas vraiment un secret — c'est la difficulté à l'accepter et à le communiquer qui crée la tension. Le spectateur sait, mais les personnages ne savent pas — et cette asymétrie génère toute la pièce."}
+      ]},
+   ]},
 ];
 
 /* ═══ AVANT-SCÈNE (pré-représentation) ═══ */
@@ -1998,6 +2237,16 @@ const EXAMS={
     {q:"Le dossier artistique contient…",o:["Juste le texte","Note d'intention, distribution, budget","Le CV","Les photos"],a:1},
     {q:"Le one-man-show dramatique exige au minimum…",o:["1 personnage","2 personnages","3 personnages","5 personnages"],a:2},
     {q:"Créer sa compagnie est…",o:["Impossible","Le geste le plus audacieux","Réservé aux pros","Facile"],a:1},
+  ]},
+  etoile:{name:"Examen — L'Étoile",minScore:3,questions:[
+    {q:"La mémoire corporelle (mémoire du corps) chez un comédien pro sert à…",o:["Se muscler","Emmagasiner les mouvements authentiques pour les reproduire fidèlement","Apprendre les chorégraphies","Rien de spécial"],a:1},
+    {q:"Diriger un masterclass, c'est…",o:["Donner un cours magistral","Partager son expérience et laisser les élèves découvrir","Corriger les fautes","Évaluer le talent"],a:1},
+    {q:"La musicality de la voix chez un pro inclut…",o:["Parler fort","Respirer, rythmer, jouer les silences comme des notes","Crier","Réciter"],a:1},
+    {q:"L'improvisation avancée repose sur…",o:["L'absence de structure","L'écoute absolue du partenaire et du moment présent","Le mémorisation préalable","L'instinct seul"],a:1},
+    {q:"Quand on monte sa compagnie, l'enjeu principal est…",o:["Avoir un budget énorme","Construire une vision partagée et une alchimie d'équipe","Trouver la meilleure salle","Obtenir des subventions"],a:1},
+    {q:"La direction de la respiration en scène signifie…",o:["Crier plus fort","Contrôler le souffle pour conduire l'énergie et le rythme du jeu","Retenir son souffle","Respirer lentement"],a:1},
+    {q:"Le solo de performance au plus haut niveau demande…",o:["Un costume spectaculaire","Une vulnerabilité absolue et une présence énorme","Un beau texte","Une lumière brillante"],a:1},
+    {q:"L'adresse au public en tant que comédien pro est…",o:["Interdite","Le contrat direct entre vous et le spectateur : honnêteté et vérité","Réservée aux clowns","Dangereuse"],a:1},
   ]},
 };
 
@@ -2274,7 +2523,7 @@ function Top({xp,streak,passedExams}){
     <div style={{position:'fixed',top:0,left:0,right:0,background:'rgba(7,7,11,.9)',backdropFilter:'blur(24px)',borderBottom:'1px solid var(--line)',zIndex:50}}>
       <div className="mw" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 20px'}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <span className="emoji" style={{fontSize:'20px'}}>{lv.icon}</span>
+          <EI e={lv.icon} s={20}/>
           <div>
             <p className="label-gold" style={{marginBottom:3}}>{lv.name}</p>
             <div style={{width:64}}><Bar val={Math.min(inL,forN)} max={forN} h={2.5}/></div>
@@ -2390,6 +2639,7 @@ function Onboard({done:onDone}){
         <div style={{display:'flex',flexDirection:'column',gap:16}}>
           <div><label className="input-label">Adresse email</label><input className="input-field" type="email" placeholder="votre@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
           <div><label className="input-label">Mot de passe</label><input className="input-field" type="password" placeholder="Votre mot de passe" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} onKeyDown={e=>{if(e.key==='Enter')loginUser()}}/></div>
+          <p style={{textAlign:'right',marginTop:-8}}><span onClick={async()=>{if(!form.email.trim()||!form.email.includes('@')){setFormErr("Entrez votre email ci-dessus, puis cliquez ici.");return}setFormErr('');setFormLoading(true);try{const{error}=await _supabase.auth.resetPasswordForEmail(form.email.trim(),{redirectTo:window.location.origin+'/castigat-academy.html'});setFormLoading(false);if(error){setFormErr(error.message)}else{setFormErr('');alert('Un email de réinitialisation a été envoyé à '+form.email.trim()+'. Vérifiez votre boîte mail (et vos spams).')}}catch(e){setFormLoading(false);setFormErr("Erreur, réessayez.")}}} style={{fontSize:11,color:'var(--gold)',cursor:'pointer',fontWeight:500}}>Mot de passe oublié ?</span></p>
           {formErr&&<div style={{padding:'10px 14px',borderRadius:8,background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)'}}><p style={{fontSize:11,color:'#ef4444'}}>{formErr}</p></div>}
           <button className="btn-gold" onClick={loginUser} disabled={formLoading} style={{width:'100%',padding:'15px 0',fontSize:13,letterSpacing:'.08em',marginTop:4,opacity:formLoading?.6:1}}>{formLoading?'Connexion...':'SE CONNECTER'}</button>
           <p style={{textAlign:'center',fontSize:12,color:'var(--text-3)',marginTop:8}}>Pas encore de compte ? <span onClick={()=>{setLoginMode(false);setFormErr('')}} style={{color:'var(--gold)',cursor:'pointer',fontWeight:600}}>S'inscrire</span></p>
@@ -2706,7 +2956,7 @@ function Onboard({done:onDone}){
   if(step===4) return(
     <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 32px',textAlign:'center'}}>
       <div style={{width:64,height:64,borderRadius:18,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 24px',boxShadow:'0 12px 40px rgba(200,164,78,.2)'}}>
-        <span className="emoji" style={{fontSize:30}}>📋</span>
+        <EI e="📋" s={30}/>
       </div>
       <h2 className="heading" style={{fontSize:26,marginBottom:10}}>Avant de commencer…</h2>
       <p className="body" style={{fontSize:14,maxWidth:300,lineHeight:1.7,marginBottom:12}}>Quelques questions pour mieux vous connaître et adapter votre parcours.</p>
@@ -2726,7 +2976,7 @@ function Onboard({done:onDone}){
       return(
         <div className="fade-up" key={"sec-"+step} style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 32px',textAlign:'center'}}>
           <div style={{width:56,height:56,borderRadius:16,background:sc.bg,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:20,fontSize:24}}>
-            <span className="emoji">{q.section==="experience"?"🎪":q.section==="feeling"?"💭":q.section==="knowledge"?"🎓":"🎭"}</span>
+            <EI e={q.section==="experience"?"🎪":q.section==="feeling"?"💭":q.section==="knowledge"?"🎓":"🎭"} s={20}/>
           </div>
           <h2 className="heading" style={{fontSize:26,marginBottom:10,color:'var(--text)'}}>{q.sectionTitle}</h2>
           <p className="body" style={{fontSize:13,maxWidth:300,marginBottom:36,lineHeight:1.6}}>{q.sectionSub}</p>
@@ -2831,18 +3081,24 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
     /* Insert scene analysis in the middle */
     const insertAt=saObj?Math.floor(merged.length/2):null;
     const allItems=[];let nodeCount=0;
-    /* All bubbles in a level are accessible once the level is unlocked — no sequential gating */
-    const prevLevelId=li>0?LEVELS[li-1].id:null;
-    const examGated=li>LEVELS.indexOf(lv)&&prevLevelId&&EXAMS[prevLevelId]&&!(st.passedExams||[]).includes(prevLevelId);
-    const levelOpen=!examGated;
+    /* Level gating: only current level and below are accessible */
+    const levelOpen=li<=LEVELS.indexOf(lv)||(st.passedExams||[]).includes(level.id);
+    /* Free plan gating: limit to 3 levels from starting level */
+    const freeWall=st.plan==="free"&&li>=(st.startLevel||0)+3;
+    const levelOpenFinal=levelOpen&&!freeWall;
+    /* For monologue gating: monologues (type video) in current level require all other exercises + all culture done */
+    const nonVideoExDone=(prM.filter(e=>e.type!=="video")||[]).every(e=>st.doneEx.includes(e.id));
+    const lvCuDone=(cuM||[]).length===0||(cuM||[]).every(c=>st.doneCu.includes(c.id));
+    const monoReady=nonVideoExDone&&lvCuDone;
     merged.forEach((m,mi)=>{
       const isDone=m.sec==="pr"?st.doneEx.includes(m.id):st.doneCu.includes(m.id);
-      const isUnlocked=levelOpen;
+      const isMonologue=m.sec==="pr"&&m.type==="video";
+      const isUnlocked=levelOpenFinal&&(!isMonologue||monoReady||isDone);
       allItems.push({type:"node",mod:m,isDone,isUnlocked,globalIdx:globalNodeIdx++});
       nodeCount++;
       if(saObj&&nodeCount===insertAt){
         const saDone=(st.doneSA||[]).includes(saObj.id);
-        allItems.push({type:"sa",sa:saObj,isDone:saDone,isUnlocked:levelOpen,globalIdx:globalNodeIdx++});
+        allItems.push({type:"sa",sa:saObj,isDone:saDone,isUnlocked:levelOpenFinal,globalIdx:globalNodeIdx++});
       }
     });
     /* Level stats */
@@ -2903,7 +3159,7 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
             backdropFilter:'blur(8px)',
             animation:isCurrent?'pathPulse 2.5s ease-in-out infinite':'none'}}>
             {isCurrent&&<span style={{position:'absolute',top:-30,zIndex:5}}><MiniChar avatar={st.user?.avatar||"dramaturge"} size={20}/></span>}
-            <span className="emoji" style={{fontSize:isVideo?18:15,filter:locked&&!done?'grayscale(1) brightness(0.3)':'none'}}>{locked&&!done?"🔒":icon}</span>
+            <EI e={locked&&!done?"🔒":icon} s={isVideo?18:15} c={locked&&!done?"var(--text-3)":"#fff"}/>
           </div>
           {/* Check badge */}
           {done&&<span style={{position:'absolute',bottom:1,right:1,width:15,height:15,borderRadius:'50%',
@@ -2941,23 +3197,37 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
         const{level,allItems,totalItems,doneItems,exam,isCurrent:isCurrentLevel,showTierBanner,tier}=sec;
         const progress=totalItems>0?Math.round(doneItems/totalItems*100):0;
         const levelUnlocked=st.xp>=level.xp||(sec.li<=currentLevelIdx);
+        const freeWallBlock=st.plan==="free"&&sec.li>=(st.startLevel||0)+3;
+        const levelUnlockedFinal=levelUnlocked&&!freeWallBlock;
         const isComplete=doneItems===totalItems&&totalItems>0;
 
         return(
           <div key={level.id}>
+            {/* Paywall for free users at the wall */}
+            {freeWallBlock&&st.plan==="free"&&(
+              <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',background:'#0d0f1a',border:'2px solid rgba(200,164,78,.3)',background:'linear-gradient(135deg,rgba(200,164,78,.05),rgba(200,164,78,.02))',padding:20,textAlign:'center'}}>
+                <div style={{fontSize:40,marginBottom:12}}>{I.crown({size:40})}</div>
+                <h3 style={{fontSize:16,fontWeight:800,color:'var(--gold)',marginBottom:6}}>Passe en Standard pour continuer</h3>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:16}}>Débloque les 12 niveaux, le classement, le bilan personnalisé et tous les outils</p>
+                <a href="https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201" target="_blank" rel="noopener noreferrer" onClick={()=>_track('paywall_clicked',{source:'level_wall',plan:st.plan,level:level.id})} style={{display:'inline-block',padding:'12px 20px',borderRadius:10,background:'linear-gradient(135deg,rgba(200,164,78,.15),rgba(200,164,78,.05))',border:'1.5px solid rgba(200,164,78,.4)',color:'var(--gold)',fontWeight:700,fontSize:12,textDecoration:'none',cursor:'pointer',transition:'all .3s'}}>
+                  Standard — 4 jours gratuits puis 9,90€/mois
+                </a>
+              </div>
+            )}
+
             {/* Tier banner */}
-            {showTierBanner&&<div style={{marginBottom:8}}><TierBanner tierId={tier.id} unlocked={levelUnlocked}/></div>}
+            {showTierBanner&&<div style={{marginBottom:8}}><TierBanner tierId={tier.id} unlocked={levelUnlockedFinal}/></div>}
 
             {/* Level card */}
             <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',
               background:isCurrentLevel?'linear-gradient(180deg,rgba(200,164,78,.04),var(--bg-card))':'var(--bg-card)',
               border:isCurrentLevel?'1.5px solid rgba(200,164,78,.2)':'1px solid var(--line)',
-              opacity:levelUnlocked?1:.4,transition:'opacity .3s'}}>
+              opacity:levelUnlockedFinal?1:.4,transition:'opacity .3s'}}>
 
               {/* Level header */}
               <div style={{padding:'14px 16px 10px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid var(--line)'}}>
                 <div style={{width:40,height:40,borderRadius:12,background:isCurrentLevel?'linear-gradient(135deg,rgba(200,164,78,.15),rgba(200,164,78,.05))':'rgba(255,255,255,.03)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <span className="emoji" style={{fontSize:20}}>{levelUnlocked?level.icon:"🔒"}</span>
+                  <EI e={levelUnlockedFinal?level.icon:"🔒"} s={20} c={levelUnlockedFinal?"#fff":"var(--text-3)"}/>
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
@@ -3017,7 +3287,7 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
                       opacity:exam.examReady||exam.examPassed?1:.35,
                       display:'flex',alignItems:'center',justifyContent:'center',gap:10,transition:'all .3s',
                       backdropFilter:'blur(4px)'}}>
-                    <span className="emoji" style={{fontSize:16}}>{exam.examPassed?"✅":exam.examReady?"🎭":"🔒"}</span>
+                    <EI e={exam.examPassed?"✅":exam.examReady?"🎭":"🔒"} s={16} c={exam.examPassed?"#fff":exam.examReady?"#fff":"var(--text-3)"}/>
                     <div style={{textAlign:'left'}}>
                       <p style={{fontSize:10,fontWeight:800,color:exam.examPassed?'var(--emerald)':exam.examReady?'var(--gold)':'var(--text-3)',letterSpacing:'.04em'}}>
                         {exam.examPassed?"EXAMEN RÉUSSI":exam.examReady?"PASSER L'EXAMEN":"EXAMEN"}</p>
@@ -3050,7 +3320,7 @@ function LevelUpModal({level,isTierChange,onClose}){
     <div style={{position:'fixed',inset:0,background:'rgba(5,5,10,0.95)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:300}}>
       {isTierChange?<Confetti count={80} duration={4000}/>:<Confetti count={50} duration={3000}/>}
       <div style={{textAlign:'center',animation:'fadeIn .5s ease-out'}}>
-        {isTierChange&&<div className="emoji" style={{fontSize:80,marginBottom:16,animation:'fadeUp .6s cubic-bezier(.22,1,.36,1) both',filter:'drop-shadow(0 0 30px rgba(212,168,67,0.4))'}}>✨</div>}
+        {isTierChange&&<div style={{marginBottom:16,animation:'fadeUp .6s cubic-bezier(.22,1,.36,1) both',filter:'drop-shadow(0 0 30px rgba(212,168,67,0.4))'}}><EI e="✨" s={80}/></div>}
         <div className="emoji em-xl" style={{marginBottom:16,animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) both'}}>
           {level.icon}
         </div>
@@ -3073,11 +3343,13 @@ function Home({st,setSt,go,setMod,setExam}){
   const lv=getLv(st.xp,st.passedExams),li=LEVELS.indexOf(lv),nx=LEVELS[li+1],inL=st.xp-lv.xp,forN=nx?nx.xp-lv.xp:1000;
   const bg=BADGES.filter(b=>b.c(st));
   const order=[lv.id,...LEVELS.filter((_,i)=>i<li).reverse().map(l=>l.id),...LEVELS.filter((_,i)=>i>li&&st.xp>=_.xp).map(l=>l.id)];
-  let nP=null,nC=null;
-  for(const lid of order){if(!nP)nP=(PR[lid]||[]).find(m=>!st.doneEx.includes(m.id));if(!nC)nC=(CU[lid]||[]).find(m=>!st.doneCu.includes(m.id));if(nP&&nC)break}
   /* Check if ALL content at current level is done (exercises + culture + analyses) */
   const allPrDone=(PR[lv.id]||[]).length>0&&(PR[lv.id]||[]).every(m=>st.doneEx.includes(m.id));
   const allCuDone=(CU[lv.id]||[]).length>0&&(CU[lv.id]||[]).every(m=>st.doneCu.includes(m.id));
+  const nonVideoPrDone=(PR[lv.id]||[]).filter(e=>e.type!=="video").every(e=>st.doneEx.includes(e.id));
+  const monoReadyHome=nonVideoPrDone&&allCuDone;
+  let nP=null,nC=null;
+  for(const lid of order){if(!nP)nP=(PR[lid]||[]).find(m=>!st.doneEx.includes(m.id)&&(m.type!=="video"||monoReadyHome));if(!nC)nC=(CU[lid]||[]).find(m=>!st.doneCu.includes(m.id));if(nP&&nC)break}
   const tierSAs=SCENE_ANALYSES.filter(sa=>sa.tier===lv.tier);
   const allSADone=tierSAs.length>0&&tierSAs.every(sa=>(st.doneSA||[]).includes(sa.id));
   const examNotPassed=nx&&EXAMS[lv.id]&&!(st.passedExams||[]).includes(lv.id);
@@ -3124,22 +3396,23 @@ function Home({st,setSt,go,setMod,setExam}){
           </div>
         </div>
 
+{/* Daily tip moved to splash screen */}
         <div className="card-gold obj-3d" style={{padding:20,marginBottom:22}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
             <div style={{display:'flex',alignItems:'center',gap:10}}>
               <div style={{width:36,height:36,borderRadius:10,background:st.streak>=30?'linear-gradient(135deg,rgba(224,184,78,.2),rgba(224,184,78,.05))':st.streak>=14?'linear-gradient(135deg,rgba(171,71,188,.2),rgba(171,71,188,.05))':st.streak>=7?'linear-gradient(135deg,rgba(79,195,247,.2),rgba(79,195,247,.05))':'linear-gradient(135deg,rgba(212,115,92,.15),rgba(212,115,92,.04))',display:'flex',alignItems:'center',justifyContent:'center',color:st.streak>=30?'var(--gold)':st.streak>=14?'#ab47bc':st.streak>=7?'#4fc3f7':'var(--coral)',animation:st.streak>=3?'breatheCircle 2s ease-in-out infinite':'none'}}>{I.flame({size:16})}</div>
-              <div><p style={{fontSize:15,fontWeight:800}}>{st.streak} jour{st.streak>1?"s":""} 🔥</p><p style={{fontSize:9,color:'var(--text-3)'}}>{st.streak>=30?"Légendaire !":st.streak>=14?"Épique !":st.streak>=7?"En feu !":st.streak>=3?"Bien parti·e !":"de suite"}</p></div>
+              <div><p style={{fontSize:15,fontWeight:800}}>{st.streak} jour{st.streak>1?"s":""}</p><p style={{fontSize:9,color:'var(--text-3)'}}>{st.streak>=30?"Légendaire !":st.streak>=14?"Épique !":st.streak>=7?"En feu !":st.streak>=3?"Bien parti·e !":"de suite"}</p></div>
             </div>
             <div style={{textAlign:'right'}}><p className="heading" style={{fontSize:22,color:'var(--gold)'}}>{st.xp}</p><p className="label-gold">XP</p></div>
           </div>
           <Bar val={Math.min(inL,forN)} max={forN} h={4}/>
-          <p style={{fontSize:9,color:'var(--text-3)',marginTop:6}}>{nx?(inL>=forN?`✏️ Passez l'examen → ${nx.name}`:`${forN-inL} XP → ${nx.name}`):"Niveau maximum !"}</p>
+          <p style={{fontSize:9,color:'var(--text-3)',marginTop:6}}>{nx?(inL>=forN?`Passez l'examen → ${nx.name}`:`${forN-inL} XP → ${nx.name}`):"Niveau maximum !"}</p>
         </div>
 
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
           {nP?<button data-tuto="tuto-exercice" className="card obj-3d" onClick={()=>{setMod({...nP,sec:"pr"});go("practice")}} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(200,164,78,.08),var(--bg-card))',border:'1px solid rgba(200,164,78,.15)'}}>
             <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:10,boxShadow:'0 6px 20px rgba(200,164,78,.2)'}}>
-              <span className="emoji" style={{fontSize:'20px'}}>{nP.icon}</span>
+              <EI e={nP.icon} s={20}/>
             </div>
             <p className="label-gold" style={{marginBottom:4,fontSize:9}}>EXERCICE</p>
             <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>{nP.title}</p>
@@ -3153,26 +3426,55 @@ function Home({st,setSt,go,setMod,setExam}){
             <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>Passer à {nx.name}</p>
             <div style={{display:'flex',alignItems:'center',gap:3,marginTop:10,color:'var(--emerald)',fontSize:10,fontWeight:700}}>{I.trophy({size:11})} Débloquer le niveau</div>
           </button>
-          :allPrDone&&examNotPassed?<div className="card" style={{padding:18,textAlign:'left',background:'var(--bg-card)',border:'1px solid rgba(74,222,128,.12)'}}>
-            <div style={{width:40,height:40,borderRadius:12,background:'rgba(74,222,128,.08)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:10}}>
-              <span style={{color:'var(--emerald)'}}>{I.check({size:20})}</span>
+          :allPrDone&&examNotPassed?<div className="card" style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(200,164,78,.04),var(--bg-card))',border:'1px solid rgba(74,222,128,.15)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+              <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,rgba(74,222,128,.15),rgba(74,222,128,.4))',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <span style={{color:'var(--emerald)'}}>{I.check({size:20})}</span>
+              </div>
+              <span style={{fontSize:8,fontWeight:800,color:'var(--emerald)',padding:'3px 8px',borderRadius:6,background:'rgba(74,222,128,.12)'}}>✓ TERMINÉ</span>
             </div>
-            <p className="label" style={{color:'var(--emerald)',marginBottom:4,fontSize:9}}>EXERCICES TERMINÉS</p>
-            <p style={{fontSize:11,fontWeight:600,lineHeight:1.4,color:'var(--text-2)'}}>Terminez la culture et les analyses pour accéder à l'examen</p>
+            <p className="label-gold" style={{color:'var(--emerald)',marginBottom:4,fontSize:9}}>EXERCICES</p>
+            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>Bravo, tous les exercices de ce niveau sont terminés !</p>
+            <p style={{fontSize:10,color:'var(--text-2)',marginTop:6,lineHeight:1.4}}>Concentrez-vous maintenant sur la culture G et l'analyse de scène pour accéder à l'examen.</p>
           </div>
           :null}
-          {nC&&<button data-tuto="tuto-culture" className="card obj-3d" onClick={()=>{setMod({...nC,sec:"cu"});go("culture")}} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:'1px solid rgba(167,139,250,.12)'}}>
+          {nC?<button data-tuto="tuto-culture" className="card obj-3d" onClick={()=>{setMod({...nC,sec:"cu"});go("culture")}} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:'1px solid rgba(167,139,250,.12)'}}>
             <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:10,boxShadow:'0 6px 20px rgba(167,139,250,.2)'}}>
-              <span className="emoji" style={{fontSize:'20px'}}>{nC.icon}</span>
+              <EI e={nC.icon} s={20}/>
             </div>
             <p className="label" style={{color:'var(--violet)',marginBottom:4,fontSize:9}}>CULTURE</p>
             <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>{nC.title}</p>
             <div style={{display:'flex',alignItems:'center',gap:3,marginTop:10,color:'var(--violet)',fontSize:10,fontWeight:700}}>{I.zap({size:11})}+{nC.xp} XP</div>
-          </button>}
+          </button>
+          :allCuDone?<div className="card" style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(167,139,250,.04),var(--bg-card))',border:'1px solid rgba(74,222,128,.15)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+              <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,rgba(74,222,128,.15),rgba(74,222,128,.4))',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <span style={{color:'var(--emerald)'}}>{I.check({size:20})}</span>
+              </div>
+              <span style={{fontSize:8,fontWeight:800,color:'var(--emerald)',padding:'3px 8px',borderRadius:6,background:'rgba(74,222,128,.12)'}}>✓ TERMINÉ</span>
+            </div>
+            <p className="label" style={{color:'var(--emerald)',marginBottom:4,fontSize:9}}>CULTURE</p>
+            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>Bravo, toute la culture G de ce niveau est terminée !</p>
+            <p style={{fontSize:10,color:'var(--text-2)',marginTop:6,lineHeight:1.4}}>Concentrez-vous maintenant sur les exercices et l'analyse de scène pour compléter votre module.</p>
+          </div>
+          :null}
         </div>
 
         {/* Analyse de scène card */}
-        <button data-tuto="tuto-analyse" className="card obj-3d" onClick={()=>setSceneAn(nSA)} style={{width:'100%',padding:18,display:'flex',alignItems:'center',gap:14,textAlign:'left',marginBottom:24,background:'linear-gradient(160deg,rgba(232,116,90,.06),var(--bg-card))',border:'1px solid rgba(232,116,90,.12)'}}>
+        {allSADone?<div className="card" style={{width:'100%',padding:18,display:'flex',alignItems:'center',gap:14,textAlign:'left',marginBottom:24,background:'linear-gradient(160deg,rgba(232,116,90,.04),var(--bg-card))',border:'1px solid rgba(74,222,128,.15)'}}>
+          <div style={{width:46,height:46,borderRadius:14,background:'linear-gradient(135deg,rgba(74,222,128,.15),rgba(74,222,128,.4))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <span style={{color:'var(--emerald)'}}>{I.check({size:20})}</span>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+              <p className="label" style={{color:'var(--emerald)',fontSize:9}}>ANALYSE DE SCÈNE</p>
+              <span style={{fontSize:8,fontWeight:800,color:'var(--emerald)',padding:'2px 6px',borderRadius:5,background:'rgba(74,222,128,.12)'}}>✓ TERMINÉ</span>
+            </div>
+            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>Bravo, toutes les analyses de ce niveau sont terminées !</p>
+            <p style={{fontSize:10,color:'var(--text-2)',marginTop:4,lineHeight:1.4}}>Concentrez-vous sur les exercices et la culture G pour compléter votre module.</p>
+          </div>
+        </div>
+        :<button data-tuto="tuto-analyse" className="card obj-3d" onClick={()=>setSceneAn(nSA)} style={{width:'100%',padding:18,display:'flex',alignItems:'center',gap:14,textAlign:'left',marginBottom:24,background:'linear-gradient(160deg,rgba(232,116,90,.06),var(--bg-card))',border:'1px solid rgba(232,116,90,.12)'}}>
           <div style={{width:46,height:46,borderRadius:14,background:'linear-gradient(135deg,var(--coral),#f09080)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 6px 20px rgba(232,116,90,.2)'}}>
             {I.scroll({size:20,sw:1.6,style:{color:'#07070b'}})}
           </div>
@@ -3182,7 +3484,7 @@ function Home({st,setSt,go,setMod,setExam}){
             <p style={{fontSize:9,color:'var(--text-3)',marginTop:3}}>{nSA.source} · {nSA.questions.length} questions</p>
           </div>
           <div style={{color:'var(--coral)',fontSize:11,fontWeight:700}}>+{nSA.tier==="avance"?60:nSA.tier==="intermediaire"?45:30} XP</div>
-        </button>
+        </button>}
 
         {/* Révision de la semaine — 1 module culture aléatoire parmi ceux déjà faits */}
         {(()=>{
@@ -3193,7 +3495,7 @@ function Home({st,setSt,go,setMod,setExam}){
           if(doneCuItems.length===0){
             return(
               <div className="card" style={{padding:18,marginBottom:24,textAlign:'center',background:'rgba(167,139,250,.03)',border:'1px solid rgba(167,139,250,.1)'}}>
-                <div className="emoji" style={{fontSize:20,marginBottom:10}}>🔄</div>
+                <div style={{marginBottom:10}}><EI e="🔄" s={20}/></div>
                 <p className="label" style={{color:'var(--violet)',marginBottom:4}}>RÉVISION DE LA SEMAINE</p>
                 <p style={{fontSize:11,color:'var(--text-2)'}}>Rien à réviser — terminez un premier module culture !</p>
               </div>
@@ -3208,7 +3510,7 @@ function Home({st,setSt,go,setMod,setExam}){
             <div className="card" style={{padding:18,marginBottom:24,background:revDone?'linear-gradient(160deg,rgba(74,222,128,.04),var(--bg-card))':'linear-gradient(160deg,rgba(167,139,250,.04),var(--bg-card))',border:revDone?'1px solid rgba(74,222,128,.15)':'1px solid rgba(167,139,250,.1)'}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span className="emoji" style={{fontSize:18}}>🔄</span>
+                  <EI e="🔄" s={18}/>
                   <p className="label" style={{color:revDone?'var(--emerald)':'var(--violet)'}}>RÉVISION DE LA SEMAINE</p>
                 </div>
                 {revDone&&<span style={{fontSize:8,fontWeight:800,color:'var(--emerald)',padding:'3px 8px',borderRadius:6,background:'rgba(74,222,128,.12)'}}>✓ Fait</span>}
@@ -3263,6 +3565,28 @@ function Home({st,setSt,go,setMod,setExam}){
             </div>
           );
         })()}
+
+        {/* Promotional card for Free users */}
+        {st.plan==="free"&&(
+          <button onClick={()=>{_track('paywall_viewed',{source:'feed_card',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{width:'100%',padding:20,borderRadius:14,background:'linear-gradient(135deg,rgba(200,164,78,.08),rgba(200,164,78,.03))',border:'2px solid transparent',backgroundImage:'linear-gradient(rgba(8,10,20,.95),rgba(8,10,20,.95)),linear-gradient(135deg,var(--gold),var(--gold-light))',backgroundOrigin:'border-box',backgroundClip:'padding-box, border-box',marginBottom:20,display:'flex',alignItems:'center',gap:16,cursor:'pointer',transition:'all .2s',textAlign:'left'}}>
+            <div style={{width:48,height:48,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 6px 20px rgba(200,164,78,.3)'}}>
+              {I.star({size:22,sw:2,style:{color:'#07070b',fill:'#07070b'}})}
+            </div>
+            <div style={{flex:1}}>
+              <p style={{fontSize:13,fontWeight:700,color:'#fff',marginBottom:8}}>Prêt·e à passer au niveau supérieur ?</p>
+              <div style={{fontSize:10,color:'var(--text-2)',lineHeight:1.6,display:'flex',flexDirection:'column',gap:2}}>
+                <div>✓ 12 niveaux complets</div>
+                <div>✓ Classement hebdo</div>
+                <div>✓ Bilan personnalisé</div>
+                <div>✓ Outils avancés</div>
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
+              <span style={{fontSize:9,fontWeight:700,color:'var(--gold)',whiteSpace:'nowrap'}}>4 jours</span>
+              <span style={{fontSize:7,color:'var(--text-3)',whiteSpace:'nowrap'}}>gratuits</span>
+            </div>
+          </button>
+        )}
 
         {/* ═══ MON ENTRAÎNEMENT SUR MESURE ═══ */}
         {(()=>{
@@ -3696,7 +4020,7 @@ function Home({st,setSt,go,setMod,setExam}){
                       {/* Exercise button */}
                       <button onClick={()=>{setMod({...rec});go("practice")}}
                         style={{width:'100%',padding:'10px 12px',display:'flex',alignItems:'center',gap:10,textAlign:'left',background:'rgba(255,255,255,.02)',cursor:'pointer',border:'none',borderBottom:'1px solid var(--line)'}}>
-                        <span className="emoji" style={{fontSize:16,flexShrink:0}}>{rec.icon}</span>
+                        <span style={{flexShrink:0}}><EI e={rec.icon} s={16}/></span>
                         <div style={{flex:1,minWidth:0}}>
                           <p style={{fontSize:10,fontWeight:700,color:'var(--text)'}}>{rec.title}</p>
                           <p style={{fontSize:8,color:'var(--text-3)'}}>{rec.cat} · {rec.dur}</p>
@@ -3733,7 +4057,7 @@ function Home({st,setSt,go,setMod,setExam}){
                 return doneExs.map(e=>(
                   <button key={e.id} onClick={()=>{setMod({...e,sec:"pr"});go("practice")}}
                     style={{flexShrink:0,width:110,padding:'12px 10px',borderRadius:12,background:'var(--bg-card)',border:'1px solid var(--line)',textAlign:'center',cursor:'pointer'}}>
-                    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:18}}><span className="emoji" style={{fontSize:'18px'}}>{e.icon}</span></div>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:18}}><EI e={e.icon} s={18}/></div>
                     <p style={{fontSize:9,fontWeight:600,color:'var(--text)',marginTop:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.title}</p>
                     <p style={{fontSize:8,color:'var(--emerald)',marginTop:2}}>Refaire →</p>
                   </button>
@@ -3941,7 +4265,7 @@ function Warmup({onClose,st,setSt}){
                 className="card obj-3d" style={{padding:18,display:'flex',alignItems:'center',gap:14,opacity:locked?.4:1,cursor:locked?'not-allowed':'pointer',textAlign:'left'}}>
                 <div style={{width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${lv.color}22,${lv.color}08)`,
                   border:`1.5px solid ${lv.color}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>
-                  {locked?I.lock({size:20,sw:1.5}):<span className="emoji" style={{fontSize:'20px'}}>{lv.icon}</span>}
+                  {locked?I.lock({size:20,sw:1.5}):<EI e={lv.icon} s={20}/>}
                 </div>
                 <div style={{flex:1}}>
                   <p style={{fontSize:14,fontWeight:700,color:locked?'var(--text-3)':'var(--text)'}}>{lv.name}</p>
@@ -4650,7 +4974,7 @@ function DictionChallenge({onClose,st,setSt}){
                 className="card obj-3d" style={{padding:18,display:'flex',alignItems:'center',gap:14,opacity:locked?.4:1,cursor:locked?'not-allowed':'pointer',textAlign:'left'}}>
                 <div style={{width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${lv.color}22,${lv.color}08)`,
                   border:`1.5px solid ${lv.color}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>
-                  {locked?I.lock({size:20,sw:1.5}):<span className="emoji" style={{fontSize:'20px'}}>{lv.icon}</span>}
+                  {locked?I.lock({size:20,sw:1.5}):<EI e={lv.icon} s={20}/>}
                 </div>
                 <div style={{flex:1}}>
                   <p style={{fontSize:14,fontWeight:700,color:locked?'var(--text-3)':'var(--text)'}}>{lv.name}</p>
@@ -4986,7 +5310,7 @@ function AvantScene({onClose,st}){
       <div className="mw">
         <button onClick={()=>{setFormat(null);setShowYFIntro(true)}} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:24}}>{I.chL({size:16})} Retour</button>
         <div style={{textAlign:'center',marginBottom:32}}>
-          <div className="emoji" style={{fontSize:40,marginBottom:16}}>🌙</div>
+          <div style={{marginBottom:16}}><EI e="🌙" s={40}/></div>
           <h1 className="heading" style={{fontSize:24,marginBottom:8}}>Introspection</h1>
           <p className="body" style={{fontSize:12,color:'var(--text-2)',lineHeight:1.7}}>Un moment rien que pour vous, en musique.</p>
         </div>
@@ -5510,7 +5834,7 @@ function MonTexte({st,setSt,onClose}){
           <button onClick={()=>{saveTime();setStepIdx(null);setPhase("intro");setQi(0);setTimerOn(false)}} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:20}}>{I.chL({size:16})} Retour au parcours</button>
           <div style={{textAlign:'center',marginBottom:24}}>
             <div style={{width:56,height:56,borderRadius:14,background:`linear-gradient(135deg,${etape.color},var(--bg-raised))`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px',boxShadow:`0 8px 30px ${etape.color}33`}}>
-              <span className="emoji" style={{fontSize:'26px'}}>{etape.icon}</span>
+              <EI e={etape.icon} s={26}/>
             </div>
             <p className="label" style={{color:etape.color,marginBottom:6}}>ÉTAPE {stepIdx+1} / {MONTEXTE_PARCOURS.length}</p>
             <h1 className="heading" style={{fontSize:24,marginBottom:4}}>{etape.name}</h1>
@@ -5537,7 +5861,7 @@ function MonTexte({st,setSt,onClose}){
           {/* Header */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
-              <span className="emoji" style={{fontSize:'16px'}}>{etape.icon}</span>
+              <EI e={etape.icon} s={16}/>
               <h2 className="heading" style={{fontSize:16}}>{etape.name}</h2>
             </div>
             <button onClick={()=>setTimerOn(!timerOn)} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 10px',borderRadius:8,background:timerOn?'rgba(74,222,128,.08)':'var(--bg-card)',border:'1px solid',borderColor:timerOn?'var(--emerald)':'var(--line)',fontSize:10,fontWeight:700,color:timerOn?'var(--emerald)':'var(--text-3)'}}>
@@ -5655,7 +5979,7 @@ function MonTexte({st,setSt,onClose}){
                     border:validated?'2px solid var(--emerald)':isCurrent?`2px solid ${etape.color}`:'2px solid var(--line)',
                     boxShadow:isCurrent?`0 0 12px ${etape.color}33`:'none',
                     animation:isCurrent?'pathPulse 2s ease-in-out infinite':'none'}}>
-                    {validated?I.check({size:16,sw:2,style:{color:'var(--emerald)'}}):unlocked?<span className="emoji" style={{fontSize:'18px'}}>{etape.icon}</span>:I.lock({size:14,sw:1.5,style:{color:'var(--text-3)'}})}
+                    {validated?I.check({size:16,sw:2,style:{color:'var(--emerald)'}}):unlocked?<EI e={etape.icon} s={18}/>:I.lock({size:14,sw:1.5,style:{color:'var(--text-3)'}})}
                   </div>
                   <div style={{flex:1}}>
                     <p style={{fontSize:12,fontWeight:700,color:validated?'var(--emerald)':isCurrent?'var(--text)':'var(--text-3)'}}>
@@ -5949,7 +6273,7 @@ function Feed({st,setSt}){
           <button onClick={()=>{setMonoTimer(0);setMonoStepIdx(null);setMonoPhase("intro");setMonoQi(0);setMonoTimerOn(false);}} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:20}}>{I.chL({size:16})} Retour au parcours</button>
           <div style={{textAlign:'center',marginBottom:24}}>
             <div style={{width:56,height:56,borderRadius:14,background:`linear-gradient(135deg,${etape.color},var(--bg-raised))`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px',boxShadow:`0 8px 30px ${etape.color}33`}}>
-              <span className="emoji" style={{fontSize:'26px'}}>{etape.icon}</span>
+              <EI e={etape.icon} s={26}/>
             </div>
             <p className="label" style={{color:etape.color,marginBottom:6}}>ÉTAPE {monoStepIdx+1} / {MONTEXTE_PARCOURS.length}</p>
             <h1 className="heading" style={{fontSize:24,marginBottom:4}}>{etape.name}</h1>
@@ -5975,7 +6299,7 @@ function Feed({st,setSt}){
 
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
-              <span className="emoji" style={{fontSize:'16px'}}>{etape.icon}</span>
+              <EI e={etape.icon} s={16}/>
               <h2 className="heading" style={{fontSize:16}}>{etape.name}</h2>
             </div>
             <button onClick={()=>setMonoTimerOn(!monoTimerOn)} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 10px',borderRadius:8,background:monoTimerOn?'rgba(74,222,128,.08)':'var(--bg-card)',border:'1px solid',borderColor:monoTimerOn?'var(--emerald)':'var(--line)',fontSize:10,fontWeight:700,color:monoTimerOn?'var(--emerald)':'var(--text-3)'}}>
@@ -6067,7 +6391,7 @@ function Feed({st,setSt}){
                     border:validated?'2px solid var(--emerald)':isCurrent?`2px solid ${etape.color}`:'2px solid var(--line)',
                     boxShadow:isCurrent?`0 0 12px ${etape.color}33`:'none',
                     animation:isCurrent?'pathPulse 2s ease-in-out infinite':'none'}}>
-                    {validated?I.check({size:16,sw:2,style:{color:'var(--emerald)'}}):unlocked?<span className="emoji" style={{fontSize:'18px'}}>{etape.icon}</span>:I.lock({size:14,sw:1.5,style:{color:'var(--text-3)'}})}
+                    {validated?I.check({size:16,sw:2,style:{color:'var(--emerald)'}}):unlocked?<EI e={etape.icon} s={18}/>:I.lock({size:14,sw:1.5,style:{color:'var(--text-3)'}})}
                   </div>
                   <div style={{flex:1}}>
                     <p style={{fontSize:12,fontWeight:700,color:validated?'var(--emerald)':isCurrent?'var(--text)':'var(--text-3)'}}>
@@ -6136,7 +6460,7 @@ function Feed({st,setSt}){
                     </div>
                   ):(
                     <div style={{padding:14,borderRadius:10,background:'rgba(74,222,128,.08)',border:'1px solid rgba(74,222,128,.2)',display:'flex',alignItems:'center',gap:10}}>
-                      <div className="emoji" style={{fontSize:20}}>✅</div>
+                      <div><EI e="✅" s={20}/></div>
                       <div style={{flex:1}}>
                         <p style={{fontSize:11,fontWeight:600,color:'var(--emerald)',marginBottom:2}}>Vidéo envoyée !</p>
                         <p style={{fontSize:10,color:'var(--text-2)'}}>Un coach de la Compagnie Castigat vous répondra sous 48h avec des retours personnalisés.</p>
@@ -6393,7 +6717,7 @@ function Feed({st,setSt}){
                           <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
                             <span style={{fontSize:8,color:'var(--text-3)',fontWeight:600}}>{'★'.repeat(m.difficulty)}</span>
                             {!unlocked&&I.lock({size:12,sw:1.5,style:{color:'var(--text-3)'}})}
-                            {isComplete&&<span className="emoji" style={{fontSize:9,fontWeight:700,color:'var(--emerald)'}}>✅</span>}
+                            {isComplete&&<EI e="✅" s={9} c="var(--emerald)"/>}
                           </div>
                         </button>
                       );
@@ -6404,6 +6728,20 @@ function Feed({st,setSt}){
             </div>
           );
         })()}
+
+        {/* Tools upgrade CTA for Free users */}
+        {st.plan==="free"&&(
+          <button onClick={()=>{_track('paywall_viewed',{source:'tools_cta',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} className="card" style={{padding:18,marginBottom:24,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:'linear-gradient(160deg,rgba(200,164,78,.08),rgba(200,164,78,.02))',border:'2px solid transparent',backgroundImage:'linear-gradient(rgba(8,10,20,.9),rgba(8,10,20,.9)),linear-gradient(135deg,var(--gold),var(--gold-light))',backgroundOrigin:'border-box',backgroundClip:'padding-box, border-box',transition:'all .2s'}}>
+            <div style={{width:46,height:46,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              {I.crown({size:20,sw:1.6,style:{color:'#07070b'}})}
+            </div>
+            <div style={{flex:1}}>
+              <p style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:4}}>Débloquez tous les outils</p>
+              <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.5}}>Accédez au défi diction, à l'avant-scène, l'échauffement vocal et bien plus</p>
+            </div>
+            <span style={{color:'var(--gold)',fontSize:11,fontWeight:700}}>→</span>
+          </button>
+        )}
 
         {/* Separator */}
         <div style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0 6px'}}>
@@ -6546,7 +6884,7 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
           if(!ms.length)return null;
           return(<div key={l.id} style={{marginBottom:26}}>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-              <span className="emoji" style={{fontSize:'15px'}}>{l.icon}</span>
+              <EI e={l.icon} s={15}/>
               <p className="label-gold" style={{color:u?'var(--gold-dim)':'var(--text-3)'}}>{l.name}</p>
               {cur&&<span style={{fontSize:7,fontWeight:700,padding:'2px 7px',borderRadius:20,background:'var(--gold-glow)',color:'var(--gold)',border:'1px solid var(--line-s)'}}>VOTRE NIVEAU</span>}
               {!u&&<span style={{fontSize:8,color:'var(--text-3)',fontWeight:600,opacity:.5}}>({LEVELS.find(ll=>ll.id===l.id)?.xp||0} XP)</span>}
@@ -6565,7 +6903,7 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
                 return(<button key={m.id} onClick={()=>{if(!isLocked)setMod({...m,sec})}}
                   className="card" style={{padding:'11px 12px',display:'flex',alignItems:'center',gap:10,opacity:isLocked?.3:1,cursor:isLocked?'default':'pointer',textAlign:'left',pointerEvents:isLocked?'none':'auto'}}>
                   <div className="em-box" style={{width:38,height:38,background:d?'rgba(74,222,128,.06)':isLocked?'rgba(255,255,255,.01)':'rgba(255,255,255,.02)',borderColor:d?'rgba(74,222,128,.12)':'rgba(255,255,255,.04)'}}>
-                    <span className="emoji" style={{fontSize:16}}>{isLocked?"🔒":m.icon}</span>
+                    <EI e={isLocked?"🔒":m.icon} s={16} c={isLocked?"var(--text-3)":"#fff"}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',alignItems:'center',gap:5}}>
@@ -6575,7 +6913,7 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
                     <p style={{fontSize:9,color:'var(--text-3)',marginTop:1}}>{isLocked?(sec==="cu"&&!cultureUnlocked?"Passez l'examen du niveau précédent":sec==="pr"?"Terminez l'exercice précédent":"Terminez la leçon précédente"):m.cat+" · "+m.dur}</p>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:5,flexShrink:0}}>
-                    {isLocked?<span className="emoji" style={{fontSize:12}}>🔒</span>:d&&st.stars?.[m.id]?<div style={{display:'flex',gap:1}}>{[1,2,3].map(s=><span key={s}>{I.star({size:10,sw:1.5,style:{color:s<=st.stars[m.id]?'var(--gold)':'var(--text-3)',fill:s<=st.stars[m.id]?'var(--gold)':'none'}})}</span>)}</div>:d?<span style={{color:'var(--emerald)'}}>{I.check({size:14})}</span>:<span style={{fontSize:9,fontWeight:800,color:'var(--gold)'}}>+{m.xp}</span>}
+                    {isLocked?<EI e="🔒" s={12} c="var(--text-3)"/>:d&&st.stars?.[m.id]?<div style={{display:'flex',gap:1}}>{[1,2,3].map(s=><span key={s}>{I.star({size:10,sw:1.5,style:{color:s<=st.stars[m.id]?'var(--gold)':'var(--text-3)',fill:s<=st.stars[m.id]?'var(--gold)':'none'}})}</span>)}</div>:d?<span style={{color:'var(--emerald)'}}>{I.check({size:14})}</span>:<span style={{fontSize:9,fontWeight:800,color:'var(--gold)'}}>+{m.xp}</span>}
                   </div>
                 </button>);
               })}
@@ -6808,35 +7146,53 @@ function ExV({mod,st,setSt,back}){
       </div>
       <p className="body" style={{fontSize:14,marginBottom:6}}>{mod.title} terminé</p>
       <p className="heading gold-shimmer" style={{fontSize:22,marginBottom:20}}>+{mod.xp} XP</p>
-      {!feedbackGiven?(
-        <div style={{marginBottom:20,animation:'fadeIn .6s ease-out'}}>
-          <p style={{fontSize:10,color:'var(--text-3)',marginBottom:10}}>Comment c'était ?</p>
-          <div style={{display:'flex',gap:10,justifyContent:'center'}}>
-            {[{id:"easy",icon:I.zap({size:18,sw:1.4}),label:"Facile",color:"var(--emerald)"},{id:"ok",icon:I.check({size:18,sw:1.4}),label:"Juste bien",color:"var(--gold)"},{id:"hard",icon:I.target({size:18,sw:1.4}),label:"Difficile",color:"var(--coral)"}].map(f=>(
+      {st.plan==="free"||!st.plan?(
+        <div style={{marginBottom:20,padding:16,borderRadius:14,background:'linear-gradient(135deg,rgba(167,139,250,.06),rgba(200,164,78,.04))',border:'1px solid rgba(167,139,250,.15)',animation:'fadeIn .6s ease-out'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+            <div style={{width:32,height:32,borderRadius:8,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.pulse({size:14,sw:1.6,style:{color:'#fff'}})}</div>
+            <p style={{fontSize:12,fontWeight:700}}>Suivi personnalisé</p>
+          </div>
+          <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.5,marginBottom:12}}>Débloquez le suivi de votre progression : notez chaque exercice et recevez un bilan personnalisé adapté à vos forces et axes d'amélioration.</p>
+          <button className="btn-v" style={{width:'100%',padding:'10px 0',fontSize:11}} onClick={()=>{_track('paywall_viewed',{source:'feedback_upsell',plan:st.plan}});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}}>{I.crown({size:13})} Passer à Standard</button>
+        </div>
+      ):!feedbackGiven?(
+        <div style={{marginBottom:20,padding:18,borderRadius:14,background:'rgba(200,164,78,.04)',border:'1px solid rgba(200,164,78,.1)',animation:'fadeIn .6s ease-out'}}>
+          <p style={{fontSize:12,fontWeight:700,marginBottom:4}}>Comment ça s'est passé ?</p>
+          <p style={{fontSize:10,color:'var(--text-2)',marginBottom:12,lineHeight:1.4}}>Votre retour nourrit votre bilan personnalisé et affine vos recommandations.</p>
+          <div style={{display:'flex',gap:8,justifyContent:'center'}}>
+            {[{id:"easy",icon:I.zap({size:20,sw:1.6}),label:"Facile",color:"var(--emerald)"},{id:"ok",icon:I.check({size:20,sw:1.6}),label:"Juste bien",color:"var(--gold)"},{id:"hard",icon:I.target({size:20,sw:1.6}),label:"Difficile",color:"var(--coral)"}].map(f=>(
               <button key={f.id} onClick={()=>giveFeedback(f.id)}
-                style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,padding:'10px 16px',borderRadius:12,background:'rgba(255,255,255,.03)',border:'1px solid var(--line)',cursor:'pointer',transition:'all .2s',minWidth:70}}
-                onMouseOver={e=>e.currentTarget.style.borderColor=f.color} onMouseOut={e=>e.currentTarget.style.borderColor='var(--line)'}>
+                style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:6,padding:'14px 10px',borderRadius:12,background:'rgba(255,255,255,.03)',border:'2px solid var(--line)',cursor:'pointer',transition:'all .2s'}}
+                onMouseOver={e=>{e.currentTarget.style.borderColor=f.color;e.currentTarget.style.background='rgba(255,255,255,.06)'}} onMouseOut={e=>{e.currentTarget.style.borderColor='var(--line)';e.currentTarget.style.background='rgba(255,255,255,.03)'}}>
                 <span style={{color:f.color}}>{f.icon}</span>
-                <span style={{fontSize:9,fontWeight:600,color:'var(--text-2)'}}>{f.label}</span>
+                <span style={{fontSize:10,fontWeight:700,color:'var(--text)'}}>{f.label}</span>
               </button>
             ))}
           </div>
-          <p style={{fontSize:8,color:'var(--text-3)',marginTop:8,fontStyle:'italic',textAlign:'center'}}>Votre retour aide votre bilan personnalisé à affiner vos recommandations</p>
         </div>
       ):(
-        <p style={{fontSize:10,color:'var(--emerald)',marginBottom:20,animation:'fadeIn .3s ease-out'}}>✓ Noté — votre bilan personnalisé en tient compte !</p>
+        <div style={{marginBottom:20,padding:12,borderRadius:10,background:'rgba(74,222,128,.06)',border:'1px solid rgba(74,222,128,.12)',animation:'fadeIn .3s ease-out',display:'flex',alignItems:'center',gap:8,justifyContent:'center'}}>
+          {I.check({size:14,sw:2,style:{color:'var(--emerald)'}})}
+          <p style={{fontSize:11,fontWeight:600,color:'var(--emerald)'}}>Noté — votre bilan personnalisé en tient compte !</p>
+        </div>
       )}
       <button onClick={back} className="btn-gold" style={{padding:'14px 48px',fontSize:13,letterSpacing:'.04em'}}>Continuer</button>
+      {st.plan==="free"&&(
+        <div style={{marginTop:24,padding:16,borderRadius:12,background:'var(--bg-card)',border:'2px solid transparent',borderImage:'linear-gradient(135deg,var(--gold),var(--gold-light)) 1',animation:'fadeIn .8s ease-out'}}>
+          <p style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:10}}>Passe en Standard pour débloquer le suivi personnalisé et tous les niveaux</p>
+          <button onClick={()=>{_track('paywall_viewed',{source:'post_exercise',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{fontSize:10,color:'var(--gold)',background:'none',border:'none',cursor:'pointer',fontWeight:600,textDecoration:'underline'}}>En savoir plus →</button>
+        </div>
+      )}
     </div>
   );
 
   return(
-    <div className="safe-b fade-up" style={{padding:'16px 20px 100px',minHeight:'100vh'}}>
-      <div className="mw">
+    <div className="safe-b fade-up" style={{minHeight:'100vh'}}>
+      <div className="back-bar"><button onClick={back}>{I.chL({size:16})} Retour</button></div>
+      <div className="mw" style={{padding:'16px 20px 100px'}}>
         {xp&&<XPPop n={mod.xp} done={()=>setXp(false)}/>}
-        <button onClick={back} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:24}}>{I.chL({size:16})} Retour</button>
         <div style={{textAlign:'center',marginBottom:24}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginBottom:8}}><span className="emoji" style={{fontSize:'36px'}}>{mod.icon}</span></div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginBottom:8}}><EI e={mod.icon} s={36}/></div>
           <h1 className="heading" style={{fontSize:22}}>{mod.title}</h1>
           <p style={{fontSize:10,color:'var(--text-3)',marginTop:4}}>{mod.cat} · {mod.dur} · <span style={{color:'var(--gold)'}}>+{mod.xp} XP</span></p>
         </div>
@@ -6847,7 +7203,7 @@ function ExV({mod,st,setSt,back}){
         {isV&&mod.text&&(
           <div style={{padding:20,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:18}}>
             <p className="label-gold" style={{marginBottom:8}}>TEXTE</p>
-            <p style={{fontSize:14,color:'var(--text)',lineHeight:1.9,fontFamily:'Cormorant Garamond, serif',fontWeight:400}}>{mod.text}</p>
+            <p className="body" style={{fontSize:14,color:'var(--text)',lineHeight:1.85,fontWeight:400}}>{mod.text}</p>
             {mod.author&&<p style={{fontSize:9,color:'var(--text-3)',marginTop:10}}>— {mod.author}</p>}
           </div>
         )}
@@ -6963,19 +7319,19 @@ function CuV({mod,st,setSt,back}){
     else{SFX.play(220,.2,'triangle',.03);setShowCorrection(true)}
   };
   return(
-    <div className="safe-b fade-up" style={{padding:'16px 20px 100px',minHeight:'100vh'}}>
-      <div className="mw">
+    <div className="safe-b fade-up" style={{minHeight:'100vh'}}>
+      <div className="back-bar"><button onClick={back}>{I.chL({size:16})} Retour</button></div>
+      <div className="mw" style={{padding:'16px 20px 100px'}}>
         {xp&&<XPPop n={mod.xp} done={()=>setXp(false)}/>}
-        <button onClick={back} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:24}}>{I.chL({size:16})} Retour</button>
         <div style={{textAlign:'center',marginBottom:24}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginBottom:8}}><span className="emoji" style={{fontSize:'36px'}}>{mod.icon}</span></div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginBottom:8}}><EI e={mod.icon} s={36}/></div>
           <h1 className="heading" style={{fontSize:22}}>{mod.title}</h1>
           <p style={{fontSize:10,color:'var(--text-3)',marginTop:4}}>{mod.cat} · {mod.dur}</p>
         </div>
         {ph==="lesson"&&(<>
           <div style={{marginBottom:14}}><Bar val={ci+1} max={mod.content.length} cls="fill-violet" h={2.5}/><p style={{fontSize:8,color:'var(--text-3)',marginTop:4,textAlign:'right'}}>{ci+1} / {mod.content.length}</p></div>
           <div style={{padding:22,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',minHeight:160,display:'flex',flexDirection:'column',justifyContent:'space-between'}}>
-            <p className="heading-light" style={{fontSize:16,color:'var(--text)',lineHeight:1.8}}>{mod.content[ci]}</p>
+            <p className="body" style={{fontSize:14,color:'var(--text)',lineHeight:1.85,fontWeight:400}}>{mod.content[ci]}</p>
             <div style={{display:'flex',justifyContent:'space-between',marginTop:18}}>
               <button onClick={()=>setCi(Math.max(0,ci-1))} className="btn-outline" style={{padding:'8px 14px',fontSize:10,opacity:ci===0?.3:1}}>←</button>
               {ci<mod.content.length-1?<button onClick={()=>setCi(ci+1)} className="btn-v" style={{padding:'8px 16px',fontSize:10}}>Suivant →</button>
@@ -7083,7 +7439,7 @@ function Profile({st,setSt}){
           </>}
           {st.user&&!editMode&&<p className="body" style={{fontSize:10,marginTop:3}}>{st.user.email}</p>}
           <div style={{display:'inline-flex',alignItems:'center',gap:6,marginTop:8,padding:'4px 14px',borderRadius:20,background:'var(--gold-glow)',border:'1px solid var(--line-s)'}}>
-            <span className="emoji" style={{fontSize:'14px'}}>{lv.icon}</span>
+            <EI e={lv.icon} s={14}/>
             <span style={{fontSize:10,fontWeight:700,color:'var(--gold)'}}>{lv.name}</span>
           </div>
           <p style={{fontSize:9,color:'var(--text-3)',marginTop:4}}>{tier?.name}</p>
@@ -7133,33 +7489,45 @@ function Profile({st,setSt}){
           </div>
         </div>
 
-        {/* Leaderboard (Standard+) */}
-        {(st.plan==="standard"||st.plan==="premium")&&<div style={{padding:18,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:24}}>
+        {/* Leaderboard (Standard+) with tease for Free users */}
+        <div style={{padding:18,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:24,position:'relative'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
             <p className="label" style={{margin:0}}>CLASSEMENT HEBDO</p>
-            <span style={{fontSize:8,color:'var(--violet)',fontWeight:700,padding:'2px 8px',borderRadius:12,background:'rgba(167,139,250,.1)'}}>STANDARD+</span>
+            <span style={{fontSize:8,color:st.plan==="free"?'var(--gold)':'var(--violet)',fontWeight:700,padding:'2px 8px',borderRadius:12,background:st.plan==="free"?'rgba(200,164,78,.12)':'rgba(167,139,250,.1)'}}>
+              {st.plan==="free"?"STANDARD":"STANDARD+"}
+            </span>
           </div>
-          {[
-            {rank:1,name:"Margaux D.",xp:1850,avatar:"dramaturge",medal:"gold"},
-            {rank:2,name:"Lucas T.",xp:1420,avatar:"tragédien",medal:"silver"},
-            {rank:3,name:"Chloé M.",xp:1180,avatar:"comédien",medal:"bronze"},
-            {rank:4,name:st.user?.pseudo||"Vous",xp:st.weekXP||0,avatar:st.user?.avatar||"dramaturge",you:true},
-            {rank:5,name:"Raphaël B.",xp:680,avatar:"metteur",medal:null},
-            {rank:6,name:"Emma L.",xp:520,avatar:"improvisateur",medal:null},
-            {rank:7,name:"Antoine R.",xp:340,avatar:"comédien",medal:null},
-          ].sort((a,b)=>b.xp-a.xp).map((u,idx)=>{
-            const rank=idx+1;const isYou=u.you;
-            return(<div key={idx} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 4px',borderRadius:8,background:isYou?'rgba(200,164,78,.06)':'transparent',borderBottom:idx<6?'1px solid var(--line)':'none'}}>
-              <span style={{fontSize:11,fontWeight:800,width:20,textAlign:'center',color:rank<=3?['var(--gold)','#c0c0c0','#cd7f32'][rank-1]:'var(--text-3)'}}>{rank<=3?I.medal({size:14,sw:1.6}):rank}</span>
-              <div style={{width:28,height:28,borderRadius:'50%',background:isYou?'var(--gold-glow)':'rgba(255,255,255,.03)',border:isYou?'1.5px solid var(--gold)':'1.5px solid var(--line)',display:'flex',alignItems:'center',justifyContent:'center'}}>{isYou?I.user({size:14,sw:1.6}):I.drama({size:14,sw:1.6})}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <p style={{fontSize:11,fontWeight:isYou?700:500,color:isYou?'var(--gold)':'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.name}{isYou?" (vous)":""}</p>
-              </div>
-              <span style={{fontSize:10,fontWeight:700,color:isYou?'var(--gold)':'var(--text-2)'}}>{u.xp} XP</span>
-            </div>);
-          })}
-          <p style={{fontSize:8,color:'var(--text-3)',marginTop:10,textAlign:'center',fontStyle:'italic'}}>Classement mis à jour chaque semaine</p>
-        </div>}
+          {st.plan==="free"&&<div style={{position:'absolute',inset:0,background:'rgba(8,10,20,.3)',backdropFilter:'blur(3px)',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',zIndex:10}}>
+            <div style={{textAlign:'center',padding:20}}>
+              <div style={{fontSize:24,marginBottom:8}}>{I.lock({size:28,sw:2,style:{color:'var(--gold)'}})}</div>
+              <p style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:4}}>Classement hebdo</p>
+              <p style={{fontSize:10,color:'var(--text-2)',marginBottom:12}}>Disponible en Standard</p>
+              <button onClick={()=>{_track('paywall_viewed',{source:'leaderboard_teaser',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{padding:'8px 18px',borderRadius:10,background:'var(--gold)',color:'#07070b',fontSize:10,fontWeight:700,border:'none',cursor:'pointer',transition:'all .2s'}} onMouseOver={e=>e.target.style.transform='scale(1.05)'} onMouseOut={e=>e.target.style.transform='scale(1)'}>Débloquer</button>
+            </div>
+          </div>}
+          <div style={{opacity:st.plan==="free"?0.3:1}}>
+            {[
+              {rank:1,name:"Margaux D.",xp:1850,avatar:"dramaturge",medal:"gold"},
+              {rank:2,name:"Lucas T.",xp:1420,avatar:"tragédien",medal:"silver"},
+              {rank:3,name:"Chloé M.",xp:1180,avatar:"comédien",medal:"bronze"},
+              {rank:4,name:st.user?.pseudo||"Vous",xp:st.weekXP||0,avatar:st.user?.avatar||"dramaturge",you:true},
+              {rank:5,name:"Raphaël B.",xp:680,avatar:"metteur",medal:null},
+              {rank:6,name:"Emma L.",xp:520,avatar:"improvisateur",medal:null},
+              {rank:7,name:"Antoine R.",xp:340,avatar:"comédien",medal:null},
+            ].sort((a,b)=>b.xp-a.xp).map((u,idx)=>{
+              const rank=idx+1;const isYou=u.you;
+              return(<div key={idx} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 4px',borderRadius:8,background:isYou?'rgba(200,164,78,.06)':'transparent',borderBottom:idx<6?'1px solid var(--line)':'none'}}>
+                <span style={{fontSize:11,fontWeight:800,width:20,textAlign:'center',color:rank<=3?['var(--gold)','#c0c0c0','#cd7f32'][rank-1]:'var(--text-3)'}}>{rank<=3?I.medal({size:14,sw:1.6}):rank}</span>
+                <div style={{width:28,height:28,borderRadius:'50%',background:isYou?'var(--gold-glow)':'rgba(255,255,255,.03)',border:isYou?'1.5px solid var(--gold)':'1.5px solid var(--line)',display:'flex',alignItems:'center',justifyContent:'center'}}>{isYou?I.user({size:14,sw:1.6}):I.drama({size:14,sw:1.6})}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <p style={{fontSize:11,fontWeight:isYou?700:500,color:isYou?'var(--gold)':'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.name}{isYou?" (vous)":""}</p>
+                </div>
+                <span style={{fontSize:10,fontWeight:700,color:isYou?'var(--gold)':'var(--text-2)'}}>{u.xp} XP</span>
+              </div>);
+            })}
+            <p style={{fontSize:8,color:'var(--text-3)',marginTop:10,textAlign:'center',fontStyle:'italic'}}>Classement mis à jour chaque semaine</p>
+          </div>
+        </div>
 
         {/* Étoiles collectées */}
         {Object.keys(st.stars||{}).length>0&&<div style={{padding:18,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:24}}>
@@ -7224,7 +7592,7 @@ function Profile({st,setSt}){
             const got=b.c(st);const rar=RARITY[b.r]||RARITY.C;
             return(
               <div key={b.id} style={{padding:'10px 4px',borderRadius:12,background:got?rar.bg:'rgba(255,255,255,.01)',border:got?`1.5px solid ${rar.border}`:'1px solid var(--line)',textAlign:'center',opacity:got?1:.3,position:'relative',transition:'all .3s'}}>
-                <div className="emoji" style={{fontSize:20,marginBottom:3}}>{got?b.ic:"🔒"}</div>
+                <div style={{marginBottom:3}}><EI e={got?b.ic:"🔒"} s={20} c={got?"#fff":"var(--text-3)"}/></div>
                 <p style={{fontSize:7,fontWeight:700,color:got?rar.color:'var(--text-3)',lineHeight:1.3,marginBottom:1}}>{b.n}</p>
                 <p style={{fontSize:5.5,fontWeight:700,color:rar.color,opacity:got?1:.5,marginBottom:2,letterSpacing:'.08em'}}>{rar.name.toUpperCase()}</p>
                 <p style={{fontSize:6,color:'var(--text-3)',lineHeight:1.3}}>{b.d}</p>
@@ -7460,7 +7828,7 @@ function BadgePopup({badge,onClose}){
   return(
     <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:999,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(5,5,10,.85)',backdropFilter:'blur(8px)',animation:'fadeIn .4s ease-out'}} onClick={onClose}>
       <div style={{textAlign:'center',animation:'fadeUp .5s ease-out',padding:40}} onClick={e=>e.stopPropagation()}>
-        <div className="emoji" style={{fontSize:64,marginBottom:16,animation:'breatheCircle 2s ease-in-out infinite'}}>{badge.ic}</div>
+        <div style={{marginBottom:16,animation:'breatheCircle 2s ease-in-out infinite'}}><EI e={badge.ic} s={64}/></div>
         <p style={{fontSize:9,fontWeight:800,letterSpacing:'.18em',color:rar.color,marginBottom:6,padding:'4px 14px',borderRadius:20,background:rar.bg,border:`1px solid ${rar.border}`,display:'inline-block'}}>{rar.name.toUpperCase()}</p>
         <p style={{fontSize:11,fontWeight:800,letterSpacing:'.2em',color:'var(--gold)',marginBottom:8,marginTop:10}}>NOUVEAU BADGE !</p>
         <h2 className="heading" style={{fontSize:28,marginBottom:8}}>{badge.n}</h2>
@@ -7616,7 +7984,9 @@ return(
   );
 }
 
-const defaultSt={xp:0,initialXp:0,streak:0,lastActiveDate:null,doneEx:[],doneCu:[],doneSA:[],perf:0,vid:0,lv:0,onb:false,user:null,plan:"free",showCGU:false,theme:"dark",stars:{},weekXP:0,weekEx:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:null,perfectWeeks:0,weekStart:new Date().toDateString(),srs:{},seenBadges:[],warmups:0,avantScenes:0,connexions:0,challenges:0,totalBreaths:0,coachMessages:[],seenTuto:false,exFeedback:{},catLastPracticed:{},firstActivityDate:null,saResults:{},cuResults:{},lastSADate:null,dailyPulse:{answers:[],lastAnswerDate:null},challengeScores:{},passedExams:[],unreadMessageCount:0,messages:[]};
+const defaultSt={xp:0,initialXp:0,streak:0,lastActiveDate:null,doneEx:[],doneCu:[],doneSA:[],perf:0,vid:0,lv:0,startLevel:0,onb:false,user:null,plan:"free",showCGU:false,theme:"dark",stars:{},weekXP:0,weekEx:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:null,perfectWeeks:0,weekStart:new Date().toDateString(),srs:{},seenBadges:[],warmups:0,avantScenes:0,connexions:0,challenges:0,totalBreaths:0,coachMessages:[],seenTuto:false,exFeedback:{},catLastPracticed:{},firstActivityDate:null,saResults:{},cuResults:{},lastSADate:null,dailyPulse:{answers:[],lastAnswerDate:null},challengeScores:{},passedExams:[],unreadMessageCount:0,messages:[]};
+
+const DAILY_TIPS=["La discipline, c'est la clé. Un peu chaque jour vaut mieux qu'un marathon une fois par mois.","Un bon comédien écoute plus qu'il ne parle.","Le corps ne ment jamais sur scène.","Respirez. La respiration est le fondement de tout jeu.","Osez le silence — c'est souvent là que se joue l'essentiel.","Ne jouez pas l'émotion, jouez l'intention. L'émotion viendra.","Le trac n'est pas votre ennemi, c'est de l'énergie brute à canaliser.","Chaque texte a un rythme. Trouvez-le avant de chercher les émotions.","Le regard, c'est 80% du jeu. Travaillez-le.","Un acteur qui s'ennuie ennuie le public. Restez curieux.","La voix est un instrument — accordez-la chaque jour.","Ne cherchez pas à être naturel. Cherchez à être vrai.","Le sous-texte est plus important que le texte.","Travaillez vos points faibles, mais jouez sur vos forces.","La scène est un terrain de jeu, pas un tribunal.","L'improvisation se prépare. Paradoxal, mais vrai.","Écoutez votre partenaire comme si c'était la première fois.","Le personnage commence dans le corps, pas dans la tête.","Chaque réplique est une action. Que faites-vous à l'autre ?","La perfection n'existe pas. L'authenticité, oui.","Répétez jusqu'à ce que ce soit facile. Puis rendez-le frais.","Le théâtre est un sport : échauffez-vous avant de jouer.","Votre plus grand outil, c'est votre vulnérabilité.","Ne jouez jamais seul·e. Même un monologue s'adresse à quelqu'un.","Observez les gens. La vie est la meilleure école de jeu.","La lenteur sur scène n'est pas l'ennui — c'est de la précision.","Articulez. Si le public ne comprend pas, il décroche.","Chaque entrée en scène est un événement. N'entrez jamais neutre.","Le jeu, c'est réagir. Pas réciter.","Le plaisir de jouer est contagieux. Amusez-vous."];
 
 function App(){
   const[st,setSt]=useState(()=>{const saved=loadState();if(!saved)return defaultSt;const merged={...defaultSt,...saved,plan:saved.plan||(saved.premium?"standard":"free"),srs:saved.srs||{},seenBadges:saved.seenBadges||[],exFeedback:saved.exFeedback||{},catLastPracticed:saved.catLastPracticed||{},firstActivityDate:saved.firstActivityDate||saved.lastActiveDate||null,saResults:saved.saResults||{},cuResults:saved.cuResults||{},lastSADate:saved.lastSADate||null,dailyPulse:saved.dailyPulse||{answers:[],lastAnswerDate:null},challengeScores:saved.challengeScores||{},passedExams:saved.passedExams||[],unreadMessageCount:saved.unreadMessageCount||0,messages:saved.messages||[]};return merged;});
@@ -7625,6 +7995,9 @@ function App(){
   const[exam,setExam]=useState(null);
   const[badgePopup,setBadgePopup]=useState(null);
   const[tutoStep,setTutoStep]=useState(0);
+  const[showTip,setShowTip]=useState("visible");/* "visible" | "exiting" | false */
+  const tipParticles=useState(()=>Array.from({length:8}).map(()=>({size:2+Math.random()*4,left:Math.random()*100,top:10+Math.random()*80,dur:3+Math.random()*4,delay:Math.random()*3,gold:Math.random()>.4})))[0];
+  const burstStars=useState(()=>Array.from({length:80}).map((_,i)=>{const angle=-90+(-60+Math.random()*120);const rad=angle*Math.PI/180;const dist=120+Math.random()*280;return{x:Math.cos(rad)*dist*(0.5+Math.random()),y:Math.sin(rad)*dist*(0.5+Math.random()),speed:.5+Math.random()*1.2,size:2+Math.random()*8,delay:Math.random()*.5,gold:Math.random()>.35,shape:i%5===0?'star':i%7===0?'trail':'circle',rot:Math.random()*360}}))[0];
   const go=t=>{_track('tab_navigated',{tab:t,from:tab,plan:st.plan});if(t!==tab)setMod(null);setTab(t);window.scrollTo(0,0)};
 
   /* Scroll to top when opening/closing an exercise or switching exam */
@@ -7751,7 +8124,72 @@ function App(){
   /* CGU from profile */
   if(st.showCGU) return <CGU onClose={()=>setSt(p=>({...p,showCGU:false}))}/>;
 
-  if(!st.onb)return<Onboard done={(i,user)=>{SFX.success();window.scrollTo(0,0);_track('onboarding_completed',{avatar:user?.avatar,goal:user?.goal,experience:user?.exp});if(user?.pseudo)posthog.identify(user.pseudo,{name:user.pseudo,avatar:user.avatar,goal:user.goal,experience:user.exp});setSt(p=>({...p,onb:true,xp:0,lv:0,user,streak:1,lastActiveDate:new Date().toDateString(),seenTuto:false}));setTutoStep(0)}}/>;
+  if(!st.onb)return<Onboard done={(i,user)=>{SFX.success();window.scrollTo(0,0);_track('onboarding_completed',{avatar:user?.avatar,goal:user?.goal,experience:user?.exp});if(user?.pseudo)posthog.identify(user.pseudo,{name:user.pseudo,avatar:user.avatar,goal:user.goal,experience:user.exp});setSt(p=>({...p,onb:true,xp:LEVELS[i]?LEVELS[i].xp:0,lv:i,startLevel:i,user,streak:1,lastActiveDate:new Date().toDateString(),seenTuto:false}));setTutoStep(0)}}/>;
+
+  /* ═══ DAILY TIP SPLASH SCREEN ═══ */
+  const dismissTip=()=>{if(showTip==="visible"){SFX.whoosh();setShowTip("exiting");setTimeout(()=>setShowTip(false),2000)}};
+  if(showTip){
+    const tipIdx=Math.floor(Date.now()/86400000)%DAILY_TIPS.length;
+    const isExiting=showTip==="exiting";
+    return(
+      <div style={{minHeight:'100vh',background:'#07070c',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative',overflow:'hidden'}}>
+
+        {/* ── Background: dot pattern + spotlight ── */}
+        <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px)',backgroundSize:'24px 24px',pointerEvents:'none'}}/>
+        <div style={{position:'absolute',top:'-5%',left:'50%',transform:'translateX(-50%)',width:300,height:'70%',background:'linear-gradient(180deg,rgba(200,164,78,.10) 0%,rgba(200,164,78,.03) 50%,transparent 100%)',clipPath:'polygon(35% 0%, 65% 0%, 85% 100%, 15% 100%)',pointerEvents:'none',animation:'spotlight-ray 4s ease-in-out infinite'}}/>
+        <div style={{position:'absolute',top:'20%',left:'-10%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(167,139,250,.06),transparent 70%)',pointerEvents:'none'}}/>
+        <div style={{position:'absolute',bottom:0,left:0,right:0,height:300,background:'linear-gradient(0deg,rgba(167,139,250,.04),transparent)',pointerEvents:'none'}}/>
+
+        {/* Ambient floating particles */}
+        {tipParticles.map((p,i)=>(
+          <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:p.gold?'var(--gold-light)':'var(--violet)',opacity:.4,left:p.left+'%',top:p.top+'%',pointerEvents:'none',animation:`float ${p.dur}s ease-in-out ${p.delay}s infinite`,boxShadow:p.gold?`0 0 ${p.size*4}px rgba(224,184,78,.5)`:`0 0 ${p.size*4}px rgba(167,139,250,.5)`}}/>
+        ))}
+
+        {/* ── STAR BURST on exit ── */}
+        {isExiting&&burstStars.map((s,i)=>{
+          const col=s.gold?'var(--gold-light)':'var(--violet)';
+          const glow=s.gold?`0 0 ${s.size*4}px rgba(224,184,78,.9), 0 0 ${s.size*8}px rgba(224,184,78,.4)`:`0 0 ${s.size*4}px rgba(167,139,250,.9), 0 0 ${s.size*8}px rgba(167,139,250,.4)`;
+          const base={position:'absolute',bottom:'40%',left:'50%',pointerEvents:'none','--bx':s.x+'px','--by':s.y+'px','--br':s.rot+'deg'};
+          if(s.shape==='trail')return <div key={'burst'+i} style={{...base,width:2,height:s.size*3,borderRadius:2,background:`linear-gradient(to top,${col},transparent)`,boxShadow:glow,animation:`star-trail ${s.speed*1.2}s ease-out ${s.delay}s both`}}/>;
+          if(s.shape==='star')return <svg key={'burst'+i} width={s.size*2.5} height={s.size*2.5} viewBox="0 0 24 24" style={{...base,animation:`star-burst-up ${s.speed}s cubic-bezier(.15,.8,.3,1) ${s.delay}s both`,filter:`drop-shadow(0 0 ${s.size*2}px ${s.gold?'rgba(224,184,78,.8)':'rgba(167,139,250,.8)'})`}}><path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4 5.6 21.2 8 14 2 9.2h7.6z" fill={s.gold?'#E0B84E':'#b8a0e0'}/></svg>;
+          return <div key={'burst'+i} style={{...base,width:s.size,height:s.size,borderRadius:'50%',background:col,boxShadow:glow,animation:`star-burst-up ${s.speed}s cubic-bezier(.15,.8,.3,1) ${s.delay}s both`}}/>;
+        })}
+
+        {/* ── Content (fades out on exit) ── */}
+        <div style={{position:'relative',zIndex:1,textAlign:'center',maxWidth:340,width:'100%',animation:isExiting?'tip-fade-out .6s ease-out forwards':'none'}}>
+
+          {/* CASTIGAT® */}
+          <div style={{animation:'fadeIn .6s ease both',marginBottom:6}}>
+            <p style={{fontFamily:'Oswald, sans-serif',fontWeight:600,fontSize:14,letterSpacing:'.22em',color:'rgba(255,255,255,.4)'}}>CASTIGAT<sup style={{fontSize:7,verticalAlign:'super',fontWeight:400}}>®</sup></p>
+          </div>
+
+          {/* CONSEIL DU JOUR */}
+          <div style={{animation:'fadeIn .8s ease .2s both',marginBottom:8}}>
+            <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:42,letterSpacing:'.08em',color:'#fff',lineHeight:1,margin:0,textShadow:'0 4px 30px rgba(255,255,255,.08)'}}>CONSEIL</h1>
+            <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:42,letterSpacing:'.08em',lineHeight:1,margin:0,color:'var(--gold-light)',textShadow:'0 0 24px rgba(200,164,78,.5),0 0 60px rgba(200,164,78,.15)'}}>DU JOUR</h1>
+          </div>
+
+          {/* Gold shimmer line */}
+          <div style={{width:90,height:2,background:'linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)',margin:'0 auto',borderRadius:2,boxShadow:'0 0 16px rgba(200,164,78,.4)',animation:'shimmer 3s linear infinite',backgroundSize:'200% auto'}}/>
+
+          {/* The quote */}
+          <div style={{marginTop:36,marginBottom:40}}>
+            <p style={{animation:'hero-text-in .8s cubic-bezier(.22,1,.36,1) .6s both',fontFamily:'Inter, sans-serif',fontWeight:500,fontSize:17,lineHeight:1.75,color:'#fff',letterSpacing:'.01em'}}>
+              {DAILY_TIPS[tipIdx]}
+            </p>
+          </div>
+
+          {/* CTA button */}
+          <div style={{animation:'fadeUp .6s ease-out .8s both'}}>
+            <button onClick={dismissTip} style={{background:'linear-gradient(135deg,var(--gold),var(--gold-light))',border:'none',borderRadius:14,padding:'16px 36px',cursor:'pointer',display:'inline-block',textAlign:'center',boxShadow:'0 8px 40px rgba(200,164,78,.35),0 0 80px rgba(200,164,78,.12),inset 0 1px 0 rgba(255,255,255,.2)',animation:'btn-glow 3s ease-in-out 1.5s infinite',transition:'transform .15s',WebkitTapHighlightColor:'transparent'}} onTouchStart={e=>e.currentTarget.style.transform='scale(.95)'} onTouchEnd={e=>e.currentTarget.style.transform='scale(1)'}>
+              <span style={{fontFamily:'Oswald, sans-serif',fontSize:15,fontWeight:700,color:'#07070c',letterSpacing:'.1em',textTransform:'uppercase'}}>IMPRIMER DANS MA CABOCHE</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const answerDailyQ=(qId,optId,val,cat)=>{
     setSt(p=>{
       const pulse=p.dailyPulse||{answers:[],lastAnswerDate:null};
@@ -7761,7 +8199,40 @@ function App(){
     setTimeout(()=>setShowDailyQ(false),600);
   };
 
-  if(showDailyQ&&todayQuestion){
+  if(showDailyQ&&todayQuestion&&st.plan==="free"){
+    return(
+      <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:24,background:'var(--bg)'}}>
+        <div style={{width:'100%',maxWidth:380}}>
+          {/* Header */}
+          <div style={{textAlign:'center',marginBottom:24}}>
+            <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>
+              {I.lock({size:18,sw:1.4,style:{color:'#07070b'}})}
+            </div>
+            <p className="label-gold" style={{fontSize:8,marginBottom:6}}>PULSE DU JOUR</p>
+          </div>
+
+          {/* Teasing card for Free users */}
+          <div className="card" style={{padding:20,marginBottom:20,border:'1px solid rgba(200,164,78,.12)',background:'rgba(8,10,20,.4)',opacity:0.85}}>
+            <p style={{fontSize:13,fontWeight:700,color:'var(--text)',lineHeight:1.5,marginBottom:20,textAlign:'center'}}>Réponds à une question quotidienne pour nourrir ton bilan personnalisé</p>
+            <div style={{display:'flex',flexDirection:'column',gap:8,opacity:0.5,pointerEvents:'none'}}>
+              {todayQuestion.opts.slice(0,2).map((opt,oi)=>(
+                <div key={opt.id} style={{padding:'12px 16px',borderRadius:10,border:'1px solid var(--line)',background:'rgba(255,255,255,.02)',display:'flex',alignItems:'center',gap:10}}>
+                  <span style={{width:22,height:22,borderRadius:6,background:'rgba(200,164,78,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:800,color:'var(--gold)',flexShrink:0}}>{String.fromCharCode(65+oi)}</span>
+                  <span style={{fontSize:11,color:'var(--text)',lineHeight:1.4}}>{opt.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <button onClick={()=>{_track('paywall_viewed',{source:'pulse_teaser',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} className="btn-gold" style={{width:'100%',padding:'14px 0',fontSize:13,marginBottom:16}}>Débloquer — Standard</button>
+          <button onClick={()=>setShowDailyQ(false)} style={{display:'block',margin:'0 auto',padding:'8px 16px',border:'none',background:'none',cursor:'pointer',fontSize:9,color:'var(--text-3)',fontWeight:600}}>Plus tard</button>
+        </div>
+      </div>
+    );
+  }
+
+  if(showDailyQ&&todayQuestion&&st.plan&&st.plan!=="free"){
     return(
       <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:24,background:'var(--bg)'}}>
         <div style={{width:'100%',maxWidth:380}}>
