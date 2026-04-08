@@ -27,7 +27,7 @@ OneSignalDeferred.push(async function(OneSignal) {
       slidedown: {
         prompts: [{
           type: "push",
-          autoPrompt: false,
+          autoPrompt: true,
           text: {
             actionMessage: "Recevez vos rappels de théâtre quotidiens !",
             acceptButton: "Oui, j'active",
@@ -2649,7 +2649,7 @@ function Onboard({done:onDone}){
   );
 
   /* Step 0 — Welcome */
-  if(step===0&&!showInstallStep&&!showNotifStep) return(
+  if(step===0&&!showInstallStep) return(
     <div style={{minHeight:'100vh',background:'#07070c',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative',overflow:'hidden'}}>
       {/* Dot pattern background */}
       <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px)',backgroundSize:'24px 24px',pointerEvents:'none'}}/>
@@ -2755,7 +2755,7 @@ function Onboard({done:onDone}){
               ))}
             </div>
 
-            <button onClick={()=>{setShowInstallStep(false);setShowNotifStep(true)}} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:12,cursor:'pointer'}}>
+            <button onClick={()=>{setShowInstallStep(false);setStep(1)}} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:12,cursor:'pointer'}}>
               Passer cette étape
             </button>
           </div>
@@ -2831,49 +2831,17 @@ function Onboard({done:onDone}){
               </div>
             )}
 
-            <button className="btn-gold" onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setShowNotifStep(true)}} style={{width:'100%',padding:'18px 0',fontSize:15,fontWeight:800,letterSpacing:'.03em',marginBottom:12}}>
+            <button className="btn-gold" onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setStep(1)}} style={{width:'100%',padding:'18px 0',fontSize:15,fontWeight:800,letterSpacing:'.03em',marginBottom:12}}>
               C'EST FAIT, CONTINUER
             </button>
             <button onClick={()=>{setInstallDevice(null)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:12,cursor:'pointer',marginBottom:4}}>
               ← Changer d'appareil
             </button>
-            <button onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setShowNotifStep(true)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>
+            <button onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setStep(1)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>
               Passer cette étape
             </button>
           </div>
         )}
-      </div>
-    </div>
-  );
-
-  /* Notification Permission Step */
-  if(showNotifStep&&step===0) return(
-    <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 28px',textAlign:'center'}}>
-      <div style={{maxWidth:380,width:'100%'}}>
-        <div style={{width:80,height:80,borderRadius:20,background:'linear-gradient(135deg,var(--violet),#a78bfa)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 24px',boxShadow:'0 12px 40px rgba(167,139,250,.25)'}}>
-          <span style={{fontSize:40,filter:'grayscale(1) brightness(10)'}}>🔔</span>
-        </div>
-
-        <h1 className="heading" style={{fontSize:26,marginBottom:10}}>Restez motivé !</h1>
-        <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6,marginBottom:12}}>Recevez chaque jour un petit message pour vous rappeler de monter sur scène</p>
-
-        <div style={{background:'var(--bg-card)',borderRadius:16,padding:'20px',marginBottom:28,border:'1px solid var(--line)',textAlign:'left'}}>
-          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
-            <span style={{fontSize:16,filter:'grayscale(1) brightness(10)'}}>🎭</span>
-            <div>
-              <p style={{fontSize:12,fontWeight:700,color:'var(--text)'}}>Castigat Academy</p>
-              <p style={{fontSize:11,color:'var(--text-3)'}}>maintenant</p>
-            </div>
-          </div>
-          <p style={{fontSize:13,color:'var(--text)',lineHeight:1.5,fontStyle:'italic'}}>"Hé ho ! Ton public t'attend ! Viens bosser ta diction aujourd'hui 🎤"</p>
-        </div>
-
-        <button className="btn-gold" onClick={async()=>{try{if(window.OneSignalDeferred){OneSignalDeferred.push(async function(OneSignal){await OneSignal.Slidedown.promptPush()})}}catch(e){console.log('Notif prompt error',e)}setShowNotifStep(false);setStep(1)}} style={{width:'100%',padding:'16px 0',fontSize:14,letterSpacing:'.06em',marginBottom:12}}>
-          ACTIVER LES NOTIFICATIONS
-        </button>
-        <button onClick={()=>{setShowNotifStep(false);setStep(1)}} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>
-          Non merci, plus tard
-        </button>
       </div>
     </div>
   );
@@ -3203,9 +3171,9 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
 
         return(
           <div key={level.id}>
-            {/* Paywall for free users at the wall */}
-            {freeWallBlock&&st.plan==="free"&&(
-              <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',background:'#0d0f1a',border:'2px solid rgba(200,164,78,.3)',background:'linear-gradient(135deg,rgba(200,164,78,.05),rgba(200,164,78,.02))',padding:20,textAlign:'center'}}>
+            {/* Paywall for free users — only show ONCE at the first blocked level */}
+            {freeWallBlock&&st.plan==="free"&&sec.li===(st.startLevel||0)+3&&(
+              <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',background:'linear-gradient(135deg,rgba(200,164,78,.05),rgba(200,164,78,.02))',border:'2px solid rgba(200,164,78,.3)',padding:20,textAlign:'center'}}>
                 <div style={{fontSize:40,marginBottom:12}}>{I.crown({size:40})}</div>
                 <h3 style={{fontSize:16,fontWeight:800,color:'var(--gold)',marginBottom:6}}>Passe en Standard pour continuer</h3>
                 <p style={{fontSize:12,color:'var(--text-2)',marginBottom:16}}>Débloque les 12 niveaux, le classement, le bilan personnalisé et tous les outils</p>
@@ -7153,7 +7121,7 @@ function ExV({mod,st,setSt,back}){
             <p style={{fontSize:12,fontWeight:700}}>Suivi personnalisé</p>
           </div>
           <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.5,marginBottom:12}}>Débloquez le suivi de votre progression : notez chaque exercice et recevez un bilan personnalisé adapté à vos forces et axes d'amélioration.</p>
-          <button className="btn-v" style={{width:'100%',padding:'10px 0',fontSize:11}} onClick={()=>{_track('paywall_viewed',{source:'feedback_upsell',plan:st.plan}});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}}>{I.crown({size:13})} Passer à Standard</button>
+          <button className="btn-v" style={{width:'100%',padding:'10px 0',fontSize:11}} onClick={()=>{_track('paywall_viewed',{source:'feedback_upsell',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}}>{I.crown({size:13})} Passer à Standard</button>
         </div>
       ):!feedbackGiven?(
         <div style={{marginBottom:20,padding:18,borderRadius:14,background:'rgba(200,164,78,.04)',border:'1px solid rgba(200,164,78,.1)',animation:'fadeIn .6s ease-out'}}>
@@ -7178,7 +7146,7 @@ function ExV({mod,st,setSt,back}){
       )}
       <button onClick={back} className="btn-gold" style={{padding:'14px 48px',fontSize:13,letterSpacing:'.04em'}}>Continuer</button>
       {st.plan==="free"&&(
-        <div style={{marginTop:24,padding:16,borderRadius:12,background:'var(--bg-card)',border:'2px solid transparent',borderImage:'linear-gradient(135deg,var(--gold),var(--gold-light)) 1',animation:'fadeIn .8s ease-out'}}>
+        <div style={{marginTop:24,padding:16,borderRadius:12,background:'var(--bg-card)',border:'2px solid rgba(200,164,78,.3)',animation:'fadeIn .8s ease-out'}}>
           <p style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:10}}>Passe en Standard pour débloquer le suivi personnalisé et tous les niveaux</p>
           <button onClick={()=>{_track('paywall_viewed',{source:'post_exercise',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{fontSize:10,color:'var(--gold)',background:'none',border:'none',cursor:'pointer',fontWeight:600,textDecoration:'underline'}}>En savoir plus →</button>
         </div>
@@ -7615,6 +7583,26 @@ function Profile({st,setSt}){
           <span style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16}}>{st.theme==="light"?"☀️":"🌙"}</span> Mode {st.theme==="light"?"clair":"sombre"}</span>
           <span style={{width:40,height:22,borderRadius:11,background:st.theme==="light"?'var(--gold)':'rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',padding:2,transition:'all .3s'}}>
             <span style={{width:18,height:18,borderRadius:9,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,.3)',transform:st.theme==="light"?'translateX(18px)':'translateX(0)',transition:'transform .3s'}}/>
+          </span>
+        </button>
+
+        {/* Notifications toggle */}
+        <button onClick={()=>{
+          const newVal=!st.notifsOff;
+          setSt(p=>({...p,notifsOff:newVal}));
+          try{
+            if(window.OneSignalDeferred){
+              OneSignalDeferred.push(async function(OneSignal){
+                if(newVal){await OneSignal.User.PushSubscription.optOut()}
+                else{await OneSignal.User.PushSubscription.optIn()}
+              });
+            }
+          }catch(e){console.log('Notif toggle error',e)}
+        }}
+          style={{width:'100%',padding:'12px 16px',fontSize:11,color:'var(--text)',display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12,borderRadius:12,border:'1px solid var(--line)',background:'var(--bg-card)'}}>
+          <span style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16,filter:'grayscale(1) brightness(10)'}}>🔔</span> Désactiver les notifications</span>
+          <span style={{width:40,height:22,borderRadius:11,background:st.notifsOff?'var(--coral)':'rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',padding:2,transition:'all .3s'}}>
+            <span style={{width:18,height:18,borderRadius:9,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,.3)',transform:st.notifsOff?'translateX(18px)':'translateX(0)',transition:'transform .3s'}}/>
           </span>
         </button>
 
@@ -8174,7 +8162,7 @@ function App(){
 
           {/* The quote */}
           <div style={{marginTop:36,marginBottom:40}}>
-            <p style={{animation:'hero-text-in .8s cubic-bezier(.22,1,.36,1) .6s both',fontFamily:'Inter, sans-serif',fontWeight:500,fontSize:17,lineHeight:1.75,color:'#fff',letterSpacing:'.01em'}}>
+            <p style={{animation:'hero-text-in .8s cubic-bezier(.22,1,.36,1) .6s both',fontFamily:"'Playfair Display', serif",fontWeight:400,fontSize:19,lineHeight:1.75,color:'#fff',letterSpacing:'.02em'}}>
               {DAILY_TIPS[tipIdx]}
             </p>
           </div>
@@ -8203,30 +8191,50 @@ function App(){
     return(
       <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:24,background:'var(--bg)'}}>
         <div style={{width:'100%',maxWidth:380}}>
-          {/* Header */}
-          <div style={{textAlign:'center',marginBottom:24}}>
-            <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>
-              {I.lock({size:18,sw:1.4,style:{color:'#07070b'}})}
-            </div>
-            <p className="label-gold" style={{fontSize:8,marginBottom:6}}>PULSE DU JOUR</p>
-          </div>
 
-          {/* Teasing card for Free users */}
-          <div className="card" style={{padding:20,marginBottom:20,border:'1px solid rgba(200,164,78,.12)',background:'rgba(8,10,20,.4)',opacity:0.85}}>
-            <p style={{fontSize:13,fontWeight:700,color:'var(--text)',lineHeight:1.5,marginBottom:20,textAlign:'center'}}>Réponds à une question quotidienne pour nourrir ton bilan personnalisé</p>
-            <div style={{display:'flex',flexDirection:'column',gap:8,opacity:0.5,pointerEvents:'none'}}>
-              {todayQuestion.opts.slice(0,2).map((opt,oi)=>(
-                <div key={opt.id} style={{padding:'12px 16px',borderRadius:10,border:'1px solid var(--line)',background:'rgba(255,255,255,.02)',display:'flex',alignItems:'center',gap:10}}>
-                  <span style={{width:22,height:22,borderRadius:6,background:'rgba(200,164,78,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:800,color:'var(--gold)',flexShrink:0}}>{String.fromCharCode(65+oi)}</span>
-                  <span style={{fontSize:11,color:'var(--text)',lineHeight:1.4}}>{opt.text}</span>
+          {/* Card unique avec tout intégré */}
+          <div style={{borderRadius:18,overflow:'hidden',border:'1.5px solid rgba(200,164,78,.2)',background:'linear-gradient(180deg,rgba(200,164,78,.06) 0%,rgba(8,10,20,.95) 40%)',position:'relative'}}>
+
+            {/* Header doré */}
+            <div style={{padding:'24px 20px 16px',textAlign:'center',background:'linear-gradient(180deg,rgba(200,164,78,.10),transparent)'}}>
+              <div style={{width:44,height:44,borderRadius:14,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 10px',boxShadow:'0 6px 24px rgba(200,164,78,.25)'}}>
+                {I.lock({size:18,sw:1.8,style:{color:'#07070b'}})}
+              </div>
+              <p style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:11,letterSpacing:'.16em',color:'var(--gold)',marginBottom:4}}>PULSE DU JOUR</p>
+              <p style={{fontSize:12,fontWeight:600,color:'var(--text)',lineHeight:1.5}}>Réponds chaque jour pour nourrir ton bilan personnalisé</p>
+            </div>
+
+            {/* Question preview floutée */}
+            <div style={{padding:'0 20px 8px',position:'relative'}}>
+              <p style={{fontSize:12,fontWeight:700,color:'var(--text-2)',textAlign:'center',marginBottom:12,filter:'blur(2px)',userSelect:'none'}}>{todayQuestion.q}</p>
+              <div style={{display:'flex',flexDirection:'column',gap:6,filter:'blur(3px)',opacity:0.4,userSelect:'none',pointerEvents:'none'}}>
+                {todayQuestion.opts.slice(0,3).map((opt,oi)=>(
+                  <div key={opt.id} style={{padding:'10px 14px',borderRadius:10,border:'1px solid var(--line)',background:'rgba(255,255,255,.02)',display:'flex',alignItems:'center',gap:10}}>
+                    <span style={{width:20,height:20,borderRadius:6,background:'rgba(200,164,78,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:8,fontWeight:800,color:'var(--gold)',flexShrink:0}}>{String.fromCharCode(65+oi)}</span>
+                    <span style={{fontSize:10,color:'var(--text)'}}>{opt.text}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Cadenas central overlay */}
+              <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
+                <div style={{width:50,height:50,borderRadius:'50%',background:'rgba(8,10,20,.7)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 30px rgba(8,10,20,.8)'}}>
+                  {I.lock({size:22,sw:2,style:{color:'var(--gold)'}})}
                 </div>
-              ))}
+              </div>
+            </div>
+
+            {/* CTA intégré dans la carte */}
+            <div style={{padding:'16px 20px 20px'}}>
+              <button onClick={()=>{_track('paywall_viewed',{source:'pulse_teaser',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{width:'100%',padding:'14px 0',borderRadius:12,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,boxShadow:'0 6px 24px rgba(200,164,78,.3)',transition:'transform .15s',WebkitTapHighlightColor:'transparent'}} onTouchStart={e=>e.currentTarget.style.transform='scale(.97)'} onTouchEnd={e=>e.currentTarget.style.transform='scale(1)'}>
+                {I.crown({size:14,sw:1.6,style:{color:'#07070b'}})}
+                <span style={{fontFamily:'Oswald, sans-serif',fontSize:13,fontWeight:700,color:'#07070b',letterSpacing:'.06em'}}>DÉBLOQUER — STANDARD</span>
+              </button>
+              <p style={{textAlign:'center',fontSize:8,color:'var(--text-3)',marginTop:8}}>4 jours gratuits puis 9,90€/mois</p>
             </div>
           </div>
 
-          {/* CTA */}
-          <button onClick={()=>{_track('paywall_viewed',{source:'pulse_teaser',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} className="btn-gold" style={{width:'100%',padding:'14px 0',fontSize:13,marginBottom:16}}>Débloquer — Standard</button>
-          <button onClick={()=>setShowDailyQ(false)} style={{display:'block',margin:'0 auto',padding:'8px 16px',border:'none',background:'none',cursor:'pointer',fontSize:9,color:'var(--text-3)',fontWeight:600}}>Plus tard</button>
+          {/* Skip */}
+          <button onClick={()=>setShowDailyQ(false)} style={{display:'block',margin:'16px auto 0',padding:'10px 20px',border:'none',background:'none',cursor:'pointer',fontSize:10,color:'var(--text-3)',fontWeight:600,letterSpacing:'.02em'}}>Plus tard</button>
         </div>
       </div>
     );
