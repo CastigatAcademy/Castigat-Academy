@@ -1,5 +1,5 @@
 /* ═══ Castigat Academy — Service Worker ═══ */
-const CACHE_NAME = 'castigat-academy-v9';
+const CACHE_NAME = 'castigat-academy-v10';
 const OFFLINE_URL = '/castigat-academy.html';
 
 // Assets to pre-cache on install
@@ -14,6 +14,13 @@ const PRECACHE_URLS = [
   'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js',
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap'
 ];
+
+// Listen for SKIP_WAITING message from the app (triggers immediate activation)
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 // Install: pre-cache essential resources
 self.addEventListener('install', event => {
