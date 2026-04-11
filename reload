@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Castigat Academy — Mise à jour</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:-apple-system,system-ui,'Inter',sans-serif;background:#07070b;color:#e8e8ec;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center}
+.logo{width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#c8a44e,#d4b566);display:flex;align-items:center;justify-content:center;margin-bottom:28px;box-shadow:0 12px 40px rgba(200,164,78,.25);animation:float 3s ease-in-out infinite}
+.logo span{font-size:40px;filter:grayscale(1) brightness(10)}
+h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:600;margin-bottom:10px;background:linear-gradient(90deg,#c8a44e,#d4b566,#c8a44e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% auto;animation:shimmer 4s linear infinite}
+p{font-size:14px;color:#b8b8c0;line-height:1.6;max-width:320px;margin-bottom:24px}
+.spinner{width:40px;height:40px;border:3px solid rgba(200,164,78,.15);border-top-color:#c8a44e;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:18px}
+.status{font-size:11px;color:#8b8b93;letter-spacing:.08em;text-transform:uppercase;font-weight:600;min-height:14px}
+.btn{margin-top:24px;padding:14px 28px;background:linear-gradient(135deg,#c8a44e,#d4b566);color:#07070b;font-weight:800;border:none;border-radius:12px;font-size:13px;letter-spacing:.03em;cursor:pointer;display:none;box-shadow:0 4px 20px rgba(200,164,78,.3)}
+.btn.show{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+</style>
+</head>
+<body>
+  <div class="logo"><span>🎭</span></div>
+  <h1>Mise à jour de l'application</h1>
+  <p>On prépare la nouvelle version pour vous. Patientez quelques secondes…</p>
+  <div class="spinner" id="spinner"></div>
+  <p class="status" id="status">Nettoyage du cache…</p>
+  <button class="btn" id="retry" onclick="location.href='/castigat-academy.html?v='+Date.now()">Continuer vers l'app</button>
+
+<script>
+(async function(){
+  const status=document.getElementById('status');
+  const spinner=document.getElementById('spinner');
+  const retry=document.getElementById('retry');
+  const set=(t)=>{status.textContent=t};
+
+  try{
+    set('Désenregistrement du service worker…');
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const r of regs){ try{ await r.unregister(); }catch(e){} }
+    }
+
+    set('Vidage du cache local…');
+    if('caches' in window){
+      const keys=await caches.keys();
+      for(const k of keys){ try{ await caches.delete(k); }catch(e){} }
+    }
+
+    set('Prêt ! Redirection…');
+    // Small delay so the user sees the progress
+    await new Promise(r=>setTimeout(r,600));
+    // Redirect with cache-busting query string to force fresh fetch
+    location.replace('/castigat-academy.html?v='+Date.now());
+  }catch(e){
+    console.error('Reload error',e);
+    spinner.style.display='none';
+    set('Une erreur est survenue');
+    retry.classList.add('show');
+  }
+})();
+</script>
+</body>
+</html>
