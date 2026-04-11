@@ -57,11 +57,37 @@ OneSignalDeferred.push(async function(OneSignal) {
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23c8a44e'><path d='M25 30c0-8 8-15 20-15s20 7 20 15c0 8-5 12-5 18s2 12 0 20H50c0-8 2-14 0-20s-5-10-5-18M45 30c0-8 8-15 20-15s20 7 20 15c0 8-5 12-5 18s2 12 0 20H70c0-8 2-14 0-20s-5-10-5-18M50 65c4 6 8 10 12 10s8-4 12-10' stroke='%23c8a44e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <script>
-/* ── Service Worker — PWA offline support ── */
+/* ── Service Worker — PWA offline support + auto-update ── */
 if('serviceWorker' in navigator){
+  let reloading=false;
+  /* When a new SW takes over, reload the page automatically so users always get the latest version */
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(reloading) return;
+    reloading=true;
+    window.location.reload();
+  });
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('/sw.js')
-      .then(function(reg){ console.log('SW registered:', reg.scope); })
+      .then(function(reg){
+        console.log('SW registered:', reg.scope);
+        /* Check for updates every time the app regains focus (user reopens PWA) */
+        reg.update();
+        window.addEventListener('focus', function(){ reg.update(); });
+        document.addEventListener('visibilitychange', function(){ if(!document.hidden) reg.update(); });
+        /* Also check every 60 seconds while app is open */
+        setInterval(function(){ reg.update(); }, 60000);
+        /* When a new worker is found and finishes installing, tell it to skip waiting */
+        reg.addEventListener('updatefound', function(){
+          const nw=reg.installing;
+          if(!nw) return;
+          nw.addEventListener('statechange', function(){
+            if(nw.state==='installed' && navigator.serviceWorker.controller){
+              /* New version ready — activate immediately (will trigger controllerchange → reload) */
+              nw.postMessage({type:'SKIP_WAITING'});
+            }
+          });
+        });
+      })
       .catch(function(err){ console.warn('SW registration failed:', err); });
   });
 }
