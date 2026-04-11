@@ -57,11 +57,37 @@ OneSignalDeferred.push(async function(OneSignal) {
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23c8a44e'><path d='M25 30c0-8 8-15 20-15s20 7 20 15c0 8-5 12-5 18s2 12 0 20H50c0-8 2-14 0-20s-5-10-5-18M45 30c0-8 8-15 20-15s20 7 20 15c0 8-5 12-5 18s2 12 0 20H70c0-8 2-14 0-20s-5-10-5-18M50 65c4 6 8 10 12 10s8-4 12-10' stroke='%23c8a44e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <script>
-/* ── Service Worker — PWA offline support ── */
+/* ── Service Worker — PWA offline support + auto-update ── */
 if('serviceWorker' in navigator){
+  let reloading=false;
+  /* When a new SW takes over, reload the page automatically so users always get the latest version */
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(reloading) return;
+    reloading=true;
+    window.location.reload();
+  });
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('/sw.js')
-      .then(function(reg){ console.log('SW registered:', reg.scope); })
+      .then(function(reg){
+        console.log('SW registered:', reg.scope);
+        /* Check for updates every time the app regains focus (user reopens PWA) */
+        reg.update();
+        window.addEventListener('focus', function(){ reg.update(); });
+        document.addEventListener('visibilitychange', function(){ if(!document.hidden) reg.update(); });
+        /* Also check every 60 seconds while app is open */
+        setInterval(function(){ reg.update(); }, 60000);
+        /* When a new worker is found and finishes installing, tell it to skip waiting */
+        reg.addEventListener('updatefound', function(){
+          const nw=reg.installing;
+          if(!nw) return;
+          nw.addEventListener('statechange', function(){
+            if(nw.state==='installed' && navigator.serviceWorker.controller){
+              /* New version ready — activate immediately (will trigger controllerchange → reload) */
+              nw.postMessage({type:'SKIP_WAITING'});
+            }
+          });
+        });
+      })
       .catch(function(err){ console.warn('SW registration failed:', err); });
   });
 }
@@ -267,6 +293,9 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;color:inhe
 .body{font-family:'Noto Sans','Inter',sans-serif;font-weight:400;line-height:1.7;color:var(--text-2)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes masteredGlow{0%,100%{box-shadow:0 0 0 1px rgba(200,164,78,.15),0 8px 32px rgba(74,222,128,.08),inset 0 1px 0 rgba(74,222,128,.15)}50%{box-shadow:0 0 0 1px rgba(200,164,78,.25),0 12px 40px rgba(74,222,128,.18),inset 0 1px 0 rgba(74,222,128,.25)}}
+@keyframes masteredShimmer{0%{left:-100%}45%{left:160%}100%{left:160%}}
 @keyframes slideUp{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
@@ -2114,6 +2143,9 @@ const SCENE_ANALYSES=[
    ]},
 ];
 
+/* ═══ LEVEL → SCENE ANALYSIS MAPPING (1 analyse de scène par niveau) ═══ */
+const LEVEL_SA={figurant:"sa1",apprenti:"sa2",dimanche:"sa3",amateur:"sa4",pensionnaire:"sa5",societaire:"sa6",interprete:"sa7",artiste:"sa8",metteur:"sa9"};
+
 /* ═══ AVANT-SCÈNE (pré-représentation) ═══ */
 const AVANTSCENE_BREATHING=[
   {id:"br1",name:"Cohérence cardiaque",dur:180,inSec:4,outSec:6,desc:"Inspirez 4 secondes, expirez 6 secondes. Laissez le rythme s'installer naturellement."},
@@ -2552,6 +2584,7 @@ function Onboard({done:onDone}){
   const[showInstallStep,setShowInstallStep]=useState(false);
   const[installIsIOS,setInstallIsIOS]=useState(false);
   const[installDevice,setInstallDevice]=useState(null);/* null='choose', 'apple', 'android' */
+  const[installSubStep,setInstallSubStep]=useState(0);/* 0=intro, 1..3=étapes, 4=confirmation */
   const[showNotifStep,setShowNotifStep]=useState(false);
   const[showSectionIntro,setShowSectionIntro]=useState(-1);
 
@@ -2714,137 +2747,367 @@ function Onboard({done:onDone}){
     </div>
   );
 
-  /* Install Step — between welcome & inscription */
-  if(showInstallStep&&step===0) return(
-    <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',padding:'40px 24px 32px',textAlign:'center'}}>
-      <div style={{maxWidth:380,width:'100%'}}>
+  /* Install Step — guided step-by-step with visual mockups */
+  if(showInstallStep&&step===0){
+    const ua=typeof navigator!=='undefined'?navigator.userAgent:'';
+    const isIOSDevice=/iPad|iPhone|iPod/.test(ua);
+    const isIOSNonSafari=isIOSDevice&&(/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua));
+    const hasNativePrompt=typeof deferredPrompt!=='undefined'&&deferredPrompt;
 
-        {/* Logo */}
-        <div style={{width:72,height:72,borderRadius:18,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
-          <span style={{fontSize:36,filter:'grayscale(1) brightness(10)'}}>🎭</span>
+    const resetFlow=()=>{setInstallDevice(null);setInstallSubStep(0)};
+    const finishFlow=()=>{setShowInstallStep(false);resetFlow();setStep(1)};
+
+    /* ═══ iOS non-Safari warning ═══ */
+    if(isIOSNonSafari&&!installDevice) return(
+      <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',padding:'40px 24px 32px',textAlign:'center'}}>
+        <div style={{maxWidth:380,width:'100%'}}>
+          <div style={{width:72,height:72,borderRadius:18,background:'linear-gradient(135deg,#f59e0b,#fbbf24)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',boxShadow:'0 8px 32px rgba(251,191,36,.25)'}}>
+            <span style={{fontSize:38,filter:'grayscale(1) brightness(10)'}}>⚠</span>
+          </div>
+          <h1 className="heading" style={{fontSize:24,marginBottom:10}}>Ouvrez plutôt Safari</h1>
+          <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6,marginBottom:24}}>Sur iPhone, l'installation d'une application web fonctionne <strong style={{color:'var(--gold)'}}>uniquement depuis Safari</strong>. Votre navigateur actuel ne le permet pas.</p>
+          <div style={{background:'var(--bg-card)',border:'1px solid var(--line)',borderRadius:14,padding:18,marginBottom:24,textAlign:'left'}}>
+            <p className="label-gold" style={{marginBottom:10}}>MARCHE À SUIVRE</p>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:800,fontSize:13,flexShrink:0}}>1.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Copiez ce lien : <code style={{color:'var(--gold)',fontSize:11}}>academy.compagnie-castigat.com</code></p></div>
+              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:800,fontSize:13,flexShrink:0}}>2.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Ouvrez l'application <strong style={{color:'var(--text)'}}>Safari</strong> (la boussole bleue 🧭)</p></div>
+              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:800,fontSize:13,flexShrink:0}}>3.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Collez le lien dans la barre d'adresse et appuyez sur <strong style={{color:'var(--text)'}}>Entrée</strong></p></div>
+              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:800,fontSize:13,flexShrink:0}}>4.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Le tuto d'installation apparaîtra automatiquement</p></div>
+            </div>
+          </div>
+          <button onClick={()=>{try{navigator.clipboard.writeText('https://academy.compagnie-castigat.com');SFX.success()}catch(e){}}} className="btn-gold" style={{width:'100%',padding:'14px 0',fontSize:13,fontWeight:700,marginBottom:10}}>Copier le lien</button>
+          <button onClick={finishFlow} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>Passer cette étape</button>
         </div>
+      </div>
+    );
 
-        <h1 className="heading" style={{fontSize:28,marginBottom:6}}>Installez l'application</h1>
-        <p style={{fontSize:13,color:'var(--text-3)',marginBottom:32}}>Accédez à Castigat Academy depuis votre écran d'accueil</p>
-
-        {/* Device choice — if no device selected yet */}
-        {!installDevice?(
-          <div>
-            <p style={{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:20}}>Quel est votre appareil ?</p>
-            <div style={{display:'flex',gap:14,marginBottom:36}}>
-              <button onClick={()=>setInstallDevice('apple')} style={{flex:1,padding:'24px 16px',borderRadius:16,background:'var(--bg-card)',border:'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
-                <span style={{fontSize:36,filter:'grayscale(1) brightness(10)'}}>🍎</span>
-                <span style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>iPhone / iPad</span>
-                <span style={{fontSize:10,color:'var(--text-3)'}}>Safari</span>
-              </button>
-              <button onClick={()=>setInstallDevice('android')} style={{flex:1,padding:'24px 16px',borderRadius:16,background:'var(--bg-card)',border:'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
-                <span style={{fontSize:36,filter:'grayscale(1) brightness(10)'}}>🤖</span>
-                <span style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>Android</span>
-                <span style={{fontSize:10,color:'var(--text-3)'}}>Chrome</span>
-              </button>
-            </div>
-
-            {/* Features */}
-            <div style={{display:'flex',gap:10,width:'100%',marginBottom:32}}>
-              {[{ic:'🎭',t:'Théâtre',d:'Cours complets'},{ic:'👨‍🏫',t:'Coach',d:'Retours perso'},{ic:'📱',t:'Mobile',d:'Même hors-ligne'}].map((f,i)=>(
-                <div key={i} style={{flex:1,textAlign:'center',padding:'14px 8px',borderRadius:12,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
-                  <div style={{fontSize:20,marginBottom:6,filter:'grayscale(1) brightness(10)'}}>{f.ic}</div>
-                  <p style={{fontSize:10,fontWeight:700,color:'var(--gold)',marginBottom:2}}>{f.t}</p>
-                  <p style={{fontSize:8,color:'var(--text-3)',lineHeight:1.4}}>{f.d}</p>
-                </div>
-              ))}
-            </div>
-
-            <button onClick={()=>{setShowInstallStep(false);setStep(1)}} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:12,cursor:'pointer'}}>
-              Passer cette étape
+    /* ═══ Device picker ═══ */
+    if(!installDevice) return(
+      <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',padding:'40px 24px 32px',textAlign:'center'}}>
+        <div style={{maxWidth:380,width:'100%'}}>
+          <div style={{width:72,height:72,borderRadius:18,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
+            <span style={{fontSize:36,filter:'grayscale(1) brightness(10)'}}>🎭</span>
+          </div>
+          <h1 className="heading" style={{fontSize:26,marginBottom:6}}>Installez l'application</h1>
+          <p style={{fontSize:12,color:'var(--text-3)',marginBottom:4}}>Pour avoir Castigat Academy directement sur votre téléphone</p>
+          <p style={{fontSize:11,color:'var(--violet)',marginBottom:28}}>Je vous guide pas à pas ✨</p>
+          <p style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:18}}>Quel appareil utilisez-vous ?</p>
+          <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:24}}>
+            <button onClick={()=>{setInstallDevice('apple');setInstallSubStep(1)}} style={{padding:'20px 20px',borderRadius:16,background:'var(--bg-card)',border:'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',alignItems:'center',gap:16,textAlign:'left'}}>
+              <span style={{fontSize:32,filter:'grayscale(1) brightness(10)',flexShrink:0}}>🍎</span>
+              <div style={{flex:1}}>
+                <p style={{fontSize:15,fontWeight:800,color:'var(--text)',marginBottom:2}}>iPhone ou iPad</p>
+                <p style={{fontSize:10,color:'var(--text-3)'}}>Avec le navigateur Safari</p>
+              </div>
+              <span style={{fontSize:20,color:'var(--text-3)'}}>›</span>
+            </button>
+            <button onClick={()=>{setInstallDevice('android');setInstallSubStep(1)}} style={{padding:'20px 20px',borderRadius:16,background:'var(--bg-card)',border:'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',alignItems:'center',gap:16,textAlign:'left'}}>
+              <span style={{fontSize:32,filter:'grayscale(1) brightness(10)',flexShrink:0}}>🤖</span>
+              <div style={{flex:1}}>
+                <p style={{fontSize:15,fontWeight:800,color:'var(--text)',marginBottom:2}}>Android ou ordinateur</p>
+                <p style={{fontSize:10,color:'var(--text-3)'}}>Avec Chrome, Edge ou Firefox</p>
+              </div>
+              <span style={{fontSize:20,color:'var(--text-3)'}}>›</span>
             </button>
           </div>
-        ):(
-          /* Tutorial after device choice */
-          <div className="fade-up">
-            {/* Chrono badge */}
-            <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 22px',borderRadius:40,background:'rgba(167,139,250,.08)',border:'1.5px solid rgba(167,139,250,.25)',marginBottom:28,animation:'pulse 2s ease-in-out infinite'}}>
-              <span style={{fontSize:18,filter:'grayscale(1) brightness(10)'}}>⏱</span>
-              <span style={{fontSize:15,fontWeight:700,color:'var(--gold-light)'}}>3 secondes top chrono</span>
-            </div>
+          <button onClick={finishFlow} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>
+            Passer cette étape (je le ferai plus tard)
+          </button>
+        </div>
+      </div>
+    );
 
-            {installDevice==='apple'?(
-              /* Steps Apple/Safari */
-              <div style={{display:'flex',flexDirection:'column',gap:14,marginBottom:32}}>
-                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid rgba(167,139,250,.3)'}}>
-                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>1</div>
-                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>⬆</span>
-                  <div style={{textAlign:'left'}}>
-                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Appuyez sur Partager</p>
-                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Le bouton en bas de Safari (carré avec flèche)</p>
+    /* ═══ iOS — Safari step-by-step ═══ */
+    if(installDevice==='apple'){
+      const totalSteps=4;
+      const nextBtn=(label,onClick)=>(
+        <button onClick={onClick} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:800,letterSpacing:'.03em',marginTop:20}}>{label}</button>
+      );
+      const backBtn=(
+        <button onClick={()=>installSubStep>1?setInstallSubStep(installSubStep-1):resetFlow()} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:11,cursor:'pointer',marginTop:6}}>← Étape précédente</button>
+      );
+      const progress=(
+        <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:18}}>
+          {[1,2,3,4].map(n=>(
+            <div key={n} style={{width:n===installSubStep?24:8,height:5,borderRadius:3,background:n<=installSubStep?'var(--gold)':'var(--line)',transition:'all .3s'}}/>
+          ))}
+        </div>
+      );
+
+      return(
+        <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',padding:'32px 24px',textAlign:'center'}}>
+          <div style={{maxWidth:380,width:'100%'}}>
+            <p style={{fontSize:10,fontWeight:700,color:'var(--violet)',letterSpacing:'.12em',marginBottom:8}}>ÉTAPE {installSubStep} / {totalSteps}</p>
+            {progress}
+
+            {installSubStep===1&&(
+              <div>
+                <h2 className="heading" style={{fontSize:22,marginBottom:8}}>Trouvez le bouton Partager</h2>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:22,lineHeight:1.6}}>Il se trouve en <strong style={{color:'var(--gold)'}}>bas de votre écran Safari</strong>. C'est un carré avec une flèche qui pointe vers le haut.</p>
+                {/* Mockup: Safari bottom toolbar */}
+                <div style={{background:'linear-gradient(180deg,#1a1a22,#0a0a0f)',borderRadius:20,padding:'60px 14px 16px',border:'1px solid var(--line)',marginBottom:14,position:'relative',boxShadow:'inset 0 1px 0 rgba(255,255,255,.04)'}}>
+                  <p style={{fontSize:9,color:'var(--text-3)',marginBottom:20,opacity:.5}}>barre d'outils Safari ↓</p>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-around',background:'rgba(50,50,60,.6)',backdropFilter:'blur(10px)',borderRadius:14,padding:'10px 8px',border:'1px solid rgba(255,255,255,.08)'}}>
+                    <span style={{fontSize:22,opacity:.35,filter:'grayscale(1) brightness(10)'}}>‹</span>
+                    <span style={{fontSize:22,opacity:.35,filter:'grayscale(1) brightness(10)'}}>›</span>
+                    <div style={{position:'relative',padding:'6px 10px',borderRadius:10,background:'rgba(200,164,78,.2)',border:'2px solid var(--gold)',animation:'pulse 1.8s ease-in-out infinite',boxShadow:'0 0 24px rgba(200,164,78,.5)'}}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C8A44E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    </div>
+                    <span style={{fontSize:22,opacity:.35,filter:'grayscale(1) brightness(10)'}}>📖</span>
+                    <span style={{fontSize:22,opacity:.35,filter:'grayscale(1) brightness(10)'}}>⊞</span>
                   </div>
+                  <p style={{fontSize:10,color:'var(--gold)',marginTop:14,fontWeight:700}}>↑ Appuyez sur ce bouton</p>
                 </div>
-                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
-                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>2</div>
-                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>➕</span>
-                  <div style={{textAlign:'left'}}>
-                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Sur l'écran d'accueil</p>
-                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Faites défiler le menu et appuyez dessus</p>
-                  </div>
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
-                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>3</div>
-                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>✓</span>
-                  <div style={{textAlign:'left'}}>
-                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Ajouter</p>
-                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Et voilà, c'est sur votre écran d'accueil !</p>
-                  </div>
-                </div>
-              </div>
-            ):(
-              /* Steps Android/Chrome */
-              <div style={{display:'flex',flexDirection:'column',gap:14,marginBottom:32}}>
-                {typeof deferredPrompt!=='undefined'&&deferredPrompt?(
-                  <button onClick={async()=>{if(deferredPrompt){deferredPrompt.prompt();const r=await deferredPrompt.userChoice;if(r.outcome==='accepted')window.deferredPrompt=null}}} className="btn-gold" style={{width:'100%',padding:'18px 0',fontSize:15,fontWeight:800,letterSpacing:'.03em',marginBottom:8,boxShadow:'0 4px 24px rgba(200,164,78,.3)'}}>
-                    Installer en 1 clic
-                  </button>
-                ):null}
-                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid rgba(167,139,250,.3)'}}>
-                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>1</div>
-                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>⋮</span>
-                  <div style={{textAlign:'left'}}>
-                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Appuyez sur les 3 points</p>
-                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>En haut à droite dans Chrome</p>
-                  </div>
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
-                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>2</div>
-                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>📲</span>
-                  <div style={{textAlign:'left'}}>
-                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Installer l'application</p>
-                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Appuyez sur cette option dans le menu</p>
-                  </div>
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:16,padding:'18px 20px',borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
-                  <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--violet),#a78bfa)',color:'#fff',fontWeight:800,fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(167,139,250,.3)'}}>3</div>
-                  <span style={{fontSize:24,flexShrink:0,filter:'grayscale(1) brightness(10)'}}>✓</span>
-                  <div style={{textAlign:'left'}}>
-                    <p style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:2}}>Installer</p>
-                    <p style={{fontSize:11,color:'var(--text-3)',lineHeight:1.5}}>Et voilà, c'est sur votre écran d'accueil !</p>
-                  </div>
-                </div>
+                {nextBtn("J'AI APPUYÉ, SUITE →",()=>setInstallSubStep(2))}
+                {backBtn}
               </div>
             )}
 
-            <button className="btn-gold" onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setStep(1)}} style={{width:'100%',padding:'18px 0',fontSize:15,fontWeight:800,letterSpacing:'.03em',marginBottom:12}}>
-              C'EST FAIT, CONTINUER
-            </button>
-            <button onClick={()=>{setInstallDevice(null)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:12,cursor:'pointer',marginBottom:4}}>
-              ← Changer d'appareil
-            </button>
-            <button onClick={()=>{setShowInstallStep(false);setInstallDevice(null);setStep(1)}} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>
-              Passer cette étape
-            </button>
+            {installSubStep===2&&(
+              <div>
+                <h2 className="heading" style={{fontSize:22,marginBottom:8}}>Cherchez "Sur l'écran d'accueil"</h2>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:22,lineHeight:1.6}}>Un menu s'est ouvert. <strong style={{color:'var(--gold)'}}>Faites défiler vers le bas</strong> si besoin pour trouver cette option.</p>
+                {/* Mockup: Share sheet with "Add to Home Screen" highlighted */}
+                <div style={{background:'linear-gradient(180deg,#2a2a35,#1a1a22)',borderRadius:20,padding:'18px 14px',border:'1px solid var(--line)',marginBottom:14}}>
+                  <div style={{width:40,height:4,background:'rgba(255,255,255,.2)',borderRadius:2,margin:'0 auto 16px'}}/>
+                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                    {['Copier','AirDrop','Messages','Mail'].map((item,i)=>(
+                      <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 12px',borderRadius:10,background:'rgba(255,255,255,.03)',opacity:.4}}>
+                        <div style={{width:28,height:28,borderRadius:6,background:'rgba(255,255,255,.1)'}}/>
+                        <span style={{fontSize:12,color:'var(--text-3)'}}>{item}</span>
+                      </div>
+                    ))}
+                    <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 12px',borderRadius:12,background:'rgba(200,164,78,.15)',border:'2px solid var(--gold)',animation:'pulse 1.8s ease-in-out infinite',boxShadow:'0 0 24px rgba(200,164,78,.4)'}}>
+                      <div style={{width:32,height:32,borderRadius:7,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07070b" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      </div>
+                      <span style={{fontSize:13,fontWeight:700,color:'var(--gold)'}}>Sur l'écran d'accueil</span>
+                    </div>
+                  </div>
+                </div>
+                <p style={{fontSize:10,color:'var(--text-3)',marginBottom:4,fontStyle:'italic'}}>Vous ne voyez pas l'option ? Faites défiler le menu vers le bas avec le doigt.</p>
+                {nextBtn("J'AI APPUYÉ, SUITE →",()=>setInstallSubStep(3))}
+                {backBtn}
+              </div>
+            )}
+
+            {installSubStep===3&&(
+              <div>
+                <h2 className="heading" style={{fontSize:22,marginBottom:8}}>Appuyez sur "Ajouter"</h2>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:22,lineHeight:1.6}}>Un écran vous montre un aperçu de l'icône. <strong style={{color:'var(--gold)'}}>Le bouton "Ajouter" est en haut à droite.</strong></p>
+                {/* Mockup: Add to Home Screen confirmation */}
+                <div style={{background:'linear-gradient(180deg,#2a2a35,#1a1a22)',borderRadius:20,padding:'14px',border:'1px solid var(--line)',marginBottom:14}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
+                    <span style={{fontSize:11,color:'var(--text-3)'}}>Annuler</span>
+                    <span style={{fontSize:12,fontWeight:700,color:'var(--text-2)'}}>Sur l'écran d'accueil</span>
+                    <div style={{padding:'5px 12px',borderRadius:8,background:'var(--gold)',border:'2px solid var(--gold-light)',animation:'pulse 1.8s ease-in-out infinite',boxShadow:'0 0 20px rgba(200,164,78,.6)'}}>
+                      <span style={{fontSize:11,fontWeight:800,color:'#07070b'}}>Ajouter</span>
+                    </div>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px',background:'rgba(255,255,255,.03)',borderRadius:12}}>
+                    <div style={{width:50,height:50,borderRadius:11,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(200,164,78,.3)'}}>
+                      <span style={{fontSize:26,filter:'grayscale(1) brightness(10)'}}>🎭</span>
+                    </div>
+                    <div style={{flex:1,textAlign:'left'}}>
+                      <p style={{fontSize:12,fontWeight:700,color:'var(--text)',marginBottom:2}}>Castigat Academy</p>
+                      <p style={{fontSize:9,color:'var(--text-3)'}}>academy.compagnie-castigat.com</p>
+                    </div>
+                  </div>
+                </div>
+                {nextBtn("J'AI APPUYÉ SUR AJOUTER →",()=>setInstallSubStep(4))}
+                {backBtn}
+              </div>
+            )}
+
+            {installSubStep===4&&(
+              <div>
+                <div style={{width:84,height:84,borderRadius:'50%',background:'linear-gradient(135deg,var(--emerald),#34d399)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',boxShadow:'0 12px 40px rgba(74,222,128,.35)',animation:'pulse 2s ease-in-out infinite'}}>
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#07070b" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <h2 className="heading" style={{fontSize:24,marginBottom:10}}>Bravo, c'est installé ! 🎉</h2>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:20,lineHeight:1.7}}>Castigat Academy est maintenant sur votre écran d'accueil. Pour l'utiliser à l'avenir :</p>
+                <div style={{background:'var(--bg-card)',border:'1px solid var(--line)',borderRadius:14,padding:18,marginBottom:22,textAlign:'left'}}>
+                  <p className="label-gold" style={{marginBottom:12}}>À RETENIR</p>
+                  <div style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:10}}>
+                    <span style={{color:'var(--emerald)',fontSize:14,flexShrink:0}}>✓</span>
+                    <p style={{fontSize:11,color:'var(--text-2)',lineHeight:1.6}}>Retrouvez l'icône <strong style={{color:'var(--gold)'}}>🎭 Castigat Academy</strong> sur votre écran d'accueil</p>
+                  </div>
+                  <div style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:10}}>
+                    <span style={{color:'var(--emerald)',fontSize:14,flexShrink:0}}>✓</span>
+                    <p style={{fontSize:11,color:'var(--text-2)',lineHeight:1.6}}>Ouvrez-la <strong style={{color:'var(--text)'}}>depuis l'icône</strong> (pas depuis Safari)</p>
+                  </div>
+                  <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
+                    <span style={{color:'var(--emerald)',fontSize:14,flexShrink:0}}>✓</span>
+                    <p style={{fontSize:11,color:'var(--text-2)',lineHeight:1.6}}>Elle fonctionne <strong style={{color:'var(--text)'}}>même hors-ligne</strong> dans le métro</p>
+                  </div>
+                </div>
+                <button onClick={finishFlow} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:800,letterSpacing:'.03em'}}>CONTINUER L'INSCRIPTION →</button>
+                <button onClick={()=>setInstallSubStep(1)} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer',marginTop:6}}>Je n'ai pas réussi, recommencer le tuto</button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
-  );
+        </div>
+      );
+    }
+
+    /* ═══ Android / Desktop — Chrome step-by-step ═══ */
+    if(installDevice==='android'){
+      /* If native prompt is available, use it directly */
+      if(hasNativePrompt&&installSubStep<4) return(
+        <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',padding:'40px 24px',textAlign:'center'}}>
+          <div style={{maxWidth:380,width:'100%'}}>
+            <div style={{width:80,height:80,borderRadius:20,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',boxShadow:'0 12px 40px rgba(200,164,78,.3)'}}>
+              <span style={{fontSize:42,filter:'grayscale(1) brightness(10)'}}>🎭</span>
+            </div>
+            <h1 className="heading" style={{fontSize:24,marginBottom:10}}>Installation en un clic !</h1>
+            <p style={{fontSize:12,color:'var(--text-2)',marginBottom:28,lineHeight:1.6}}>Votre navigateur permet l'installation directe. Appuyez sur le bouton ci-dessous, puis confirmez dans la fenêtre qui apparaît.</p>
+            <button onClick={async()=>{
+              try{
+                deferredPrompt.prompt();
+                const r=await deferredPrompt.userChoice;
+                if(r.outcome==='accepted'){window.deferredPrompt=null;setInstallSubStep(4)}
+              }catch(e){setInstallSubStep(1)}
+            }} className="btn-gold btn-pulse" style={{width:'100%',padding:'20px 0',fontSize:15,fontWeight:800,letterSpacing:'.04em',marginBottom:14,boxShadow:'0 8px 32px rgba(200,164,78,.35)'}}>
+              📲 INSTALLER MAINTENANT
+            </button>
+            <button onClick={()=>setInstallSubStep(1)} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:12,cursor:'pointer',marginBottom:4}}>
+              Le bouton ne marche pas ? Voir le tuto manuel
+            </button>
+            <button onClick={resetFlow} style={{width:'100%',padding:'8px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>← Changer d'appareil</button>
+          </div>
+        </div>
+      );
+
+      /* Manual step-by-step for Android/Chrome */
+      const totalSteps=3;
+      const nextBtn=(label,onClick)=>(
+        <button onClick={onClick} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:800,letterSpacing:'.03em',marginTop:20}}>{label}</button>
+      );
+      const backBtn=(
+        <button onClick={()=>installSubStep>1?setInstallSubStep(installSubStep-1):resetFlow()} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:11,cursor:'pointer',marginTop:6}}>← Étape précédente</button>
+      );
+      const progress=(
+        <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:18}}>
+          {[1,2,3].map(n=>(
+            <div key={n} style={{width:n===installSubStep?24:8,height:5,borderRadius:3,background:n<=installSubStep?'var(--gold)':'var(--line)',transition:'all .3s'}}/>
+          ))}
+        </div>
+      );
+
+      return(
+        <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',padding:'32px 24px',textAlign:'center'}}>
+          <div style={{maxWidth:380,width:'100%'}}>
+            {installSubStep<4&&<p style={{fontSize:10,fontWeight:700,color:'var(--violet)',letterSpacing:'.12em',marginBottom:8}}>ÉTAPE {installSubStep} / {totalSteps}</p>}
+            {installSubStep<4&&progress}
+
+            {installSubStep===1&&(
+              <div>
+                <h2 className="heading" style={{fontSize:22,marginBottom:8}}>Ouvrez le menu Chrome</h2>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:22,lineHeight:1.6}}>Cherchez les <strong style={{color:'var(--gold)'}}>3 petits points</strong> en haut à droite de votre navigateur Chrome et appuyez dessus.</p>
+                {/* Mockup: Chrome top bar with 3 dots */}
+                <div style={{background:'linear-gradient(180deg,#2a2a35,#1a1a22)',borderRadius:20,padding:'14px',border:'1px solid var(--line)',marginBottom:14}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,background:'rgba(255,255,255,.06)',borderRadius:14,padding:'8px 10px'}}>
+                    <div style={{width:20,height:20,borderRadius:'50%',background:'rgba(255,255,255,.1)',flexShrink:0}}/>
+                    <div style={{flex:1,background:'rgba(255,255,255,.05)',borderRadius:8,padding:'6px 10px',textAlign:'left'}}>
+                      <span style={{fontSize:10,color:'var(--text-3)'}}>academy.compagnie-castigat.com</span>
+                    </div>
+                    <div style={{padding:'8px 6px',borderRadius:10,background:'rgba(200,164,78,.2)',border:'2px solid var(--gold)',animation:'pulse 1.8s ease-in-out infinite',boxShadow:'0 0 24px rgba(200,164,78,.5)'}}>
+                      <div style={{display:'flex',flexDirection:'column',gap:2}}>
+                        <div style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)'}}/>
+                        <div style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)'}}/>
+                        <div style={{width:4,height:4,borderRadius:'50%',background:'var(--gold)'}}/>
+                      </div>
+                    </div>
+                  </div>
+                  <p style={{fontSize:10,color:'var(--gold)',marginTop:12,fontWeight:700}}>↑ Ces 3 points là</p>
+                </div>
+                {nextBtn("J'AI APPUYÉ, SUITE →",()=>setInstallSubStep(2))}
+                {backBtn}
+              </div>
+            )}
+
+            {installSubStep===2&&(
+              <div>
+                <h2 className="heading" style={{fontSize:22,marginBottom:8}}>Cherchez "Installer l'application"</h2>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:22,lineHeight:1.6}}>Un menu s'est ouvert. Trouvez l'option qui dit <strong style={{color:'var(--gold)'}}>"Installer l'application"</strong> ou <strong style={{color:'var(--gold)'}}>"Ajouter à l'écran d'accueil"</strong>.</p>
+                <div style={{background:'linear-gradient(180deg,#2a2a35,#1a1a22)',borderRadius:16,padding:'12px',border:'1px solid var(--line)',marginBottom:14}}>
+                  {['Nouvel onglet','Historique','Téléchargements','Favoris'].map((item,i)=>(
+                    <div key={i} style={{padding:'11px 14px',textAlign:'left',opacity:.4,borderBottom:i<3?'1px solid rgba(255,255,255,.04)':'none'}}>
+                      <span style={{fontSize:11,color:'var(--text-3)'}}>{item}</span>
+                    </div>
+                  ))}
+                  <div style={{padding:'14px',textAlign:'left',borderRadius:10,background:'rgba(200,164,78,.15)',border:'2px solid var(--gold)',animation:'pulse 1.8s ease-in-out infinite',boxShadow:'0 0 24px rgba(200,164,78,.4)',margin:'4px 0',display:'flex',alignItems:'center',gap:10}}>
+                    <span style={{fontSize:18}}>📲</span>
+                    <span style={{fontSize:12,fontWeight:800,color:'var(--gold)'}}>Installer l'application</span>
+                  </div>
+                </div>
+                <p style={{fontSize:10,color:'var(--text-3)',marginBottom:4,fontStyle:'italic'}}>Pas trouvé ? L'option peut être cachée dans un sous-menu "Ajouter à…"</p>
+                {nextBtn("J'AI APPUYÉ, SUITE →",()=>setInstallSubStep(3))}
+                {backBtn}
+              </div>
+            )}
+
+            {installSubStep===3&&(
+              <div>
+                <h2 className="heading" style={{fontSize:22,marginBottom:8}}>Confirmez l'installation</h2>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:22,lineHeight:1.6}}>Une fenêtre de confirmation apparaît. Appuyez sur <strong style={{color:'var(--gold)'}}>"Installer"</strong> pour finaliser.</p>
+                <div style={{background:'linear-gradient(180deg,#2a2a35,#1a1a22)',borderRadius:20,padding:'18px',border:'1px solid var(--line)',marginBottom:14}}>
+                  <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+                    <div style={{width:48,height:48,borderRadius:11,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 16px rgba(200,164,78,.3)'}}>
+                      <span style={{fontSize:26,filter:'grayscale(1) brightness(10)'}}>🎭</span>
+                    </div>
+                    <div style={{flex:1,textAlign:'left'}}>
+                      <p style={{fontSize:13,fontWeight:800,color:'var(--text)',marginBottom:2}}>Installer l'application ?</p>
+                      <p style={{fontSize:10,color:'var(--text-3)'}}>Castigat Academy</p>
+                    </div>
+                  </div>
+                  <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+                    <div style={{padding:'8px 14px',borderRadius:8,background:'rgba(255,255,255,.05)',opacity:.5}}>
+                      <span style={{fontSize:11,color:'var(--text-3)'}}>Annuler</span>
+                    </div>
+                    <div style={{padding:'8px 18px',borderRadius:8,background:'var(--gold)',border:'2px solid var(--gold-light)',animation:'pulse 1.8s ease-in-out infinite',boxShadow:'0 0 20px rgba(200,164,78,.6)'}}>
+                      <span style={{fontSize:11,fontWeight:800,color:'#07070b'}}>Installer</span>
+                    </div>
+                  </div>
+                </div>
+                {nextBtn("C'EST FAIT →",()=>setInstallSubStep(4))}
+                {backBtn}
+              </div>
+            )}
+
+            {installSubStep===4&&(
+              <div>
+                <div style={{width:84,height:84,borderRadius:'50%',background:'linear-gradient(135deg,var(--emerald),#34d399)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',boxShadow:'0 12px 40px rgba(74,222,128,.35)',animation:'pulse 2s ease-in-out infinite'}}>
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#07070b" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <h2 className="heading" style={{fontSize:24,marginBottom:10}}>Bravo, c'est installé ! 🎉</h2>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:20,lineHeight:1.7}}>Castigat Academy est maintenant dans vos applications. Pour l'utiliser à l'avenir :</p>
+                <div style={{background:'var(--bg-card)',border:'1px solid var(--line)',borderRadius:14,padding:18,marginBottom:22,textAlign:'left'}}>
+                  <p className="label-gold" style={{marginBottom:12}}>À RETENIR</p>
+                  <div style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:10}}>
+                    <span style={{color:'var(--emerald)',fontSize:14,flexShrink:0}}>✓</span>
+                    <p style={{fontSize:11,color:'var(--text-2)',lineHeight:1.6}}>L'icône <strong style={{color:'var(--gold)'}}>🎭 Castigat Academy</strong> est dans vos apps</p>
+                  </div>
+                  <div style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:10}}>
+                    <span style={{color:'var(--emerald)',fontSize:14,flexShrink:0}}>✓</span>
+                    <p style={{fontSize:11,color:'var(--text-2)',lineHeight:1.6}}>Ouvrez-la <strong style={{color:'var(--text)'}}>depuis l'icône</strong> (pas depuis Chrome)</p>
+                  </div>
+                  <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
+                    <span style={{color:'var(--emerald)',fontSize:14,flexShrink:0}}>✓</span>
+                    <p style={{fontSize:11,color:'var(--text-2)',lineHeight:1.6}}>Elle fonctionne <strong style={{color:'var(--text)'}}>même hors-ligne</strong></p>
+                  </div>
+                </div>
+                <button onClick={finishFlow} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:800,letterSpacing:'.03em'}}>CONTINUER L'INSCRIPTION →</button>
+                <button onClick={()=>setInstallSubStep(1)} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer',marginTop:6}}>Je n'ai pas réussi, recommencer le tuto</button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  }
 
   /* Step 1 — Inscription */
   if(step===1) return(
@@ -3029,7 +3292,6 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
   const[showPrevLevels,setShowPrevLevels]=useState(false);
   const currentLevelIdx=LEVELS.indexOf(lv);
   const startLevelIdx=Math.min(st.lv||0,currentLevelIdx);
-  const LEVEL_SA={figurant:"sa1",apprenti:"sa2",dimanche:"sa3",amateur:"sa4",pensionnaire:"sa5",societaire:"sa6",interprete:"sa7",artiste:"sa8",metteur:"sa9"};
 
   /* ── Build level sections ── */
   const levelSections=[];
@@ -3059,13 +3321,16 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
     const lvCuDone=(cuM||[]).length===0||(cuM||[]).every(c=>st.doneCu.includes(c.id));
     const monoReady=nonVideoExDone&&lvCuDone;
     merged.forEach((m,mi)=>{
-      const isDone=m.sec==="pr"?st.doneEx.includes(m.id):st.doneCu.includes(m.id);
+      /* Only count as "done" if the level is actually unlocked — prevents legacy data from a previous version showing exercises as completed in locked levels */
+      const rawDone=m.sec==="pr"?st.doneEx.includes(m.id):st.doneCu.includes(m.id);
+      const isDone=levelOpenFinal&&rawDone;
       const isMonologue=m.sec==="pr"&&m.type==="video";
       const isUnlocked=levelOpenFinal&&(!isMonologue||monoReady||isDone);
       allItems.push({type:"node",mod:m,isDone,isUnlocked,globalIdx:globalNodeIdx++});
       nodeCount++;
       if(saObj&&nodeCount===insertAt){
-        const saDone=(st.doneSA||[]).includes(saObj.id);
+        const rawSaDone=(st.doneSA||[]).includes(saObj.id);
+        const saDone=levelOpenFinal&&rawSaDone;
         allItems.push({type:"sa",sa:saObj,isDone:saDone,isUnlocked:levelOpenFinal,globalIdx:globalNodeIdx++});
       }
     });
@@ -3168,6 +3433,8 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
         const freeWallBlock=st.plan==="free"&&sec.li>=(st.startLevel||0)+3;
         const levelUnlockedFinal=levelUnlocked&&!freeWallBlock;
         const isComplete=doneItems===totalItems&&totalItems>0;
+        /* Level has been fully MASTERED (exam passed) — deserves a special celebration animation */
+        const levelMastered=(st.passedExams||[]).includes(level.id);
 
         return(
           <div key={level.id}>
@@ -3187,20 +3454,45 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
             {showTierBanner&&<div style={{marginBottom:8}}><TierBanner tierId={tier.id} unlocked={levelUnlockedFinal}/></div>}
 
             {/* Level card */}
-            <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',
-              background:isCurrentLevel?'linear-gradient(180deg,rgba(200,164,78,.04),var(--bg-card))':'var(--bg-card)',
-              border:isCurrentLevel?'1.5px solid rgba(200,164,78,.2)':'1px solid var(--line)',
-              opacity:levelUnlockedFinal?1:.4,transition:'opacity .3s'}}>
+            <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',position:'relative',
+              background:levelMastered?'linear-gradient(180deg,rgba(74,222,128,.06),rgba(200,164,78,.03))':isCurrentLevel?'linear-gradient(180deg,rgba(200,164,78,.04),var(--bg-card))':'var(--bg-card)',
+              border:levelMastered?'1.5px solid rgba(74,222,128,.45)':isCurrentLevel?'1.5px solid rgba(200,164,78,.2)':'1px solid var(--line)',
+              boxShadow:levelMastered?'0 0 0 1px rgba(200,164,78,.15),0 8px 32px rgba(74,222,128,.08),inset 0 1px 0 rgba(74,222,128,.15)':'none',
+              opacity:levelUnlockedFinal?1:.4,transition:'opacity .3s',
+              animation:levelMastered?'masteredGlow 3.2s ease-in-out infinite':'none'}}>
+
+              {/* MASTERED — shimmer overlay */}
+              {levelMastered&&(
+                <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:16}}>
+                  <div style={{position:'absolute',top:0,left:'-100%',width:'60%',height:'100%',
+                    background:'linear-gradient(110deg,transparent 0%,transparent 40%,rgba(74,222,128,.08) 50%,rgba(200,164,78,.12) 55%,transparent 65%,transparent 100%)',
+                    animation:'masteredShimmer 4.5s ease-in-out infinite'}}/>
+                </div>
+              )}
+
+              {/* MASTERED — diagonal ribbon */}
+              {levelMastered&&(
+                <div style={{position:'absolute',top:10,right:-32,transform:'rotate(38deg)',
+                  background:'linear-gradient(135deg,var(--emerald),#34d399)',
+                  padding:'3px 36px',fontSize:8,fontWeight:900,letterSpacing:'.12em',color:'#07070b',
+                  boxShadow:'0 4px 14px rgba(74,222,128,.35)',zIndex:3,pointerEvents:'none'}}>
+                  ✓ MAÎTRISÉ
+                </div>
+              )}
 
               {/* Level header */}
-              <div style={{padding:'14px 16px 10px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid var(--line)'}}>
-                <div style={{width:40,height:40,borderRadius:12,background:isCurrentLevel?'linear-gradient(135deg,rgba(200,164,78,.15),rgba(200,164,78,.05))':'rgba(255,255,255,.03)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <div style={{padding:'14px 16px 10px',display:'flex',alignItems:'center',gap:12,borderBottom:levelMastered?'1px solid rgba(74,222,128,.15)':'1px solid var(--line)',position:'relative',zIndex:2}}>
+                <div style={{width:40,height:40,borderRadius:12,
+                  background:levelMastered?'linear-gradient(135deg,rgba(74,222,128,.25),rgba(200,164,78,.15))':isCurrentLevel?'linear-gradient(135deg,rgba(200,164,78,.15),rgba(200,164,78,.05))':'rgba(255,255,255,.03)',
+                  border:levelMastered?'1.5px solid rgba(74,222,128,.4)':'none',
+                  display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
+                  boxShadow:levelMastered?'0 0 16px rgba(74,222,128,.25)':'none'}}>
                   <EI e={levelUnlockedFinal?level.icon:"🔒"} s={20} c={levelUnlockedFinal?"#fff":"var(--text-3)"}/>
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
-                    <p style={{fontSize:13,fontWeight:800,color:isCurrentLevel?'var(--gold)':'var(--text)'}}>{level.name}</p>
-                    <p style={{fontSize:10,fontWeight:700,color:isComplete?'var(--emerald)':'var(--text-3)'}}>{doneItems}/{totalItems}</p>
+                    <p style={{fontSize:13,fontWeight:800,color:levelMastered?'var(--emerald)':isCurrentLevel?'var(--gold)':'var(--text)'}}>{level.name}</p>
+                    <p style={{fontSize:10,fontWeight:700,color:levelMastered||isComplete?'var(--emerald)':'var(--text-3)'}}>{doneItems}/{totalItems}</p>
                   </div>
                   <div style={{height:4,borderRadius:2,background:'var(--line)',overflow:'hidden'}}>
                     <div style={{height:'100%',borderRadius:2,width:progress+'%',background:isComplete?'var(--emerald)':'linear-gradient(90deg,var(--gold),var(--gold-light))',transition:'width .5s ease'}}/>
@@ -3318,15 +3610,14 @@ function Home({st,setSt,go,setMod,setExam}){
   const monoReadyHome=nonVideoPrDone&&allCuDone;
   let nP=null,nC=null;
   for(const lid of order){if(!nP)nP=(PR[lid]||[]).find(m=>!st.doneEx.includes(m.id)&&(m.type!=="video"||monoReadyHome));if(!nC)nC=(CU[lid]||[]).find(m=>!st.doneCu.includes(m.id));if(nP&&nC)break}
-  const tierSAs=SCENE_ANALYSES.filter(sa=>sa.tier===lv.tier);
-  const allSADone=tierSAs.length>0&&tierSAs.every(sa=>(st.doneSA||[]).includes(sa.id));
+  /* Scene analysis: ONE per level via LEVEL_SA mapping */
+  const levelSAId=LEVEL_SA[lv.id];
+  const levelSA=levelSAId?SCENE_ANALYSES.find(s=>s.id===levelSAId):null;
+  const allSADone=!levelSA||(st.doneSA||[]).includes(levelSAId);
+  const nSA=levelSA;
   const examNotPassed=nx&&EXAMS[lv.id]&&!(st.passedExams||[]).includes(lv.id);
   /* Exam available only when everything else at this level is complete */
   const examAvailable=allPrDone&&allCuDone&&allSADone&&examNotPassed;
-  /* Find next scene analysis for user tier — skip already done */
-  const tier=lv.tier;
-  const doneSAIds=st.doneSA||[];
-  const nSA=SCENE_ANALYSES.find(sa=>sa.tier===tier&&!doneSAIds.includes(sa.id))||SCENE_ANALYSES.find(sa=>!doneSAIds.includes(sa.id))||SCENE_ANALYSES[0];
 
   useEffect(()=>{
     const currentLv=getLv(st.xp,st.passedExams).id;
@@ -3750,6 +4041,25 @@ function Home({st,setSt,go,setMod,setExam}){
           const precisionLabel=precision<30?"En observation":precision<55?"En apprentissage":precision<80?"Affiné":"Expert";
 
           /* ══════════ RENDER — BILAN PERSONNALISÉ ══════════ */
+
+          /* ── FREE PLAN GATE — bilan locked behind Standard ── */
+          if(st.plan==="free"){
+            return(
+              <div className="card" style={{padding:20,marginBottom:20,background:'linear-gradient(160deg,rgba(200,164,78,.06),var(--bg-card))',border:'1.5px solid rgba(200,164,78,.25)',textAlign:'center',position:'relative',overflow:'hidden'}}>
+                <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,transparent,var(--gold),transparent)'}}/>
+                <div style={{width:44,height:44,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',boxShadow:'0 8px 24px rgba(200,164,78,.25)'}}>
+                  {I.lock({size:18,sw:2,style:{color:'#07070b'}})}
+                </div>
+                <p className="label-gold" style={{fontSize:9,marginBottom:8}}>BILAN PERSONNALISÉ</p>
+                <p style={{fontSize:13,fontWeight:700,color:'#fff',marginBottom:6,lineHeight:1.4}}>Votre coach personnel vous attend</p>
+                <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.6,marginBottom:16,maxWidth:280,margin:'0 auto 16px'}}>Diagnostic sur mesure, forces et axes d'amélioration, recommandations adaptées à votre profil. Disponible en Standard.</p>
+                <button onClick={()=>{_track('paywall_viewed',{source:'bilan_gate',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{display:'inline-block',padding:'11px 22px',borderRadius:10,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',border:'none',color:'#07070b',fontWeight:800,fontSize:11,letterSpacing:'.04em',cursor:'pointer',boxShadow:'0 6px 18px rgba(200,164,78,.25)'}}>
+                  DÉBLOQUER — 4 JOURS GRATUITS
+                </button>
+                <p style={{fontSize:8,color:'var(--text-3)',marginTop:10}}>Puis 9,90€/mois · sans engagement</p>
+              </div>
+            );
+          }
 
           /* ── LOCKED STATE ── */
           if(!isUnlocked){
@@ -4501,7 +4811,7 @@ function Warmup({onClose,st,setSt}){
 /* ═══ ANALYSE DE SCÈNE ═══ */
 function SceneAnalysis({analysis,st,setSt,onClose}){
   const[qi,setQi]=useState(0);
-  const[answers,setAnswers]=useState({});/* {idx: {chosen, selfEval, userText, revealed}} */
+  const[answers,setAnswers]=useState({});/* {idx: {chosen, selfEval, userText, revealed, aiLoading, aiResult}} */
   const[phase,setPhase]=useState("intro");/* intro, question, correction, results */
   const q=analysis.questions[qi];
   const ans=answers[qi]||{};
@@ -4512,10 +4822,37 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
   const setUserText=(t)=>setAnswers(a=>({...a,[qi]:{...ans,userText:t}}));
   const setSelfEval=(v)=>setAnswers(a=>({...a,[qi]:{...ans,selfEval:v}}));
 
-  const reveal=()=>{
+  const reveal=async()=>{
     setAnswers(a=>({...a,[qi]:{...ans,revealed:true}}));
     if(q.type==="qcm"&&ans.chosen===q.a)SFX.success();
     else SFX.click();
+    /* AI correction for free-text answers (libre + argument) */
+    if((q.type==="libre"||q.type==="argument")&&(ans.userText||"").trim().length>=5){
+      setAnswers(a=>({...a,[qi]:{...a[qi],aiLoading:true}}));
+      try{
+        const res=await fetch(`${SUPABASE_URL}/functions/v1/correct-scene`,{
+          method:"POST",
+          headers:{"content-type":"application/json","apikey":SUPABASE_ANON_KEY,"authorization":`Bearer ${SUPABASE_ANON_KEY}`},
+          body:JSON.stringify({
+            question:q.q,
+            extract:analysis.extract,
+            userAnswer:ans.userText,
+            reference:q.ref||"",
+            keyPoints:q.keyPoints||[]
+          })
+        });
+        if(res.ok){
+          const data=await res.json();
+          setAnswers(a=>({...a,[qi]:{...a[qi],aiLoading:false,aiResult:data,selfEval:data.level||"partial"}}));
+          if(data.level==="found")SFX.success();
+        }else{
+          setAnswers(a=>({...a,[qi]:{...a[qi],aiLoading:false,aiResult:null}}));
+        }
+      }catch(e){
+        console.error("AI correction error",e);
+        setAnswers(a=>({...a,[qi]:{...a[qi],aiLoading:false,aiResult:null}}));
+      }
+    }
   };
 
   const nextQ=()=>{
@@ -4545,9 +4882,14 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
 
   /* Intro */
   if(phase==="intro") return(
-    <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',padding:'28px 20px 40px'}}>
+    <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',paddingBottom:40}}>
+      <div style={{position:'sticky',top:0,zIndex:50,background:'rgba(7,7,11,.94)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',borderBottom:'1px solid var(--line)',paddingTop:'max(12px,env(safe-area-inset-top))',paddingBottom:12,paddingLeft:20,paddingRight:20,marginBottom:20}}>
+        <div className="mw">
+          <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-2)',fontSize:13,fontWeight:600,padding:'8px 14px',borderRadius:10,background:'rgba(255,255,255,.04)',border:'1px solid var(--line)'}}>{I.chL({size:16})} Retour</button>
+        </div>
+      </div>
+      <div style={{padding:'8px 20px 0'}}>
       <div className="mw">
-        <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:24}}>{I.chL({size:16})} Retour</button>
         <div style={{textAlign:'center',position:'relative',zIndex:2}}>
           <p className="label" style={{color:tierColor,marginBottom:8}}>{analysis.tier==="avance"?"AVANCÉ":analysis.tier==="intermediaire"?"INTERMÉDIAIRE":"DÉBUTANT"}</p>
           <h1 className="heading hero-text" style={{fontSize:24,marginBottom:8}}>{analysis.title}</h1>
@@ -4563,6 +4905,7 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
         </div>
         <p className="body" style={{fontSize:11,textAlign:'center',marginBottom:16}}>{total} question{total>1?"s":""} — QCM, réflexion libre et analyse argumentée</p>
         <button onClick={()=>setPhase("question")} className="btn-gold btn-pulse" style={{width:'100%',padding:'14px 0',fontSize:13}}>Commencer l'analyse</button>
+      </div>
       </div>
     </div>
   );
@@ -4621,12 +4964,16 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
 
   /* Question view */
   return(
-    <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',padding:'28px 20px 120px'}}>
-      <div className="mw">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-          <button onClick={()=>{if(qi>0)setQi(qi-1);else setPhase("intro")}} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12}}>{I.chL({size:16})} {qi>0?"Précédent":"Retour"}</button>
-          <button onClick={onClose} style={{fontSize:10,color:'var(--text-3)'}}>Quitter ✕</button>
+    <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',paddingBottom:120}}>
+      {/* Sticky top nav — always accessible, respects iPhone safe area */}
+      <div style={{position:'sticky',top:0,zIndex:50,background:'rgba(7,7,11,.94)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',borderBottom:'1px solid var(--line)',paddingTop:'max(12px,env(safe-area-inset-top))',paddingBottom:12,paddingLeft:20,paddingRight:20}}>
+        <div className="mw" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <button onClick={()=>{if(qi>0)setQi(qi-1);else setPhase("intro")}} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-2)',fontSize:13,fontWeight:600,padding:'8px 14px',borderRadius:10,background:'rgba(255,255,255,.04)',border:'1px solid var(--line)'}}>{I.chL({size:16})} {qi>0?"Précédent":"Retour"}</button>
+          <button onClick={onClose} style={{fontSize:12,color:'var(--text-2)',fontWeight:600,padding:'8px 14px',borderRadius:10,background:'rgba(255,255,255,.04)',border:'1px solid var(--line)'}}>Quitter ✕</button>
         </div>
+      </div>
+      <div style={{padding:'20px 20px 40px'}}>
+      <div className="mw">
         <Bar val={qi+(ans.revealed?1:0)} max={total} cls="fill-gold" h={3}/>
         <p style={{fontSize:8,color:'var(--text-3)',marginTop:4,textAlign:'right'}}>Question {qi+1} / {total}</p>
 
@@ -4684,11 +5031,43 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
                 fontFamily:'Noto Sans, Inter, sans-serif',fontSize:12,lineHeight:1.7,resize:'vertical',outline:'none'}}/>
             {ans.revealed&&(
               <div style={{marginTop:12}}>
+                {/* AI correction feedback */}
+                {ans.aiLoading&&(
+                  <div style={{padding:14,borderRadius:12,background:'rgba(200,164,78,.04)',border:'1px solid rgba(200,164,78,.15)',marginBottom:12,display:'flex',alignItems:'center',gap:10}}>
+                    <div style={{width:18,height:18,border:'2px solid var(--gold)',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 1s linear infinite'}}/>
+                    <p style={{fontSize:11,color:'var(--text-2)'}}>Correction en cours…</p>
+                  </div>
+                )}
+                {ans.aiResult&&!ans.aiLoading&&(()=>{
+                  const lvl=ans.aiResult.level;
+                  const col=lvl==="found"?"var(--emerald)":lvl==="partial"?"var(--gold)":"var(--coral)";
+                  const label=lvl==="found"?"TRÈS BIEN":lvl==="partial"?"SUR LA BONNE VOIE":"À APPROFONDIR";
+                  return(
+                    <div style={{padding:14,borderRadius:12,background:`${col}08`,border:`1px solid ${col}33`,marginBottom:12}}>
+                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                        <p className="label" style={{color:col,fontSize:9}}>{label}</p>
+                        <p style={{fontSize:14,fontWeight:800,color:col}}>{ans.aiResult.score}/100</p>
+                      </div>
+                      {ans.aiResult.feedback&&<p style={{fontSize:11,lineHeight:1.7,color:'var(--text)',marginBottom:ans.aiResult.matched&&ans.aiResult.matched.length>0?8:0}}>{ans.aiResult.feedback}</p>}
+                      {ans.aiResult.matched&&ans.aiResult.matched.length>0&&(
+                        <div style={{marginTop:6}}>
+                          {ans.aiResult.matched.map((m,mi)=>(
+                            <div key={mi} style={{display:'flex',alignItems:'flex-start',gap:6,marginTop:4}}>
+                              <span style={{color:col,fontSize:10,marginTop:1}}>✓</span>
+                              <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.5}}>{m}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 <p className="label" style={{color:'var(--violet)',marginBottom:8}}>RÉPONSE DE RÉFÉRENCE</p>
                 <div style={{padding:14,borderRadius:12,background:'rgba(167,139,250,.04)',border:'1px solid rgba(167,139,250,.12)'}}>
                   <p style={{fontSize:11,lineHeight:1.7,color:'var(--text)'}}>{q.ref}</p>
                 </div>
-                {!ans.selfEval&&(
+                {/* Fallback self-eval if AI unavailable */}
+                {!ans.selfEval&&!ans.aiLoading&&!ans.aiResult&&(
                   <div style={{marginTop:12}}>
                     <p style={{fontSize:10,color:'var(--text-2)',marginBottom:8}}>Comment évaluez-vous votre réponse ?</p>
                     <div style={{display:'flex',gap:6}}>
@@ -4759,6 +5138,7 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
             <p style={{fontSize:11,lineHeight:1.7,color:'var(--text)'}}>{q.expl}</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
