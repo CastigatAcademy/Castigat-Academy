@@ -2559,7 +2559,7 @@ function ExamView({levelId,st,setSt,onPass,onBack}){
 function Nav({tab,go,plan}){
   const T=[{id:"practice",ic:I.mic,l:"Pratique"},{id:"culture",ic:I.brain,l:"Culture"},{id:"home",ic:I.home,l:"Mon Parcours"},{id:"feed",ic:I.briefcase,l:"Outils"},{id:"profile",ic:I.user,l:"Profil"}];
   return(
-    <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--nav-bg)',backdropFilter:'blur(24px)',borderTop:'1px solid var(--line)',zIndex:50,paddingBottom:'env(safe-area-inset-bottom,0)'}}>
+    <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--nav-bg)',backdropFilter:'blur(24px)',WebkitBackdropFilter:'blur(24px)',borderTop:'1px solid var(--line)',zIndex:50,paddingBottom:'env(safe-area-inset-bottom,0)',transform:'translate3d(0,0,0)',willChange:'transform',isolation:'isolate'}}>
       <div className="mw" style={{display:'flex',justifyContent:'space-around',alignItems:'flex-end',padding:'10px 0 6px'}}>
         {T.map((t,idx)=>{
           const a=tab===t.id;
