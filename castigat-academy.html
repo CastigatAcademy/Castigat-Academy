@@ -335,6 +335,11 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;color:inhe
 @keyframes star-burst-up{0%{transform:translate(0,0) scale(1) rotate(0deg);opacity:1}40%{opacity:1}100%{transform:translate(var(--bx),var(--by)) scale(.1) rotate(var(--br,180deg));opacity:0}}
 @keyframes star-trail{0%{transform:translateY(0) scaleY(1);opacity:.9}100%{transform:translateY(-120vh) scaleY(3);opacity:0}}
 @keyframes tip-fade-out{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.92)}}
+@keyframes tip-drift-1{0%{transform:translate(0,0) scale(.8);opacity:.3}25%{transform:translate(40px,-60px) scale(1.1);opacity:.9}50%{transform:translate(-20px,-110px) scale(.9);opacity:.6}75%{transform:translate(30px,-60px) scale(1.2);opacity:1}100%{transform:translate(0,0) scale(.8);opacity:.3}}
+@keyframes tip-drift-2{0%{transform:translate(0,0) scale(1);opacity:.4}33%{transform:translate(-50px,40px) scale(1.3);opacity:.85}66%{transform:translate(40px,70px) scale(.7);opacity:.5}100%{transform:translate(0,0) scale(1);opacity:.4}}
+@keyframes tip-twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.4)}}
+@keyframes tip-rise{0%{transform:translateY(40px);opacity:0}20%{opacity:.9}80%{opacity:.7}100%{transform:translateY(-120px);opacity:0}}
+@keyframes btn-violet-glow{0%,100%{box-shadow:0 0 24px rgba(167,139,250,.25),0 0 60px rgba(167,139,250,.1),inset 0 0 20px rgba(167,139,250,.05)}50%{box-shadow:0 0 36px rgba(167,139,250,.45),0 0 80px rgba(167,139,250,.2),inset 0 0 28px rgba(167,139,250,.1)}}
 @keyframes text-reveal{0%{opacity:0;letter-spacing:.4em;filter:blur(6px)}100%{opacity:1;letter-spacing:.14em;filter:blur(0)}}
 @keyframes text-fade-up{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes flicker{0%,100%{opacity:.9}10%{opacity:.85}20%{opacity:1}40%{opacity:.95}60%{opacity:1}80%{opacity:.88}}
@@ -8454,7 +8459,12 @@ function App(){
   const[badgePopup,setBadgePopup]=useState(null);
   const[tutoStep,setTutoStep]=useState(0);
   const[showTip,setShowTip]=useState("visible");/* "visible" | "exiting" | false */
-  const tipParticles=useState(()=>Array.from({length:8}).map(()=>({size:2+Math.random()*4,left:Math.random()*100,top:10+Math.random()*80,dur:3+Math.random()*4,delay:Math.random()*3,gold:Math.random()>.4})))[0];
+  const tipParticles=useState(()=>{
+    const drifters=Array.from({length:18}).map(()=>({kind:'drift',size:2+Math.random()*5,left:Math.random()*100,top:5+Math.random()*90,dur:6+Math.random()*6,delay:Math.random()*4,gold:Math.random()>.35,anim:'tip-drift-'+(1+Math.floor(Math.random()*2))}));
+    const twinks=Array.from({length:10}).map(()=>({kind:'twink',size:1.5+Math.random()*2,left:Math.random()*100,top:Math.random()*100,dur:2+Math.random()*3,delay:Math.random()*3,gold:Math.random()>.3}));
+    const embers=Array.from({length:6}).map(()=>({kind:'ember',size:1.5+Math.random()*2.5,left:Math.random()*100,dur:6+Math.random()*4,delay:Math.random()*6}));
+    return[...drifters,...twinks,...embers];
+  })[0];
   const burstStars=useState(()=>Array.from({length:80}).map((_,i)=>{const angle=-90+(-60+Math.random()*120);const rad=angle*Math.PI/180;const dist=120+Math.random()*280;return{x:Math.cos(rad)*dist*(0.5+Math.random()),y:Math.sin(rad)*dist*(0.5+Math.random()),speed:.5+Math.random()*1.2,size:2+Math.random()*8,delay:Math.random()*.5,gold:Math.random()>.35,shape:i%5===0?'star':i%7===0?'trail':'circle',rot:Math.random()*360}}))[0];
   const go=t=>{_track('tab_navigated',{tab:t,from:tab,plan:st.plan});if(t!==tab)setMod(null);setTab(t);window.scrollTo(0,0)};
 
@@ -8590,18 +8600,21 @@ function App(){
     const tipIdx=Math.floor(Date.now()/86400000)%DAILY_TIPS.length;
     const isExiting=showTip==="exiting";
     return(
-      <div style={{minHeight:'100vh',background:'#07070c',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative',overflow:'hidden'}}>
+      <div style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative',overflow:'hidden'}}>
 
-        {/* ── Background: dot pattern + spotlight ── */}
+        {/* ── Background: dot pattern + violet halos ── */}
         <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(var(--w04) 1px, transparent 1px)',backgroundSize:'24px 24px',pointerEvents:'none'}}/>
-        <div style={{position:'absolute',top:'-5%',left:'50%',transform:'translateX(-50%)',width:300,height:'70%',background:'linear-gradient(180deg,rgba(200,164,78,.10) 0%,rgba(200,164,78,.03) 50%,transparent 100%)',clipPath:'polygon(35% 0%, 65% 0%, 85% 100%, 15% 100%)',pointerEvents:'none',animation:'spotlight-ray 4s ease-in-out infinite'}}/>
         <div style={{position:'absolute',top:'20%',left:'-10%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(167,139,250,.06),transparent 70%)',pointerEvents:'none'}}/>
         <div style={{position:'absolute',bottom:0,left:0,right:0,height:300,background:'linear-gradient(0deg,rgba(167,139,250,.04),transparent)',pointerEvents:'none'}}/>
 
-        {/* Ambient floating particles */}
-        {tipParticles.map((p,i)=>(
-          <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:p.gold?'var(--gold-light)':'var(--violet)',opacity:.4,left:p.left+'%',top:p.top+'%',pointerEvents:'none',animation:`float ${p.dur}s ease-in-out ${p.delay}s infinite`,boxShadow:p.gold?`0 0 ${p.size*4}px rgba(224,184,78,.5)`:`0 0 ${p.size*4}px rgba(167,139,250,.5)`}}/>
-        ))}
+        {/* Ambient floating particles — drifters + twinkles + embers */}
+        {tipParticles.map((p,i)=>{
+          const col=p.gold?'var(--gold-light)':'var(--violet)';
+          const glow=p.gold?`0 0 ${p.size*6}px rgba(224,184,78,.8),0 0 ${p.size*12}px rgba(224,184,78,.3)`:`0 0 ${p.size*6}px rgba(167,139,250,.8),0 0 ${p.size*12}px rgba(167,139,250,.3)`;
+          if(p.kind==='ember')return <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:'var(--gold-light)',left:p.left+'%',bottom:'0%',pointerEvents:'none',boxShadow:`0 0 ${p.size*6}px rgba(224,184,78,.9)`,animation:`tip-rise ${p.dur}s linear ${p.delay}s infinite`}}/>;
+          if(p.kind==='twink')return <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:col,left:p.left+'%',top:p.top+'%',pointerEvents:'none',boxShadow:glow,animation:`tip-twinkle ${p.dur}s ease-in-out ${p.delay}s infinite`}}/>;
+          return <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:col,left:p.left+'%',top:p.top+'%',pointerEvents:'none',boxShadow:glow,animation:`${p.anim} ${p.dur}s ease-in-out ${p.delay}s infinite`}}/>;
+        })}
 
         {/* ── STAR BURST on exit ── */}
         {isExiting&&burstStars.map((s,i)=>{
@@ -8618,29 +8631,28 @@ function App(){
 
           {/* CASTIGAT® */}
           <div style={{animation:'fadeIn .6s ease both',marginBottom:6}}>
-            <p style={{fontFamily:'Oswald, sans-serif',fontWeight:600,fontSize:14,letterSpacing:'.22em',color:'rgba(255,255,255,.4)'}}>CASTIGAT<sup style={{fontSize:7,verticalAlign:'super',fontWeight:400}}>®</sup></p>
+            <p style={{fontFamily:'Oswald, sans-serif',fontWeight:600,fontSize:13,letterSpacing:'.28em',color:'var(--text-3)'}}>CASTIGAT<sup style={{fontSize:6,verticalAlign:'super',fontWeight:400}}>®</sup></p>
           </div>
 
-          {/* CONSEIL DU JOUR */}
-          <div style={{animation:'fadeIn .8s ease .2s both',marginBottom:8}}>
-            <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:42,letterSpacing:'.08em',color:'#fff',lineHeight:1,margin:0,textShadow:'0 4px 30px var(--w08)'}}>CONSEIL</h1>
-            <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:42,letterSpacing:'.08em',lineHeight:1,margin:0,color:'var(--gold-light)',textShadow:'0 0 24px rgba(200,164,78,.5),0 0 60px rgba(200,164,78,.15)'}}>DU JOUR</h1>
+          {/* CONSEIL / DU JOUR */}
+          <div style={{animation:'fadeIn .8s ease .2s both',marginTop:18}}>
+            <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:56,letterSpacing:'.06em',color:'var(--text)',lineHeight:1,margin:0,textShadow:'0 4px 30px var(--w08)'}}>CONSEIL</h1>
+            <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:56,letterSpacing:'.06em',lineHeight:1,margin:0,color:'var(--gold-light)',textShadow:'0 0 24px rgba(200,164,78,.5),0 0 60px rgba(200,164,78,.15)'}}>DU JOUR</h1>
           </div>
 
-          {/* Gold shimmer line */}
-          <div style={{width:90,height:2,background:'linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)',margin:'0 auto',borderRadius:2,boxShadow:'0 0 16px rgba(200,164,78,.4)',animation:'shimmer 3s linear infinite',backgroundSize:'200% auto'}}/>
-
-          {/* The quote */}
-          <div style={{marginTop:36,marginBottom:40}}>
-            <p style={{animation:'hero-text-in .8s cubic-bezier(.22,1,.36,1) .6s both',fontFamily:"'Playfair Display', serif",fontWeight:400,fontSize:19,lineHeight:1.75,color:'#fff',letterSpacing:'.02em'}}>
+          {/* The quote — Cormorant Garamond droit, with decorative quote marks behind */}
+          <div style={{position:'relative',marginTop:38,marginBottom:28,animation:'fadeUp .8s ease .6s both'}}>
+            <span style={{position:'absolute',top:-50,left:-28,fontFamily:"'Playfair Display', serif",fontWeight:700,fontSize:220,lineHeight:.8,color:'var(--gold)',opacity:.22,pointerEvents:'none',userSelect:'none',textShadow:'0 0 40px rgba(200,164,78,.3)'}}>“</span>
+            <span style={{position:'absolute',bottom:-110,right:-28,fontFamily:"'Playfair Display', serif",fontWeight:700,fontSize:220,lineHeight:.8,color:'var(--gold)',opacity:.22,pointerEvents:'none',userSelect:'none',textShadow:'0 0 40px rgba(200,164,78,.3)'}}>”</span>
+            <p style={{position:'relative',zIndex:1,fontFamily:"'Cormorant Garamond', serif",fontWeight:500,fontSize:22,lineHeight:1.55,color:'var(--text)',letterSpacing:'.01em',margin:0}}>
               {DAILY_TIPS[tipIdx]}
             </p>
           </div>
 
-          {/* CTA button */}
-          <div style={{animation:'fadeUp .6s ease-out .8s both'}}>
-            <button onClick={dismissTip} style={{background:'linear-gradient(135deg,var(--gold),var(--gold-light))',border:'none',borderRadius:14,padding:'16px 36px',cursor:'pointer',display:'inline-block',textAlign:'center',boxShadow:'0 8px 40px rgba(200,164,78,.35),0 0 80px rgba(200,164,78,.12),inset 0 1px 0 rgba(255,255,255,.2)',animation:'btn-glow 3s ease-in-out 1.5s infinite',transition:'transform .15s',WebkitTapHighlightColor:'transparent'}} onTouchStart={e=>e.currentTarget.style.transform='scale(.95)'} onTouchEnd={e=>e.currentTarget.style.transform='scale(1)'}>
-              <span style={{fontFamily:'Oswald, sans-serif',fontSize:15,fontWeight:700,color:'#07070c',letterSpacing:'.1em',textTransform:'uppercase'}}>IMPRIMER DANS MA CABOCHE</span>
+          {/* CTA button — violet outline */}
+          <div style={{animation:'fadeUp .6s ease-out 1s both',marginTop:40}}>
+            <button onClick={dismissTip} style={{background:'rgba(167,139,250,.08)',border:'1.5px solid var(--violet)',borderRadius:14,padding:'17px 40px',cursor:'pointer',display:'inline-block',textAlign:'center',boxShadow:'0 0 24px rgba(167,139,250,.25),0 0 60px rgba(167,139,250,.1),inset 0 0 20px rgba(167,139,250,.05)',animation:'btn-violet-glow 3s ease-in-out 1.8s infinite',transition:'transform .15s, background .2s',WebkitTapHighlightColor:'transparent',backdropFilter:'blur(8px)'}} onTouchStart={e=>{e.currentTarget.style.transform='scale(.96)';e.currentTarget.style.background='rgba(167,139,250,.15)'}} onTouchEnd={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.background='rgba(167,139,250,.08)'}}>
+              <span style={{fontFamily:'Oswald, sans-serif',fontSize:14,fontWeight:700,color:'var(--violet)',letterSpacing:'.14em',textTransform:'uppercase'}}>C'est noté.</span>
             </button>
           </div>
         </div>
