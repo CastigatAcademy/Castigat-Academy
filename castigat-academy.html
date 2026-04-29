@@ -173,35 +173,53 @@ const saveToCloudDebounced=(stateData)=>{
   _cloudSaveTimer=setTimeout(()=>{saveToCloud(stateData)},CLOUD_SAVE_DEBOUNCE);
 };
 
+/* Timeout helpers — guard against Supabase hangs on slow mobile networks */
+const _timeout=(ms,fallback=null)=>new Promise(resolve=>setTimeout(()=>resolve(fallback),ms));
+const _withTimeout=(promise,ms,fallback=null)=>Promise.race([promise,_timeout(ms,fallback)]);
+
 const loadFromCloud=async()=>{
-  try{
-    const{data:{user}}=await _supabase.auth.getUser();
-    if(!user)return null;
-    const uid=user.id;
-    /* Load main progress */
-    const{data:prog}=await _supabase.from('user_progress').select('data').eq('user_id',uid).maybeSingle();
-    /* Also load the plan from profiles (source of truth for plan) */
-    const{data:profile}=await _supabase.from('profiles').select('plan').eq('id',uid).maybeSingle();
-    let result=prog?.data||null;
-    if(result&&profile&&profile.plan){
-      /* profiles.plan is the source of truth — always override */
-      result.plan=profile.plan;
-    }
-    if(result){
-      localStorage.setItem(SAVE_KEY,JSON.stringify(result));
-    }
-    /* Load texts */
-    const{data:texts}=await _supabase.from('user_texts').select('data').eq('user_id',uid).maybeSingle();
-    if(texts&&texts.data){
-      localStorage.setItem('castigat_montexte',JSON.stringify(texts.data));
-    }
-    /* Load monologues */
-    const{data:mono}=await _supabase.from('user_monologues').select('data').eq('user_id',uid).maybeSingle();
-    if(mono&&mono.data){
-      localStorage.setItem('castigat_monologues_progress',JSON.stringify(mono.data));
-    }
-    return result;
-  }catch(e){console.log('Cloud load error',e);return null}
+  /* Hard global timeout: if the whole flow exceeds 12s, bail out and let the user proceed */
+  const _start=Date.now();
+  const _doLoad=async()=>{
+    try{
+      const userResp=await _withTimeout(_supabase.auth.getUser(),5000,{data:{user:null}});
+      const user=(userResp&&userResp.data)?userResp.data.user:null;
+      if(!user)return null;
+      const uid=user.id;
+      /* Load main progress (with per-query timeout) */
+      const progResp=await _withTimeout(_supabase.from('user_progress').select('data').eq('user_id',uid).maybeSingle(),5000,{data:null});
+      const prog=progResp?progResp.data:null;
+      const profileResp=await _withTimeout(_supabase.from('profiles').select('plan').eq('id',uid).maybeSingle(),5000,{data:null});
+      const profile=profileResp?profileResp.data:null;
+      let result=prog?.data||null;
+      if(result&&profile&&profile.plan){
+        result.plan=profile.plan;
+      }
+      if(result){
+        localStorage.setItem(SAVE_KEY,JSON.stringify(result));
+      }
+      /* Load texts (best-effort) */
+      const textsResp=await _withTimeout(_supabase.from('user_texts').select('data').eq('user_id',uid).maybeSingle(),5000,{data:null});
+      const texts=textsResp?textsResp.data:null;
+      if(texts&&texts.data){
+        localStorage.setItem('castigat_montexte',JSON.stringify(texts.data));
+      }
+      /* Load monologues (best-effort) */
+      const monoResp=await _withTimeout(_supabase.from('user_monologues').select('data').eq('user_id',uid).maybeSingle(),5000,{data:null});
+      const mono=monoResp?monoResp.data:null;
+      if(mono&&mono.data){
+        localStorage.setItem('castigat_monologues_progress',JSON.stringify(mono.data));
+      }
+      console.log('[Cloud] loaded in '+(Date.now()-_start)+'ms');
+      return result;
+    }catch(e){console.warn('[Cloud] load error',e);return null}
+  };
+  const winner=await Promise.race([_doLoad(),_timeout(12000,'__TIMEOUT__')]);
+  if(winner==='__TIMEOUT__'){
+    console.warn('[Cloud] aborted after 12s — proceeding without cloud restore');
+    return null;
+  }
+  return winner;
 };
 
 /* ── PENDING PLAN UPDATE (mobile Stripe redirect fix) ── */
@@ -2666,11 +2684,20 @@ function Onboard({done:onDone}){
     if(!form.email.trim()||!form.email.includes('@')){setFormErr("Adresse email invalide.");return}
     if(!form.password||form.password.length<6){setFormErr("Mot de passe requis (6 caractères min.).");return}
     setFormErr('');setFormLoading(true);
+    /* Safety net: if anything below hangs more than 20s, abort and show error rather than keep the button frozen */
+    const _safetyNet=setTimeout(()=>{setFormErr("La connexion prend trop de temps. Vérifiez votre connexion internet et réessayez.");setFormLoading(false)},20000);
     try{
-      const{data,error}=await _supabase.auth.signInWithPassword({email:form.email.trim(),password:form.password});
-      if(error){setFormErr(error.message==='Invalid login credentials'?'Email ou mot de passe incorrect.':error.message);setFormLoading(false);return}
-      /* Try to restore full progress from cloud */
+      /* Wrap signInWithPassword with its own timeout — prevents hang when Supabase is slow/down */
+      const authResp=await _withTimeout(_supabase.auth.signInWithPassword({email:form.email.trim(),password:form.password}),10000,{error:{message:'__TIMEOUT__'}});
+      const{data,error}=authResp;
+      if(error){
+        clearTimeout(_safetyNet);
+        const msg=error.message==='__TIMEOUT__'?"La connexion au serveur a expiré. Réessayez.":(error.message==='Invalid login credentials'?'Email ou mot de passe incorrect.':error.message);
+        setFormErr(msg);setFormLoading(false);return;
+      }
+      /* Try to restore full progress from cloud (already protected by 12s internal timeout) */
       const cloudData=await loadFromCloud();
+      clearTimeout(_safetyNet);
       if(cloudData&&cloudData.onb){
         /* User has existing cloud data — restore it fully */
         localStorage.setItem(SAVE_KEY,JSON.stringify(cloudData));
@@ -2678,11 +2705,11 @@ function Onboard({done:onDone}){
         window.location.reload(); /* Reload to pick up restored state */
         return;
       }
-      /* No cloud data — new onboarding flow */
+      /* No cloud data (or timed out) — new onboarding flow */
       const displayName=data.user?.user_metadata?.display_name||data.user?.email?.split('@')[0]||'';
       setFormLoading(false);
-      onDone({user:displayName,email:data.user.email,pseudo:displayName});
-    }catch(e){setFormErr("Erreur de connexion. Réessayez.");setFormLoading(false)}
+      onDone({user:displayName,email:data.user?.email||form.email.trim(),pseudo:displayName});
+    }catch(e){clearTimeout(_safetyNet);setFormErr("Erreur de connexion. Réessayez.");setFormLoading(false)}
   };
 
   /* Login screen */
@@ -4925,6 +4952,9 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
     /* AI correction for free-text answers (libre + argument) */
     if((q.type==="libre"||q.type==="argument")&&(ans.userText||"").trim().length>=5){
       setAnswers(a=>({...a,[qi]:{...a[qi],aiLoading:true}}));
+      /* Use AbortController so we can cancel the fetch on timeout — prevents leaving aiLoading:true forever on slow networks */
+      const _ctl=new AbortController();
+      const _timer=setTimeout(()=>_ctl.abort(),12000);
       try{
         const res=await fetch(`${SUPABASE_URL}/functions/v1/correct-scene`,{
           method:"POST",
@@ -4935,8 +4965,10 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
             userAnswer:ans.userText,
             reference:q.ref||"",
             keyPoints:q.keyPoints||[]
-          })
+          }),
+          signal:_ctl.signal
         });
+        clearTimeout(_timer);
         if(res.ok){
           const data=await res.json();
           setAnswers(a=>({...a,[qi]:{...a[qi],aiLoading:false,aiResult:data,selfEval:data.level||"partial"}}));
@@ -4945,7 +4977,9 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
           setAnswers(a=>({...a,[qi]:{...a[qi],aiLoading:false,aiResult:null}}));
         }
       }catch(e){
-        console.error("AI correction error",e);
+        clearTimeout(_timer);
+        if(e.name==='AbortError')console.warn("AI correction timeout (12s)");
+        else console.error("AI correction error",e);
         setAnswers(a=>({...a,[qi]:{...a[qi],aiLoading:false,aiResult:null}}));
       }
     }
@@ -6509,6 +6543,7 @@ function CoachChat({st,setSt,onClose}){
   useEffect(()=>{chatEndRef.current?.scrollIntoView({behavior:'smooth'})},[messages]);
   const emailRef=useRef('');
   const ivRef=useRef(null);
+  const isPollingRef=useRef(false); /* Prevents stacking polls when one hangs on slow connection */
 
   /* Get email/ID, load messages, start polling */
   useEffect(()=>{(async()=>{
@@ -6525,22 +6560,26 @@ function CoachChat({st,setSt,onClose}){
     }
     /* 2. Load messages now that emailRef is set — filter SERVER-SIDE by student_email (privacy fix) */
     if(emailRef.current){
-      const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
+      const res=await _withTimeout(_supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true}),8000,{error:'timeout',data:null});
       if(!res.error&&res.data){
         setMessages(res.data);
         /* Mark unread coach messages as read */
         const unreadIds=res.data.filter(m=>m.sender==='coach'&&!m.read).map(m=>m.id);
         if(unreadIds.length>0){
-          await _supabase.from('messages').update({read:true}).in('id',unreadIds);
+          await _withTimeout(_supabase.from('messages').update({read:true}).in('id',unreadIds),5000,null);
         }
       }
     }
     setLoading(false);
-    /* 3. Start polling AFTER emailRef is set */
+    /* 3. Start polling AFTER emailRef is set — guard against stacking with isPollingRef */
     ivRef.current=setInterval(async()=>{
       if(!emailRef.current)return;
-      const res=await _supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true});
-      if(!res.error&&res.data){setMessages(res.data);}
+      if(isPollingRef.current)return; /* Skip this tick — previous poll still in flight */
+      isPollingRef.current=true;
+      try{
+        const res=await _withTimeout(_supabase.from('messages').select('*').eq('student_email',emailRef.current).order('created_at',{ascending:true}),7000,{error:'timeout',data:null});
+        if(!res.error&&res.data){setMessages(res.data);}
+      }finally{isPollingRef.current=false;}
     },8000);
   })();
   return()=>{if(ivRef.current)clearInterval(ivRef.current);};
@@ -8214,7 +8253,7 @@ function Profile({st,setSt}){
 /* Plan URL param handler */
 (function(){var u=new URLSearchParams(window.location.search);var p=u.get("plan");if(p==="standard"||p==="premium"){_track('plan_activated',{plan:p,price:p==='standard'?9.90:29.90});var s=localStorage.getItem(SAVE_KEY);if(s){try{var d=JSON.parse(s);d.plan=p;localStorage.setItem(SAVE_KEY,JSON.stringify(d));saveToCloud(d);}catch(e){}}else{localStorage.setItem(SAVE_KEY,JSON.stringify({plan:p}));saveToCloud({plan:p});}
 /* Also update profils table so plan is visible in Supabase dashboard */
-(async()=>{try{var usr=await _supabase.auth.getUser();if(usr.data.user){localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:usr.data.user.id}));await _supabase.from('profiles').update({plan:p,plan_started_at:new Date().toISOString()}).eq('id',usr.data.user.id);localStorage.removeItem('pending_plan_update');}else{localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:'pending'}));}}catch(e){console.log('profils plan update error',e)}})();
+(async()=>{try{var usrResp=await _withTimeout(_supabase.auth.getUser(),5000,{data:{user:null}});var usr=usrResp;if(usr.data&&usr.data.user){localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:usr.data.user.id}));var upd=await _withTimeout(_supabase.from('profiles').update({plan:p,plan_started_at:new Date().toISOString()}).eq('id',usr.data.user.id),8000,{error:{message:'timeout'}});if(!upd||!upd.error){localStorage.removeItem('pending_plan_update');}else{console.warn('Plan update timed out — pending_plan_update kept for retry');}}else{localStorage.setItem('pending_plan_update',JSON.stringify({plan:p,uid:'pending'}));}}catch(e){console.log('profils plan update error',e)}})();
 window.history.replaceState({},"",window.location.pathname);}})();
 function loadState(){
   try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s)}catch(e){}
