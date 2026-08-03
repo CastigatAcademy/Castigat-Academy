@@ -2121,6 +2121,76 @@ function ExamView({levelId,st,setSt,onPass,onBack}){
   );
 }
 
+/* ═══ PAYWALL GLOBAL ═══
+   Un seul mur d'abonnement, ouvrable depuis n'importe quel écran via usePaywall().
+   Règle : tout ce qui est verrouillé doit être cliquable et doit mener ici. */
+const STRIPE_STANDARD="https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201";
+const STRIPE_PREMIUM="https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202";
+const PaywallCtx=React.createContext(()=>{});
+const usePaywall=()=>React.useContext(PaywallCtx);
+
+/* Ce sur quoi elle vient de cliquer, pour que le mur lui réponde au lieu de réciter une liste */
+const PAYWALL_COPY={
+  challenge:{t:"CHALLENGE DICTION",d:"Le chrono de 60 secondes, les virelangues et le classement font partie des outils du comédien."},
+  avantscene:{t:"AVANT-SCÈNE",d:"Le rituel de préparation, juste avant d'entrer en scène, fait partie des outils du comédien."},
+  warmup:{t:"ÉCHAUFFEMENT VOCAL",d:"Les échauffements guidés de la voix font partie des outils du comédien."},
+  montexte:{t:"MON TEXTE",d:"L'atelier pour apprendre et travailler vos textes fait partie des outils du comédien."},
+  tools:{t:"LES OUTILS DU COMÉDIEN",d:"Challenge Diction, Avant-Scène, Échauffement vocal et Mon Texte, débloqués d'un coup."},
+  level:{t:"LA SUITE DU PARCOURS",d:"Les 12 niveaux, du Figurant jusqu'au bout, avec leurs exercices et leurs analyses."},
+  exercise:{t:"CET EXERCICE",d:"Il appartient à un niveau réservé aux abonnées."},
+  culture:{t:"CETTE LEÇON",d:"Elle appartient à un niveau réservé aux abonnées."},
+  analysis:{t:"CETTE ANALYSE DE SCÈNE",d:"Les analyses complètes de scène sont réservées aux abonnées."},
+  bilan:{t:"LE BILAN PERSONNALISÉ",d:"Votre diagnostic sur mesure, vos forces et vos axes de travail."},
+  monologue:{t:"CE MONOLOGUE",d:"Les monologues du répertoire et leurs conseils d'interprétation sont réservés aux abonnées."},
+  default:{t:"TOUT LE PARCOURS",d:"Les 12 niveaux, les outils du comédien et le bilan personnalisé."}
+};
+const PAYWALL_FEATURES=["Tout le parcours — 12 niveaux","Les 4 outils du comédien","Toutes les analyses de scène","Les monologues du répertoire","Votre bilan personnalisé"];
+
+function Paywall({source,plan,onClose}){
+  const copy=PAYWALL_COPY[source]||PAYWALL_COPY.default;
+  useEffect(()=>{
+    _track('paywall_viewed',{source,current_plan:plan});
+    const prev=document.body.style.overflow;document.body.style.overflow='hidden';
+    return()=>{document.body.style.overflow=prev};
+  },[]);
+  const goStandard=()=>{_track('plan_clicked',{plan:'standard',price:9.90,source:'paywall_'+source});SFX.success();window.location.href=STRIPE_STANDARD};
+  const goPremium=()=>{_track('plan_clicked',{plan:'premium',price:29.90,source:'paywall_'+source});SFX.levelUp();window.location.href=STRIPE_PREMIUM};
+  return(
+    <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(5,5,10,.92)',backdropFilter:'blur(8px)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px 0',overflowY:'auto',animation:'fadeIn .25s ease-out'}}>
+      <div onClick={e=>e.stopPropagation()} style={{maxWidth:360,width:'90%',padding:'28px 24px',borderRadius:20,background:'var(--bg-card)',border:'1px solid var(--line-s)',textAlign:'center',animation:'fadeUp .35s ease-out',margin:'auto'}}>
+
+        <div style={{width:52,height:52,borderRadius:15,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',boxShadow:'0 8px 28px rgba(200,164,78,.28)'}}>
+          {I.crown({size:22,style:{color:'var(--ink)'}})}
+        </div>
+
+        <p style={{fontSize:9,fontWeight:800,letterSpacing:'.16em',color:'var(--gold)',marginBottom:10}}>{copy.t}</p>
+
+        {/* L'essai est le titre : c'est l'argument, pas une mention */}
+        <h3 className="heading" style={{fontSize:28,lineHeight:1.15,marginBottom:8}}>4 jours gratuits</h3>
+        <p className="body" style={{fontSize:12,lineHeight:1.6,marginBottom:18}}>{copy.d}</p>
+
+        <div style={{textAlign:'left',marginBottom:20,padding:'14px 16px',borderRadius:14,background:'var(--w03)',border:'1px solid var(--line)'}}>
+          {PAYWALL_FEATURES.map((f,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:9,marginBottom:i===PAYWALL_FEATURES.length-1?0:9}}>
+              <span style={{color:'var(--emerald)',flexShrink:0}}>{I.check({size:13,sw:2})}</span>
+              <p style={{fontSize:11.5,color:'var(--text)'}}>{f}</p>
+            </div>
+          ))}
+        </div>
+
+        <button onClick={goStandard} className="btn-gold btn-pulse" style={{width:'100%',padding:'15px 0',fontSize:13,fontWeight:800,marginBottom:8}}>Commencer mes 4 jours gratuits</button>
+        <p style={{fontSize:10,color:'var(--text-3)',marginBottom:16,lineHeight:1.5}}>Puis 9,90 €/mois. Sans engagement, résiliable à tout moment.</p>
+
+        <button onClick={goPremium} style={{width:'100%',padding:'13px 0',fontSize:11.5,fontWeight:700,color:'var(--purple)',borderRadius:10,background:'rgba(171,71,188,.08)',border:'1px solid rgba(171,71,188,.2)',cursor:'pointer',marginBottom:10}}>
+          Passer en Premium — coach personnel, 29,90 €/mois
+        </button>
+
+        <button onClick={onClose} style={{fontSize:11,color:'var(--text-3)',padding:'8px 0',background:'none',border:'none',cursor:'pointer'}}>Plus tard</button>
+      </div>
+    </div>
+  );
+}
+
 /* ═══ NAV ═══ */
 function Nav({tab,go,plan}){
   const T=[{id:"practice",ic:I.mic,l:"Pratique"},{id:"culture",ic:I.brain,l:"Culture"},{id:"home",ic:I.home,l:"Mon Parcours"},{id:"feed",ic:I.briefcase,l:"Outils"},{id:"profile",ic:I.user,l:"Profil"}];
@@ -2164,8 +2234,8 @@ function Top({xp,streak,passedExams}){
 }
 
 /* ═══ ONBOARDING ═══ */
-function Onboard({done:onDone}){
-  const[step,setStep]=useState(0);
+function Onboard({done:onDone,startStep=0}){
+  const[step,setStep]=useState(startStep);
   const[loginMode,setLoginMode]=useState(false);
   const[ans,setAns]=useState([]);
   const[ansIdx,setAnsIdx]=useState([]);/* actual option indices chosen */
@@ -2334,6 +2404,11 @@ function Onboard({done:onDone}){
             <span style={{fontFamily:'Oswald, sans-serif',fontSize:22,fontWeight:700,color:'var(--ink)',letterSpacing:'.14em',textTransform:'uppercase',display:'block'}}>MAINTENANT</span>
           </button>
           <p style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:14,fontStyle:'italic',animation:'fadeIn .6s ease 2.8s both'}}>Créé par des professionnels du théâtre</p>
+          {/* On peut voir l'application avant de donner son email */}
+          <button onClick={()=>{SFX.click();onDone(0,{pseudo:'Invitée',avatar:'dramaturge'},{preview:true,skippedQuiz:true})}}
+            style={{display:'block',margin:'18px auto 0',padding:'10px 18px',background:'transparent',border:'1px solid rgba(255,255,255,.16)',borderRadius:12,color:'rgba(255,255,255,.66)',fontSize:11.5,fontWeight:600,cursor:'pointer',animation:'fadeIn .6s ease 3.1s both'}}>
+            Regarder d'abord, sans créer de compte
+          </button>
         </div>
 
         {/* 3 features bottom */}
@@ -2862,8 +2937,12 @@ function Onboard({done:onDone}){
       </div>
       <h2 className="heading" style={{fontSize:26,marginBottom:10}}>Avant de commencer…</h2>
       <p className="body" style={{fontSize:14,maxWidth:300,lineHeight:1.7,marginBottom:12}}>Quelques questions pour mieux vous connaître et adapter votre parcours.</p>
-      <p style={{fontSize:11,color:'var(--text-3)',maxWidth:280,lineHeight:1.6,marginBottom:36}}>Ça ne prend que 2 minutes, promis !</p>
+      <p style={{fontSize:11,color:'var(--text-3)',maxWidth:280,lineHeight:1.6,marginBottom:36}}>Ça ne prend que 2 minutes, et vous pourrez le faire plus tard si vous préférez commencer tout de suite.</p>
       <button className="btn-gold" onClick={()=>setStep(5)} style={{padding:'14px 48px',fontSize:13,letterSpacing:'.06em'}}>C'EST PARTI</button>
+      <button onClick={()=>onDone(0,{prenom:form.prenom.trim(),nom:form.nom.trim(),birth:form.birth,email:form.email.trim(),avatar,pseudo:form.pseudo.trim()||'Comédien'},{skippedQuiz:true})}
+        style={{marginTop:18,padding:'10px 16px',background:'none',border:'none',color:'var(--text-3)',fontSize:11.5,fontWeight:600,cursor:'pointer',textDecoration:'underline'}}>
+        Plus tard — commencer directement
+      </button>
     </div>
   );
 
@@ -2894,6 +2973,10 @@ function Onboard({done:onDone}){
             <p style={{fontSize:11,fontWeight:700,color:'var(--gold-dim)'}}>{Math.round((qStep+1)/QUIZ.length*100)}%</p>
           </div>
           <Bar val={qStep+1} max={QUIZ.length} h={3}/>
+          <button onClick={()=>onDone(0,{prenom:form.prenom.trim(),nom:form.nom.trim(),birth:form.birth,email:form.email.trim(),avatar,pseudo:form.pseudo.trim()||'Comédien'},{skippedQuiz:true})}
+            style={{marginTop:10,padding:0,background:'none',border:'none',color:'var(--text-3)',fontSize:10.5,fontWeight:600,cursor:'pointer'}}>
+            Passer le test et commencer →
+          </button>
         </div>
         <span style={{display:'inline-block',padding:'3px 10px',borderRadius:20,background:sc.bg,color:sc.color,fontSize:9,fontWeight:700,letterSpacing:'.08em',marginBottom:12}}>{sc.label}</span>
         <h2 className="heading" style={{fontSize:24,color:'var(--text)',marginBottom:32}}>{q.q}</h2>
@@ -2958,6 +3041,7 @@ function TierBanner({tierId,unlocked}){
 
 /* ═══ PROGRESSION PATH (Bubble Grid) ═══ */
 function ProgressPath({st,go,setMod,setExam,setSceneAn}){
+  const openPaywall=usePaywall();
   const lv=getLv(st.xp,st.passedExams);
   const currentNodeRef=useRef(null);
   const[showPrevLevels,setShowPrevLevels]=useState(false);
@@ -2997,12 +3081,13 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
       const isDone=levelOpenFinal&&rawDone;
       const isMonologue=m.sec==="pr"&&m.type==="video";
       const isUnlocked=levelOpenFinal&&(!isMonologue||monoReady||isDone);
-      allItems.push({type:"node",mod:m,isDone,isUnlocked,globalIdx:globalNodeIdx++});
+      /* freeWall = verrouillé par l'abonnement (→ mur d'abonnement), sinon verrouillé par la progression (→ rien à vendre) */
+      allItems.push({type:"node",mod:m,isDone,isUnlocked,paywalled:freeWall,globalIdx:globalNodeIdx++});
       nodeCount++;
       if(saObj&&nodeCount===insertAt){
         const rawSaDone=(st.doneSA||[]).includes(saObj.id);
         const saDone=levelOpenFinal&&rawSaDone;
-        allItems.push({type:"sa",sa:saObj,isDone:saDone,isUnlocked:levelOpenFinal,globalIdx:globalNodeIdx++});
+        allItems.push({type:"sa",sa:saObj,isDone:saDone,isUnlocked:levelOpenFinal,paywalled:freeWall,globalIdx:globalNodeIdx++});
       }
     });
     /* Level stats */
@@ -3049,8 +3134,8 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
     const ring=sz+8;
     return(
       <div onClick={onClick} ref={isCurrent?currentNodeRef:null}
-        style={{display:'flex',flexDirection:'column',alignItems:'center',width:78,cursor:done||isCurrent?'pointer':locked?'default':'pointer',
-          opacity:done?1:isCurrent?1:item.isUnlocked?.65:.25,transition:'all .35s ease'}}>
+        style={{display:'flex',flexDirection:'column',alignItems:'center',width:78,cursor:(locked&&!item.paywalled)?'default':'pointer',
+          opacity:done?1:isCurrent?1:item.isUnlocked?.65:item.paywalled?.45:.25,transition:'all .35s ease'}}>
         {/* Outer glow ring */}
         <div style={{width:ring,height:ring,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',
           background:done?`linear-gradient(145deg,rgba(${accentRgba},.15),rgba(${accentRgba},.04))`:isCurrent?`linear-gradient(145deg,rgba(${accentRgba},.1),rgba(${accentRgba},.02))`:'transparent',
@@ -3113,11 +3198,12 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
             {freeWallBlock&&st.plan==="free"&&sec.li===(st.startLevel||0)+3&&(
               <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',background:'linear-gradient(135deg,rgba(200,164,78,.05),rgba(200,164,78,.02))',border:'2px solid rgba(200,164,78,.3)',padding:20,textAlign:'center'}}>
                 <div style={{fontSize:40,marginBottom:12}}>{I.crown({size:40})}</div>
-                <h3 style={{fontSize:16,fontWeight:800,color:'var(--gold)',marginBottom:6}}>Passe en Standard pour continuer</h3>
-                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:16}}>Débloque les 12 niveaux, le classement, le bilan personnalisé et tous les outils</p>
-                <a href="https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201" target="_blank" rel="noopener noreferrer" onClick={()=>_track('paywall_clicked',{source:'level_wall',plan:st.plan,level:level.id})} style={{display:'inline-block',padding:'12px 20px',borderRadius:10,background:'linear-gradient(135deg,rgba(200,164,78,.15),rgba(200,164,78,.05))',border:'1.5px solid rgba(200,164,78,.4)',color:'var(--gold)',fontWeight:700,fontSize:12,textDecoration:'none',cursor:'pointer',transition:'all .3s'}}>
-                  Standard — 4 jours gratuits puis 9,90€/mois
-                </a>
+                <h3 style={{fontSize:22,fontWeight:800,color:'var(--gold)',marginBottom:6}}>4 jours gratuits</h3>
+                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:16}}>Pour continuer le parcours : les 12 niveaux, le classement, le bilan personnalisé et tous les outils</p>
+                <button onClick={()=>openPaywall('level')} style={{display:'inline-block',padding:'13px 22px',borderRadius:10,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',border:'none',color:'var(--ink)',fontWeight:800,fontSize:12.5,cursor:'pointer',boxShadow:'0 6px 18px rgba(200,164,78,.25)',transition:'all .3s'}}>
+                  Essayer gratuitement
+                </button>
+                <p style={{fontSize:9,color:'var(--text-3)',marginTop:10}}>Puis 9,90 €/mois · sans engagement</p>
               </div>
             )}
 
@@ -3189,8 +3275,14 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
                         {items.map(item=>{
                           const isCur=item.globalIdx===currentGlobalIdx;
                           const handleClick=()=>{
-                            if(item.type==="sa"){if(item.isDone||item.isUnlocked){setSceneAn&&setSceneAn(item.sa)}}
-                            else{if(item.isDone||item.isUnlocked){setMod({...item.mod});go(item.mod.sec==="pr"?"practice":"culture")}}
+                            const open=item.isDone||item.isUnlocked;
+                            if(!open){
+                              /* Verrouillé par l'abonnement → on tend la main au lieu de ne rien faire */
+                              if(item.paywalled)openPaywall(item.type==="sa"?"analysis":item.mod.sec==="cu"?"culture":item.mod.type==="video"?"monologue":"exercise");
+                              return;
+                            }
+                            if(item.type==="sa"){setSceneAn&&setSceneAn(item.sa)}
+                            else{setMod({...item.mod});go(item.mod.sec==="pr"?"practice":"culture")}
                           };
                           return <Bubble key={item.type==="sa"?item.sa.id:item.mod.id} item={item} isCurrent={isCur} onClick={handleClick}/>;
                         })}
@@ -3325,6 +3417,19 @@ function Home({st,setSt,go,setMod,setExam}){
             <p className="body" style={{fontSize:12}}>{new Date().getHours()<12?"Prêt·e pour l'entraînement du matin ?":new Date().getHours()<18?"On continue l'entraînement ?":"Prêt·e pour une session du soir ?"}</p>
           </div>
         </div>
+
+        {/* Test de niveau passé à l'inscription : on le repropose ici, quand elle a le temps */}
+        {st.pendingQuiz&&!st.preview&&(
+          <button onClick={()=>{_track('level_quiz_resumed',{xp:st.xp});setSt(p=>({...p,onb:false}))}}
+            className="card obj-3d" style={{width:'100%',textAlign:'left',padding:16,marginBottom:18,display:'flex',alignItems:'center',gap:13,cursor:'pointer',background:'linear-gradient(160deg,rgba(167,139,250,.07),var(--bg-card))',border:'1px solid rgba(167,139,250,.2)'}}>
+            <div style={{width:38,height:38,borderRadius:11,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.target({size:17,sw:1.6,style:{color:'#fff'}})}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <p style={{fontSize:11.5,fontWeight:700,marginBottom:2}}>Situer votre niveau</p>
+              <p style={{fontSize:9.5,color:'var(--text-3)',lineHeight:1.4}}>Le petit test que vous avez passé — 2 minutes, pour ajuster votre parcours.</p>
+            </div>
+            {I.chR({size:15,sw:1.6,style:{color:'var(--violet)'}})}
+          </button>
+        )}
 
 {/* Daily tip moved to splash screen */}
         <div className="card-gold obj-3d" style={{padding:20,marginBottom:22}}>
@@ -6204,6 +6309,7 @@ function CoachChat({st,setSt,onClose}){
 
 /* ═══ FEED ═══ */
 function Feed({st,setSt}){
+  const openPaywall=usePaywall();
   const[warmup,setWarmup]=useState(false);
   const[avantScene,setAvantScene]=useState(false);
   const[sceneAn,setSceneAn]=useState(null);
@@ -6599,38 +6705,37 @@ function Feed({st,setSt}){
         <h1 className="heading" style={{fontSize:26,marginBottom:4}}>Outils</h1>
         <p className="body" style={{fontSize:12,marginBottom:20}}>Vos outils de travail du comédien</p>
 
-        {/* Unlock banner */}
-        <div style={{padding:'14px 16px',borderRadius:14,background:'linear-gradient(135deg,rgba(167,139,250,.12),rgba(139,92,246,.06))',border:'1px solid rgba(167,139,250,.25)',marginBottom:18,display:'flex',alignItems:'center',gap:12}}>
+        {/* Unlock banner — cliquable */}
+        <button onClick={()=>openPaywall("tools")} style={{width:'100%',textAlign:'left',padding:'14px 16px',borderRadius:14,background:'linear-gradient(135deg,rgba(167,139,250,.12),rgba(139,92,246,.06))',border:'1px solid rgba(167,139,250,.25)',marginBottom:18,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
           <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.crown({size:16})}</div>
           <div style={{flex:1}}>
             <p style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:2}}>Débloquez tous les outils</p>
-            <p style={{fontSize:10,color:'var(--text-3)'}}>Passez à Standard ou Coach dans votre Profil</p>
+            <p style={{fontSize:10,color:'var(--text-2)'}}>4 jours gratuits, puis 9,90 €/mois</p>
           </div>
-        </div>
+          {I.chR({size:16,sw:1.6,style:{color:'var(--violet)'}})}
+        </button>
 
-        {/* Tool previews — visible but locked */}
-        <div style={{opacity:.55,pointerEvents:'none',position:'relative'}}>
-          <div className="card" style={{padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,position:'relative'}}>
-            <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--coral-dim,rgba(248,113,113,.3)),var(--coral))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.zap({size:18,sw:1.6,style:{color:'#fff'}})}</div>
-            <div style={{flex:1}}><p className="label" style={{color:'var(--coral)',marginBottom:3}}>CHALLENGE DICTION</p><p style={{fontSize:11,fontWeight:700}}>60 secondes chrono</p></div>
-            <div style={{width:22,height:22,borderRadius:6,background:'var(--w08)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.lock?I.lock({size:12,style:{color:'var(--text-3)'}}):<span style={{fontSize:11,color:'var(--text-3)'}}>🔒</span>}</div>
-          </div>
-          <div className="card" style={{padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,position:'relative'}}>
-            <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.compass({size:18,sw:1.6,style:{color:'#fff'}})}</div>
-            <div style={{flex:1}}><p className="label" style={{color:'var(--violet)',marginBottom:3}}>AVANT-SCÈNE</p><p style={{fontSize:11,fontWeight:700}}>Préparez-vous avant de jouer</p></div>
-            <div style={{width:22,height:22,borderRadius:6,background:'var(--w08)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.lock?I.lock({size:12,style:{color:'var(--text-3)'}}):<span style={{fontSize:11,color:'var(--text-3)'}}>🔒</span>}</div>
-          </div>
-          <div className="card" style={{padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,position:'relative'}}>
-            <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.headphones({size:18,sw:1.6,style:{color:'var(--ink)'}})}</div>
-            <div style={{flex:1}}><p className="label-gold" style={{marginBottom:3}}>ÉCHAUFFEMENT VOCAL</p><p style={{fontSize:11,fontWeight:700}}>Préparez votre voix</p></div>
-            <div style={{width:22,height:22,borderRadius:6,background:'var(--w08)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.lock?I.lock({size:12,style:{color:'var(--text-3)'}}):<span style={{fontSize:11,color:'var(--text-3)'}}>🔒</span>}</div>
-          </div>
-          <div className="card" style={{padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,position:'relative'}}>
-            <div style={{width:42,height:42,borderRadius:12,background:'rgba(200,164,78,.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.book({size:18,sw:1.6,style:{color:'var(--gold)'}})}</div>
-            <div style={{flex:1}}><p className="label-gold" style={{marginBottom:3}}>MON TEXTE</p><p style={{fontSize:11,fontWeight:700}}>Travaillez vos textes</p></div>
-            <div style={{width:22,height:22,borderRadius:6,background:'var(--w08)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.lock?I.lock({size:12,style:{color:'var(--text-3)'}}):<span style={{fontSize:11,color:'var(--text-3)'}}>🔒</span>}</div>
-          </div>
-        </div>
+        {/* Outils verrouillés — visibles ET cliquables : le clic ouvre le mur d'abonnement */}
+        {[
+          {src:"challenge",label:"CHALLENGE DICTION",sub:"60 secondes chrono",col:"var(--coral)",bg:"linear-gradient(135deg,rgba(248,113,113,.3),var(--coral))",ic:I.zap,icCol:"#fff"},
+          {src:"avantscene",label:"AVANT-SCÈNE",sub:"Préparez-vous avant de jouer",col:"var(--violet)",bg:"linear-gradient(135deg,var(--violet-dim),var(--violet))",ic:I.compass,icCol:"#fff"},
+          {src:"warmup",label:"ÉCHAUFFEMENT VOCAL",sub:"Préparez votre voix",col:"var(--gold)",bg:"linear-gradient(135deg,var(--gold-dim),var(--gold))",ic:I.headphones,icCol:"var(--ink)"},
+          {src:"montexte",label:"MON TEXTE",sub:"Travaillez vos textes",col:"var(--gold)",bg:"rgba(200,164,78,.12)",ic:I.book,icCol:"var(--gold)"}
+        ].map(t=>(
+          <button key={t.src} onClick={()=>openPaywall(t.src)} className="card obj-3d"
+            style={{width:'100%',textAlign:'left',padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,cursor:'pointer',opacity:.8,transition:'opacity .2s'}}
+            onMouseOver={e=>e.currentTarget.style.opacity=1} onMouseOut={e=>e.currentTarget.style.opacity=.8}>
+            <div style={{width:42,height:42,borderRadius:12,background:t.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{t.ic({size:18,sw:1.6,style:{color:t.icCol}})}</div>
+            <div style={{flex:1}}>
+              <p className="label" style={{color:t.col,marginBottom:3}}>{t.label}</p>
+              <p style={{fontSize:11,fontWeight:700}}>{t.sub}</p>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
+              <span style={{fontSize:9,fontWeight:700,color:'var(--gold)',whiteSpace:'nowrap'}}>Débloquer</span>
+              <div style={{width:22,height:22,borderRadius:6,background:'var(--w08)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.lock({size:12,style:{color:'var(--text-3)'}})}</div>
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -7142,6 +7247,140 @@ const EX_PURPOSE={
 };
 
 /* ═══ MODLIST ═══ */
+/* ═══ EXERCICE GUIDÉ ═══
+   Les consignes portaient déjà leurs durées (« Inspirez par le nez (4s) ») mais rien
+   ne les jouait : un exercice annoncé 10 minutes se terminait en 40 secondes de clics.
+   On lit ces durées dans le texte et on les fait vivre — minuteur, cercle de
+   respiration animé, cycles comptés, repères sonores. Aucune consigne n'est inventée. */
+
+const BREATH_DEFAULT={in:4,out:6,hold:4};
+const PHASE_LABEL={in:"Inspirez",out:"Expirez",hold:"Retenez",timer:"En cours"};
+const PHASE_TONE={in:392,out:294,hold:330,timer:349};
+const PHASE_SCALE={in:1,out:.52,timer:.8};
+
+function parseStep(text){
+  const t=(text||"").toLowerCase();
+  let secs=null,m;
+  if((m=t.match(/\((\d+)\s*(?:s|sec|secondes?)\)/)))secs=+m[1];
+  else if((m=t.match(/(\d+)\s*secondes?/)))secs=+m[1];
+  else if((m=t.match(/sur\s+(\d+)\s+temps/)))secs=+m[1];
+  else if((m=t.match(/(\d+)\s*(?:minutes?|min\b)/)))secs=+m[1]*60;
+  const rep=t.match(/(\d+)\s*fois/);
+  const phase=/inspir/.test(t)?"in"
+    :/expir|soufflez|sssss|ahhh/.test(t)?"out"
+    :/reten(ez|ir)|bloquez|apnée|suspendez/.test(t)?"hold":null;
+  return{secs,reps:rep?+rep[1]:null,phase,loop:/répét|recommenc|en boucle|chaque sens/.test(t)};
+}
+
+/* Reconstitue le cycle de respiration de l'exercice à partir de ses propres consignes */
+function breathPlan(steps){
+  const plan=[];
+  (steps||[]).forEach(s=>{const p=parseStep(s);if(p.phase)plan.push({phase:p.phase,secs:p.secs||BREATH_DEFAULT[p.phase]})});
+  return plan.length>=2?plan:null;
+}
+
+/* Ce qu'il faut guider pour une consigne donnée — ou rien si elle ne se chronomètre pas */
+function stepGuide(steps,i){
+  const meta=parseStep(steps[i]);
+  const bp=breathPlan(steps);
+  if(meta.loop&&meta.reps&&bp)return{plan:bp,cycles:meta.reps};
+  if(meta.phase)return{plan:[{phase:meta.phase,secs:meta.secs||BREATH_DEFAULT[meta.phase]}],cycles:meta.reps||1};
+  /* Au-delà de 5 minutes, le nombre lu décrit un projet (« un spectacle de 15 minutes »),
+     pas une consigne à chronométrer : on ne guide pas. */
+  if(meta.secs&&meta.secs<=300)return{plan:[{phase:"timer",secs:meta.secs}],cycles:meta.reps||1};
+  if(meta.reps&&meta.reps<=20)return{plan:[{phase:"timer",secs:4}],cycles:meta.reps};
+  return null;
+}
+
+const fmtDur=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+
+/* « 10 min » → 600. Sert à répartir la durée annoncée sur les consignes qui n'en portent pas. */
+function durToSecs(d){
+  const t=String(d||"").toLowerCase();
+  const m=t.match(/(\d+)\s*(?:min|minutes?)/);if(m)return +m[1]*60;
+  const s=t.match(/(\d+)\s*(?:s|secondes?)/);if(s)return +s[1];
+  return 0;
+}
+
+function Guide({plan,cycles=1,onComplete,soft=false}){
+  const[running,setRunning]=useState(false);
+  const[pos,setPos]=useState({i:0,c:1});
+  const[left,setLeft]=useState(plan[0].secs);
+  const[finished,setFinished]=useState(false);
+  /* En mode « repère » (consigne sans durée écrite), le minuteur reste replié :
+     il est disponible, il ne s'impose pas. */
+  const[open,setOpen]=useState(!soft);
+  const endRef=useRef(0);
+  const cur=plan[pos.i];
+
+  useEffect(()=>{
+    if(!running||finished)return;
+    endRef.current=Date.now()+left*1000;
+    const id=setInterval(()=>{
+      const rest=(endRef.current-Date.now())/1000;
+      if(rest>0.05){setLeft(rest);return}
+      clearInterval(id);
+      const nextI=pos.i+1;
+      if(nextI<plan.length){SFX.play(PHASE_TONE[plan[nextI].phase]||349,.18,'sine',.035);setLeft(plan[nextI].secs);setPos({i:nextI,c:pos.c})}
+      else if(pos.c<cycles){SFX.play(PHASE_TONE[plan[0].phase]||349,.18,'sine',.035);setLeft(plan[0].secs);setPos({i:0,c:pos.c+1})}
+      else{setRunning(false);setFinished(true);setLeft(0);SFX.success();onComplete&&onComplete()}
+    },100);
+    return()=>clearInterval(id);
+  },[running,pos,finished]);
+
+  /* Le cercle garde sa taille pendant une rétention : on remonte à la dernière phase qui bouge */
+  let scale=PHASE_SCALE[cur.phase];
+  if(scale===undefined){for(let k=pos.i-1;k>=0;k--){if(PHASE_SCALE[plan[k].phase]!==undefined){scale=PHASE_SCALE[plan[k].phase];break}}}
+  if(scale===undefined)scale=.75;
+
+  const SZ=soft?100:132,R=soft?40:54,C=2*Math.PI*R;
+  const frac=Math.max(0,Math.min(1,left/cur.secs));
+  const totalSecs=plan.reduce((a,p)=>a+p.secs,0)*cycles;
+  const col=cur.phase==="out"?"var(--violet)":cur.phase==="hold"?"var(--text-2)":soft?"var(--text-2)":"var(--gold)";
+  const label=finished?"TERMINÉ":soft?"MINUTEUR":PHASE_LABEL[cur.phase].toUpperCase();
+
+  const start=()=>{SFX.play(PHASE_TONE[cur.phase]||349,.18,'sine',.035);setRunning(true)};
+
+  if(soft&&!open)return(
+    <button onClick={()=>{setOpen(true);start()}} style={{marginTop:14,display:'flex',alignItems:'center',gap:8,padding:'9px 14px',borderRadius:10,background:'var(--w02)',border:'1px solid var(--line)',cursor:'pointer',color:'var(--text-3)'}}>
+      {I.clock({size:13,sw:1.5})}
+      <span style={{fontSize:10.5,fontWeight:700,color:'var(--text-2)'}}>Minuteur {fmtDur(plan[0].secs)}</span>
+      <span style={{fontSize:9.5,color:'var(--text-3)'}}>· prendre le temps</span>
+    </button>
+  );
+
+  return(
+    <div style={{marginTop:16,padding:soft?'14px 16px':'18px 16px',borderRadius:14,background:soft?'var(--w01)':'var(--w02)',border:'1px solid var(--line)'}}>
+      <div style={{position:'relative',width:SZ,height:SZ,margin:'0 auto 12px'}}>
+        {/* Disque qui respire */}
+        <div style={{position:'absolute',inset:soft?10:14,borderRadius:'50%',background:`radial-gradient(circle,${cur.phase==="out"?'rgba(167,139,250,.22)':soft?'rgba(255,255,255,.06)':'rgba(200,164,78,.22)'},transparent 70%)`,
+          transform:`scale(${running?scale:.75})`,transition:`transform ${running?cur.secs:0.4}s ease-in-out`}}/>
+        {/* Anneau de décompte */}
+        <svg width={SZ} height={SZ} style={{position:'absolute',inset:0,transform:'rotate(-90deg)'}}>
+          <circle cx={SZ/2} cy={SZ/2} r={R} fill="none" stroke="var(--w08)" strokeWidth={3}/>
+          <circle cx={SZ/2} cy={SZ/2} r={R} fill="none" stroke={col} strokeWidth={3} strokeLinecap="round"
+            strokeDasharray={C} strokeDashoffset={C*(1-frac)} style={{transition:'stroke-dashoffset .12s linear'}}/>
+        </svg>
+        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+          <p style={{fontSize:soft?20:26,fontWeight:800,color:'var(--text)',lineHeight:1}}>{finished?"✓":left>=60?fmtDur(left):Math.ceil(left)}</p>
+          <p style={{fontSize:soft?7.5:9.5,fontWeight:700,letterSpacing:'.1em',color:col,marginTop:4}}>{label}</p>
+        </div>
+      </div>
+
+      {cycles>1&&<p style={{textAlign:'center',fontSize:10.5,color:'var(--text-2)',marginBottom:12,fontWeight:600}}>Cycle {pos.c} / {cycles} <span style={{color:'var(--text-3)',fontWeight:400}}>· {fmtDur(totalSecs)} en tout</span></p>}
+      {cycles<=1&&<p style={{textAlign:'center',fontSize:10.5,color:'var(--text-3)',marginBottom:12}}>{soft?"Temps suggéré : ":"Durée : "}{fmtDur(totalSecs)}</p>}
+
+      <div style={{display:'flex',gap:8,justifyContent:'center'}}>
+        {!finished&&<button onClick={()=>running?setRunning(false):start()} className={running?"btn-outline":"btn-gold"} style={{padding:'10px 22px',fontSize:11,fontWeight:700}}>
+          {running?"Pause":pos.c>1||pos.i>0||left<cur.secs?"Reprendre":"Démarrer"}
+        </button>}
+        {!finished&&<button onClick={()=>{setRunning(false);setFinished(true);onComplete&&onComplete()}} style={{padding:'10px 16px',fontSize:10.5,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Passer</button>}
+        {finished&&<button onClick={()=>{setFinished(false);setPos({i:0,c:1});setLeft(plan[0].secs)}} style={{padding:'10px 16px',fontSize:10.5,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Recommencer</button>}
+      </div>
+    </div>
+  );
+}
+
 function ExV({mod,st,setSt,back}){
   const[step,setStep]=useState(0);
   const[done,setDone]=useState(st.doneEx.includes(mod.id));
@@ -7154,6 +7393,14 @@ function ExV({mod,st,setSt,back}){
   const[showPremiumModal,setShowPremiumModal]=useState(false);
   const[feedbackGiven,setFeedbackGiven]=useState(false);
   const isV=mod.type==="video";const steps=isV?mod.instructions:mod.steps;
+  /* Guidage de la consigne en cours + temps réellement passé sur l'exercice */
+  const guide=React.useMemo(()=>stepGuide(steps,step),[mod.id,step]);
+  /* Consigne sans durée écrite : on répartit la durée annoncée de l'exercice, à titre de repère */
+  const durSecs=React.useMemo(()=>durToSecs(mod.dur),[mod.id]);
+  const softSecs=(!guide&&durSecs>0&&steps&&steps.length)?Math.max(30,Math.min(120,Math.round(durSecs/steps.length/10)*10)):0;
+  const startedAt=useRef(Date.now());
+  const[elapsed,setElapsed]=useState(0);
+  useEffect(()=>{const id=setInterval(()=>setElapsed(Math.floor((Date.now()-startedAt.current)/1000)),1000);return()=>clearInterval(id)},[]);
   const finish=(starCount)=>{if(!done){setDone(true);setXp(true);setShowCelebration(true);SFX.xp();const s=starCount||3;const now=new Date().toISOString();setSt(p=>({...p,xp:p.xp+mod.xp,weekXP:(p.weekXP||0)+mod.xp,weekEx:(p.weekEx||0)+1,doneEx:[...p.doneEx,mod.id],stars:{...p.stars,[mod.id]:Math.max(s,p.stars?.[mod.id]||0)},catLastPracticed:{...(p.catLastPracticed||{}),[mod.cat]:now}}))}};
   const giveFeedback=(level)=>{/* level: "easy","ok","hard" */
     setFeedbackGiven(true);SFX.click();
@@ -7225,6 +7472,9 @@ function ExV({mod,st,setSt,back}){
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginBottom:8}}><EI e={mod.icon} s={36}/></div>
           <h1 className="heading" style={{fontSize:22}}>{mod.title}</h1>
           <p style={{fontSize:10,color:'var(--text-3)',marginTop:4}}>{mod.cat} · {mod.dur} · <span style={{color:'var(--gold)'}}>+{mod.xp} XP</span></p>
+          <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:5,display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>
+            {I.clock({size:11,sw:1.5})} {fmtDur(elapsed)} de pratique
+          </p>
         </div>
         {EX_PURPOSE[mod.id]&&<div style={{padding:14,borderRadius:12,background:'linear-gradient(135deg,rgba(200,164,78,.04),rgba(167,139,250,.04))',border:'1px solid rgba(200,164,78,.1)',marginBottom:16}}>
           <div style={{display:'flex',gap:8,alignItems:'flex-start'}}><span style={{color:'var(--gold)',flexShrink:0,marginTop:1}}>{I.target({size:13,sw:1.4})}</span>
@@ -7248,6 +7498,10 @@ function ExV({mod,st,setSt,back}){
               <p className="label">ÉTAPE {step+1}</p>
             </div>
             <p className="body" style={{fontSize:13,color:'var(--text)',lineHeight:1.7}}>{steps[step]}</p>
+            {guide&&<Guide key={mod.id+"-"+step} plan={guide.plan} cycles={guide.cycles}
+              onComplete={()=>{if(step<steps.length-1)setStep(step+1);else if(!isV&&!done)finish()}}/>}
+            {!guide&&softSecs>0&&<Guide key={mod.id+"-soft-"+step} soft plan={[{phase:"timer",secs:softSecs}]} cycles={1}
+              onComplete={()=>{if(step<steps.length-1)setStep(step+1);else if(!isV&&!done)finish()}}/>}
           </div>
           <div style={{display:'flex',justifyContent:'space-between',marginTop:18}}>
             <button onClick={()=>setStep(Math.max(0,step-1))} className="btn-outline" style={{padding:'8px 14px',fontSize:10,opacity:step===0?.3:1}}>← Précédent</button>
@@ -7594,7 +7848,38 @@ function Profile({st,setSt}){
             alert('Mode admin : plan changé en '+newPlan.toUpperCase());
           }
         }}>MON ABONNEMENT</p>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:24}}>
+        {/* ── Plan gratuit : l'essai est le titre, et il y a un bouton pour le prendre ── */}
+        {st.plan==="free"&&(
+          <div style={{marginBottom:24}}>
+            <div style={{padding:'22px 20px',borderRadius:16,background:'linear-gradient(160deg,rgba(200,164,78,.09),var(--bg-card))',border:'2px solid var(--gold)',marginBottom:12,boxShadow:'0 8px 30px rgba(200,164,78,.10)'}}>
+              <p style={{fontSize:9,fontWeight:800,letterSpacing:'.16em',color:'var(--gold)',marginBottom:8}}>STANDARD</p>
+              <h3 className="heading" style={{fontSize:26,lineHeight:1.15,marginBottom:6}}>4 jours gratuits</h3>
+              <p style={{fontSize:11,color:'var(--text-2)',marginBottom:16,lineHeight:1.5}}>Puis 9,90 €/mois. Sans engagement, résiliable à tout moment.</p>
+              <div style={{marginBottom:18}}>
+                {["Tout le parcours (12 niveaux)","Toutes les analyses de scène","Avant-Scène & Connexion","Mon Texte & Mon Monologue","Bilan personnalisé","Bibliothèque complète"].map((f,i)=>(
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
+                    <span style={{color:'var(--emerald)',flexShrink:0}}>{I.check({size:12,sw:2})}</span>
+                    <p style={{fontSize:11,color:'var(--text)'}}>{f}</p>
+                  </div>
+                ))}
+              </div>
+              <button onClick={()=>{_track('plan_clicked',{plan:'standard',price:9.90,source:'profile_hero'});SFX.success();window.location.href=STRIPE_STANDARD}}
+                className="btn-gold btn-pulse" style={{width:'100%',padding:'15px 0',fontSize:13,fontWeight:800}}>Essayer gratuitement</button>
+            </div>
+
+            <div style={{padding:'18px 20px',borderRadius:16,background:'rgba(171,71,188,.05)',border:'1.5px solid rgba(171,71,188,.25)',marginBottom:12}}>
+              <p style={{fontSize:9,fontWeight:800,letterSpacing:'.16em',color:'var(--purple)',marginBottom:6}}>PREMIUM</p>
+              <p style={{fontSize:16,fontWeight:800,marginBottom:6}}>29,90 €<span style={{fontSize:10,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
+              <p style={{fontSize:10.5,color:'var(--text-2)',marginBottom:14,lineHeight:1.5}}>Tout Standard, plus un coach personnel par chat, des retours vidéo et la correction de vos monologues.</p>
+              <button onClick={()=>{_track('plan_clicked',{plan:'premium',price:29.90,source:'profile_hero'});SFX.levelUp();window.location.href=STRIPE_PREMIUM}}
+                style={{width:'100%',padding:'13px 0',fontSize:12,fontWeight:700,color:'var(--purple)',borderRadius:10,background:'rgba(171,71,188,.1)',border:'1px solid rgba(171,71,188,.3)',cursor:'pointer'}}>Passer en Premium</button>
+            </div>
+
+            <p style={{fontSize:9.5,color:'var(--text-3)',textAlign:'center'}}>Votre plan actuel : Gratuit — 3 premiers niveaux, quiz de culture, badges et streaks.</p>
+          </div>
+        )}
+
+        {st.plan!=="free"&&<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:24}}>
           {[{id:"free",name:"Gratuit",price:"0€",highlight:false,features:["3 premiers niveaux","Quiz culture de base","Pulse du jour","Challenge Diction","Badges & streaks"]},
             {id:"standard",name:"Standard",price:"9,90€/mois",trial:"4 jours gratuits",highlight:true,features:["Tout le parcours (12 niveaux)","Toutes les analyses de scène","Avant-Scène & Connexion","Mon Texte & Mon Monologue","Bilan personnalisé","Bibliothèque complète"]},
             {id:"premium",name:"Premium",price:"29,90€/mois",highlight:false,features:["Tout Standard","Coach personnel par chat","Retours vidéo personnalisés","Corrections de vos monologues","Programme sur mesure","Accès prioritaire nouveautés"]}
@@ -7608,7 +7893,7 @@ function Profile({st,setSt}){
               {st.plan===plan.id&&<div style={{fontSize:7,marginTop:8,padding:'4px 8px',borderRadius:8,background:'rgba(74,222,128,.15)',color:'var(--emerald)',fontWeight:700}}>✓ Actif</div>}
             </button>
           ))}
-        </div>
+        </div>}
 
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
           <p className="label-gold">COLLECTION DE BADGES</p>
@@ -8034,9 +8319,26 @@ return(
   );
 }
 
-const defaultSt={xp:0,initialXp:0,streak:0,lastActiveDate:null,doneEx:[],doneCu:[],doneSA:[],perf:0,vid:0,lv:0,startLevel:0,onb:false,user:null,plan:"free",showCGU:false,theme:"dark",stars:{},weekXP:0,weekEx:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:null,perfectWeeks:0,weekStart:new Date().toDateString(),srs:{},seenBadges:[],warmups:0,avantScenes:0,connexions:0,challenges:0,totalBreaths:0,coachMessages:[],seenTuto:false,exFeedback:{},catLastPracticed:{},firstActivityDate:null,saResults:{},cuResults:{},lastSADate:null,dailyPulse:{answers:[],lastAnswerDate:null},challengeScores:{},passedExams:[],unreadMessageCount:0,messages:[]};
+const defaultSt={xp:0,initialXp:0,streak:0,lastActiveDate:null,doneEx:[],doneCu:[],doneSA:[],perf:0,vid:0,lv:0,startLevel:0,onb:false,preview:false,pendingQuiz:false,resumeSignup:false,user:null,plan:"free",showCGU:false,theme:"dark",stars:{},weekXP:0,weekEx:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:null,perfectWeeks:0,weekStart:new Date().toDateString(),srs:{},seenBadges:[],warmups:0,avantScenes:0,connexions:0,challenges:0,totalBreaths:0,coachMessages:[],seenTuto:false,exFeedback:{},catLastPracticed:{},firstActivityDate:null,saResults:{},cuResults:{},lastSADate:null,dailyPulse:{answers:[],lastAnswerDate:null},challengeScores:{},passedExams:[],unreadMessageCount:0,messages:[]};
 
 const DAILY_TIPS=["La discipline, c'est la clé. Un peu chaque jour vaut mieux qu'un marathon une fois par mois.","Un bon comédien écoute plus qu'il ne parle.","Le corps ne ment jamais sur scène.","Respirez. La respiration est le fondement de tout jeu.","Osez le silence — c'est souvent là que se joue l'essentiel.","Ne jouez pas l'émotion, jouez l'intention. L'émotion viendra.","Le trac n'est pas votre ennemi, c'est de l'énergie brute à canaliser.","Chaque texte a un rythme. Trouvez-le avant de chercher les émotions.","Le regard, c'est 80% du jeu. Travaillez-le.","Un acteur qui s'ennuie ennuie le public. Restez curieux.","La voix est un instrument — accordez-la chaque jour.","Ne cherchez pas à être naturel. Cherchez à être vrai.","Le sous-texte est plus important que le texte.","Travaillez vos points faibles, mais jouez sur vos forces.","La scène est un terrain de jeu, pas un tribunal.","L'improvisation se prépare. Paradoxal, mais vrai.","Écoutez votre partenaire comme si c'était la première fois.","Le personnage commence dans le corps, pas dans la tête.","Chaque réplique est une action. Que faites-vous à l'autre ?","La perfection n'existe pas. L'authenticité, oui.","Répétez jusqu'à ce que ce soit facile. Puis rendez-le frais.","Le théâtre est un sport : échauffez-vous avant de jouer.","Votre plus grand outil, c'est votre vulnérabilité.","Ne jouez jamais seul·e. Même un monologue s'adresse à quelqu'un.","Observez les gens. La vie est la meilleure école de jeu.","La lenteur sur scène n'est pas l'ennui — c'est de la précision.","Articulez. Si le public ne comprend pas, il décroche.","Chaque entrée en scène est un événement. N'entrez jamais neutre.","Le jeu, c'est réagir. Pas réciter.","Le plaisir de jouer est contagieux. Amusez-vous."];
+
+/* ═══ MODE DÉCOUVERTE ═══
+   On entre dans l'app sans compte : rien n'est enregistré tant qu'elle n'en crée pas un,
+   et le bandeau le dit clairement plutôt que de bloquer la porte d'entrée. */
+function PreviewBar({onSignup}){
+  return(
+    <div style={{position:'fixed',left:0,right:0,bottom:'calc(80px + env(safe-area-inset-bottom,0px))',zIndex:49,padding:'0 12px',pointerEvents:'none'}}>
+      <div className="mw" style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:14,background:'rgba(20,16,10,.94)',backdropFilter:'blur(16px)',border:'1px solid rgba(200,164,78,.3)',boxShadow:'0 8px 28px rgba(0,0,0,.45)',pointerEvents:'auto'}}>
+        <div style={{flex:1,minWidth:0}}>
+          <p style={{fontSize:11,fontWeight:700,color:'var(--gold)',marginBottom:1}}>Mode découverte</p>
+          <p style={{fontSize:9.5,color:'var(--text-3)',lineHeight:1.4}}>Créez un compte pour garder votre progression.</p>
+        </div>
+        <button onClick={onSignup} className="btn-gold" style={{padding:'9px 14px',fontSize:10.5,fontWeight:800,flexShrink:0}}>Créer mon compte</button>
+      </div>
+    </div>
+  );
+}
 
 function App(){
   const[st,setSt]=useState(()=>{const saved=loadState();if(!saved)return defaultSt;const merged={...defaultSt,...saved,plan:saved.plan||(saved.premium?"standard":"free"),srs:saved.srs||{},seenBadges:saved.seenBadges||[],exFeedback:saved.exFeedback||{},catLastPracticed:saved.catLastPracticed||{},firstActivityDate:saved.firstActivityDate||saved.lastActiveDate||null,saResults:saved.saResults||{},cuResults:saved.cuResults||{},lastSADate:saved.lastSADate||null,dailyPulse:saved.dailyPulse||{answers:[],lastAnswerDate:null},challengeScores:saved.challengeScores||{},passedExams:saved.passedExams||[],unreadMessageCount:saved.unreadMessageCount||0,messages:saved.messages||[]};return merged;});
@@ -8044,6 +8346,8 @@ function App(){
   const[mod,setMod]=useState(null);
   const[exam,setExam]=useState(null);
   const[badgePopup,setBadgePopup]=useState(null);
+  const[paywall,setPaywall]=useState(null);
+  const openPaywall=React.useCallback(src=>{SFX.whoosh&&SFX.whoosh();setPaywall(src||"default")},[]);
   const[tutoStep,setTutoStep]=useState(0);
   const[showTip,setShowTip]=useState("visible");/* "visible" | "exiting" | false */
   const tipParticles=useState(()=>{
@@ -8174,16 +8478,36 @@ function App(){
   const answeredIds=dailyPulse.answers.map(a=>a.qId);
   const remainingQs=DAILY_QUESTIONS.filter(q=>!answeredIds.includes(q.id));
   const todayQuestion=(!alreadyAnsweredToday&&st.onb)?(remainingQs.length>0?remainingQs[0]:DAILY_QUESTIONS[dailyPulse.answers.length%DAILY_QUESTIONS.length]):null;
-  const[showDailyQ,setShowDailyQ]=useState(!!todayQuestion);
+  const[showDailyQ,setShowDailyQ]=useState(!!todayQuestion&&!st.preview);
 
   /* CGU from profile */
   if(st.showCGU) return <CGU onClose={()=>setSt(p=>({...p,showCGU:false}))}/>;
 
-  if(!st.onb)return<Onboard done={(i,user)=>{SFX.success();window.scrollTo({top:0,left:0,behavior:'instant'});_track('onboarding_completed',{avatar:user?.avatar,goal:user?.goal,experience:user?.exp});if(user?.pseudo)posthog.identify(user.pseudo,{name:user.pseudo,avatar:user.avatar,goal:user.goal,experience:user.exp});setSt(p=>({...p,onb:true,xp:LEVELS[i]?LEVELS[i].xp:0,lv:i,startLevel:i,user,streak:1,lastActiveDate:new Date().toDateString(),seenTuto:false}));setTutoStep(0)}}/>;
+  if(!st.onb)return<Onboard startStep={st.resumeSignup?1:st.pendingQuiz&&st.user?4:0} done={(i,user,opts)=>{
+    const o=opts||{};
+    /* Test de niveau repassé depuis l'app : on ne retouche pas le profil déjà rempli */
+    const retake=!!(st.pendingQuiz&&st.user&&!st.resumeSignup);
+    SFX.success();window.scrollTo({top:0,left:0,behavior:'instant'});
+    _track('onboarding_completed',{avatar:user?.avatar,preview:!!o.preview,quiz_skipped:!!o.skippedQuiz});
+    if(user?.pseudo&&!o.preview)posthog.identify(user.pseudo,{name:user.pseudo,avatar:user.avatar});
+    setSt(p=>{
+      const n={...p,onb:true,resumeSignup:false,preview:!!o.preview,pendingQuiz:!!o.skippedQuiz,
+        user:o.preview?user:retake?p.user:{...(p.user||{}),...(user||{})},
+        streak:p.streak||1,lastActiveDate:new Date().toDateString(),seenTuto:!!p.seenTuto};
+      /* Le test de niveau ne fait que placer le point de départ — jamais reculer quelqu'un qui a déjà progressé */
+      if(!o.skippedQuiz){
+        n.xp=Math.max(p.xp||0,LEVELS[i]?LEVELS[i].xp:0);
+        n.lv=Math.max(p.lv||0,i);n.startLevel=Math.max(p.startLevel||0,i);
+      }
+      return n;
+    });
+    if(!st.seenTuto)setTutoStep(0);
+  }}/>;
 
   /* ═══ DAILY TIP SPLASH SCREEN ═══ */
   const dismissTip=()=>{if(showTip==="visible"){SFX.whoosh();setShowTip("exiting");setTimeout(()=>setShowTip(false),2000)}};
-  if(showTip){
+  /* En mode découverte, on ne met pas un écran de plus entre elle et l'application */
+  if(showTip&&!st.preview){
     const tipIdx=Math.floor(Date.now()/86400000)%DAILY_TIPS.length;
     const isExiting=showTip==="exiting";
     return(
@@ -8349,18 +8673,22 @@ function App(){
   if(exam) return <ExamView levelId={exam} st={st} setSt={setSt} onPass={()=>{SFX.levelUp();setExam(null)}} onBack={()=>setExam(null)}/>;
 
   return(
+    <PaywallCtx.Provider value={openPaywall}>
     <div style={{minHeight:'100vh',background:'var(--bg)'}}>
-      {!st.seenTuto&&tab==="home"&&<TutoOverlay step={tutoStep} onNext={()=>setTutoStep(tutoStep+1)} onDone={()=>setSt(p=>({...p,seenTuto:true}))}/>}
+      {!st.seenTuto&&!st.preview&&tab==="home"&&<TutoOverlay step={tutoStep} onNext={()=>setTutoStep(tutoStep+1)} onDone={()=>setSt(p=>({...p,seenTuto:true}))}/>}
       {badgePopup&&<BadgePopup badge={badgePopup} onClose={()=>setBadgePopup(null)}/>}
+      {paywall&&<Paywall source={paywall} plan={st.plan} onClose={()=>setPaywall(null)}/>}
       <Top xp={st.xp} streak={st.streak} passedExams={st.passedExams}/>
-      <InstallPrompt st={st}/>
+      {!st.preview&&<InstallPrompt st={st}/>}
       {tab==="home"&&<Home st={st} setSt={setSt} go={go} setMod={setMod} setExam={setExam}/>}
       {tab==="practice"&&<ModList title="Pratique" sub="Exercices progressifs" mods={PR} dk="doneEx" st={st} setSt={setSt} active={mod} setMod={setMod} sec="pr"/>}
       {tab==="culture"&&<ModList title="Culture" sub="Histoire, auteurs, techniques" mods={CU} dk="doneCu" st={st} setSt={setSt} active={mod} setMod={setMod} sec="cu"/>}
       {tab==="feed"&&<Feed st={st} setSt={setSt}/>}
       {tab==="profile"&&<Profile st={st} setSt={setSt}/>}
+      {st.preview&&<PreviewBar onSignup={()=>{_track('preview_signup_clicked',{xp:st.xp});setSt(p=>({...p,onb:false,preview:false,resumeSignup:true}))}}/>}
       <Nav tab={tab} go={go} plan={st.plan}/>
     </div>
+    </PaywallCtx.Provider>
   );
 }
 

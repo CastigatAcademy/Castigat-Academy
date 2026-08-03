@@ -36,3 +36,31 @@ git add -A && git commit -m "..." && git push
   la direction artistique se réglera dans ces variables.
 - **Autofill** : les champs remplis automatiquement par Chrome ne passent plus
   en lavande clair sur fond noir.
+
+## Ce qui a changé le 03/08/2026 (chantier B)
+
+**Tunnel de vente.** Un seul mur d'abonnement (`Paywall`), ouvrable depuis
+n'importe quel écran via `usePaywall()`. Tout ce qui est verrouillé est
+maintenant cliquable et y mène : les 4 outils, le bandeau des outils, les nœuds
+du parcours bloqués par l'abonnement. « 4 jours gratuits » est devenu le titre,
+avec un bouton d'essai, dans le mur, sur le mur de niveau et dans le Profil.
+
+**Écran d'exercice.** Les durées écrites dans les consignes (« (4s) »,
+« 15 secondes », « sur 4 temps ») sont lues et jouées : cercle de respiration
+animé, décompte, repères sonores, cycles comptés pour « Répétez 10 fois »,
+enchaînement automatique. Les consignes sans durée reçoivent un minuteur replié
+calé sur la durée annoncée de l'exercice. Un chrono de pratique s'affiche en tête.
+Rien n'est inventé : tout vient du texte des consignes (`parseStep`, `stepGuide`).
+
+**Entrée dans l'app.** Mode découverte depuis la page d'accueil (`st.preview`) :
+on entre sans compte, un bandeau propose la création de compte. Le test de
+niveau est devenu optionnel et reproposé plus tard sur l'accueil
+(`st.pendingQuiz`). En découverte : pas de conseil du jour, pas de tutoriel,
+pas d'invitation à installer.
+
+### Point à trancher (non modifié)
+
+Dans l'onglet Pratique, les exercices ne sont filtrés que par l'XP, pas par le
+plan : une compte gratuit avec assez d'XP peut ouvrir des exercices de niveaux
+que le parcours, lui, verrouille derrière l'abonnement. C'est un choix
+commercial, pas un bug de code — à décider avant de le refermer.
