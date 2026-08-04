@@ -275,160 +275,21 @@ function CGU({onClose}){
 }
 
 /* ═══ SVG AVATARS ═══ */
+/* Les six masques. Dessinés dans le même style que le répertoire : buste
+   cadré serré, pour rester lisibles jusqu'à vingt-quatre pixels. */
 function AvatarSVG({id,size=60}){
-  const s=size/60;
-  const common={width:size,height:size,viewBox:"0 0 60 60",fill:"none"};
-  const avatars={
-    dramaturge:(<svg {...common}>
-      <circle cx="30" cy="30" r="28" fill="#1a1a26" stroke="var(--gold-dim)" strokeWidth="1"/>
-      <circle cx="30" cy="24" r="9" fill="var(--bg-card)" stroke="var(--gold)" strokeWidth="1"/>
-      <circle cx="27" cy="22" r="1.2" fill="var(--gold)"/>
-      <circle cx="33" cy="22" r="1.2" fill="var(--gold)"/>
-      <path d="M27 27c1 1.5 2 2 3 2s2-.5 3-2" stroke="var(--gold)" strokeWidth=".8" fill="none"/>
-      <path d="M20 12l4 2M40 12l-4 2" stroke="var(--gold-dim)" strokeWidth=".8"/>
-      <path d="M22 17c2-3 5-5 8-5s6 2 8 5" fill="var(--gold-dim)" opacity=".3" stroke="var(--gold)" strokeWidth=".6"/>
-      <rect x="21" y="32" width="18" height="3" rx="1.5" fill="var(--gold-dim)" opacity=".4"/>
-      <path d="M24 35h12c0 6-3 10-6 10s-6-4-6-10z" fill="var(--gold-dim)" opacity=".2"/>
-      <path d="M18 40l6-4M42 40l-6-4" stroke="var(--gold-dim)" strokeWidth=".6" opacity=".5"/>
-      <rect x="26" y="38" width="8" height="10" rx="1" fill="none" stroke="var(--gold-dim)" strokeWidth=".6" opacity=".4"/>
-      <line x1="28" y1="41" x2="32" y2="41" stroke="var(--gold-dim)" strokeWidth=".4" opacity=".4"/>
-      <line x1="28" y1="43" x2="31" y2="43" stroke="var(--gold-dim)" strokeWidth=".4" opacity=".4"/>
-    </svg>),
-    tragedia:(<svg {...common}>
-      <circle cx="30" cy="30" r="28" fill="#1a1a26" stroke="var(--violet-dim)" strokeWidth="1"/>
-      {/* Masque tragique détaillé */}
-      <ellipse cx="30" cy="24" rx="13" ry="14" fill="var(--bg-card)" stroke="var(--violet)" strokeWidth="1.2"/>
-      {/* Sourcils froncés */}
-      <path d="M20 16l6 2" stroke="var(--violet)" strokeWidth="1.2" strokeLinecap="round"/>
-      <path d="M40 16l-6 2" stroke="var(--violet)" strokeWidth="1.2" strokeLinecap="round"/>
-      {/* Yeux en amande tristes */}
-      <ellipse cx="25" cy="22" rx="3" ry="2.2" fill="none" stroke="var(--violet)" strokeWidth="1"/>
-      <ellipse cx="35" cy="22" rx="3" ry="2.2" fill="none" stroke="var(--violet)" strokeWidth="1"/>
-      <circle cx="25" cy="22.5" r="1" fill="var(--violet)"/>
-      <circle cx="35" cy="22.5" r="1" fill="var(--violet)"/>
-      {/* Larme */}
-      <path d="M37 24l.5 3c0 .8-.5 1-1 .5" stroke="var(--violet)" strokeWidth=".7" fill="var(--violet)" opacity=".5"/>
-      {/* Bouche triste */}
-      <path d="M23 31c2-3 5-4 7-4s5 1 7 4" stroke="var(--violet)" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
-      {/* Rides expression */}
-      <path d="M20 28l2-1M40 28l-2-1" stroke="var(--violet-dim)" strokeWidth=".6"/>
-      {/* Toge drapée */}
-      <path d="M18 37c3-2 7-3 12-3s9 1 12 3v10H18z" fill="var(--violet)" opacity=".08" stroke="var(--violet-dim)" strokeWidth=".7"/>
-      <path d="M22 37v9M26 36v10M30 36v10M34 36v10M38 37v9" stroke="var(--violet-dim)" strokeWidth=".4" opacity=".4"/>
-      <path d="M20 38l22-1" stroke="var(--violet-dim)" strokeWidth=".6" opacity=".5"/>
-      <path d="M24 36l-6 5" stroke="var(--violet-dim)" strokeWidth=".7" opacity=".5"/>
-      {/* Couronne de laurier brisée */}
-      <path d="M18 14c2-1 3 0 4 1s2 1 3 0M35 15c1 1 2 2 3 1s2-2 4-1" stroke="var(--violet-dim)" strokeWidth=".8" fill="none"/>
-    </svg>),
-    comedia:(<svg {...common}>
-      <circle cx="30" cy="30" r="28" fill="#1a1a26" stroke="var(--emerald)" strokeWidth="1"/>
-      {/* Masque comique détaillé */}
-      <ellipse cx="30" cy="24" rx="13" ry="14" fill="var(--bg-card)" stroke="var(--emerald)" strokeWidth="1.2"/>
-      {/* Sourcils malicieux */}
-      <path d="M20 18c2-2 4-2 6 0" stroke="var(--emerald)" strokeWidth="1" strokeLinecap="round"/>
-      <path d="M34 18c2-2 4-2 6 0" stroke="var(--emerald)" strokeWidth="1" strokeLinecap="round"/>
-      {/* Yeux ronds joyeux */}
-      <circle cx="25" cy="22" r="2.8" fill="none" stroke="var(--emerald)" strokeWidth="1"/>
-      <circle cx="35" cy="22" r="2.8" fill="none" stroke="var(--emerald)" strokeWidth="1"/>
-      <circle cx="25.5" cy="21.5" r="1.2" fill="var(--emerald)"/>
-      <circle cx="35.5" cy="21.5" r="1.2" fill="var(--emerald)"/>
-      {/* Petites rides de rire */}
-      <path d="M21 24c-1 1-1 2 0 2M39 24c1 1 1 2 0 2" stroke="var(--emerald)" strokeWidth=".6"/>
-      {/* Grand sourire */}
-      <path d="M22 28c2 5 5 7 8 7s6-2 8-7" stroke="var(--emerald)" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
-      {/* Dents visibles */}
-      <line x1="27" y1="29" x2="27" y2="31" stroke="var(--emerald)" strokeWidth=".5" opacity=".5"/>
-      <line x1="30" y1="29" x2="30" y2="32" stroke="var(--emerald)" strokeWidth=".5" opacity=".5"/>
-      <line x1="33" y1="29" x2="33" y2="31" stroke="var(--emerald)" strokeWidth=".5" opacity=".5"/>
-      {/* Joues rosées */}
-      <circle cx="20" cy="27" r="2.5" fill="var(--emerald)" opacity=".08"/>
-      <circle cx="40" cy="27" r="2.5" fill="var(--emerald)" opacity=".08"/>
-      {/* Petit chapeau/bonnet */}
-      <path d="M22 13c3-4 6-5 8-5s5 1 8 5" fill="var(--emerald)" opacity=".15" stroke="var(--emerald)" strokeWidth=".8"/>
-      <circle cx="30" cy="7" r="2" fill="var(--emerald)" opacity=".3" stroke="var(--emerald)" strokeWidth=".6"/>
-      {/* Collerette */}
-      <path d="M19 38c1-1 2 0 3 0s2-1 3 0 2 0 3 0 2-1 3 0 2 0 3 0 2-1 3 0" stroke="var(--emerald)" strokeWidth=".8" fill="none"/>
-      {/* Costume à losanges */}
-      <path d="M20 39v8h20v-8" fill="var(--emerald)" opacity=".06" stroke="var(--emerald)" strokeWidth=".5"/>
-      <path d="M24 39l3 4-3 4M30 39l3 4-3 4M36 39l3 4-3 4" stroke="var(--emerald)" strokeWidth=".5" opacity=".4"/>
-      <path d="M21 43h18" stroke="var(--emerald)" strokeWidth=".4" opacity=".3"/>
-      {/* Pompons */}
-      <circle cx="25" cy="39" r="1" fill="var(--emerald)" opacity=".35"/>
-      <circle cx="30" cy="38.5" r="1" fill="var(--emerald)" opacity=".35"/>
-      <circle cx="35" cy="39" r="1" fill="var(--emerald)" opacity=".35"/>
-    </svg>),
-    mime:(<svg {...common}>
-      <circle cx="30" cy="30" r="28" fill="#1a1a26" stroke="var(--text-2)" strokeWidth="1"/>
-      <circle cx="30" cy="24" r="11" fill="var(--bg-card)" stroke="var(--text-2)" strokeWidth="1"/>
-      {/* Béret */}
-      <rect x="21" y="13" width="18" height="5" rx="2" fill="var(--text-3)"/>
-      {/* Yeux expressifs */}
-      <circle cx="26" cy="22" r="2.5" fill="none" stroke="var(--text)" strokeWidth="1.5"/>
-      <circle cx="34" cy="22" r="2.5" fill="none" stroke="var(--text)" strokeWidth="1.5"/>
-      <circle cx="26" cy="22" r=".8" fill="var(--text)"/>
-      <circle cx="34" cy="22" r=".8" fill="var(--text)"/>
-      {/* Bouche O */}
-      <ellipse cx="30" cy="29" rx="3" ry="2" fill="none" stroke="var(--text)" strokeWidth="1"/>
-      {/* Rayures marinière */}
-      <line x1="22" y1="36" x2="38" y2="36" stroke="var(--text-2)" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="23" y1="39" x2="37" y2="39" stroke="var(--text-2)" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="24" y1="42" x2="36" y2="42" stroke="var(--text-2)" strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>),
-    diva:(<svg {...common}>
-      <circle cx="30" cy="30" r="28" fill="#1a1a26" stroke="var(--coral)" strokeWidth="1"/>
-      <circle cx="30" cy="24" r="9" fill="var(--bg-card)" stroke="var(--coral)" strokeWidth="1"/>
-      {/* Cheveux volumineux */}
-      <path d="M21 20c0-6 4-11 9-11s9 5 9 11" fill="var(--coral)" opacity=".3" stroke="var(--coral)" strokeWidth=".8"/>
-      <path d="M24 16c2-4 5-5 6-5s4 1 6 5" fill="none" stroke="var(--coral)" strokeWidth=".8"/>
-      {/* Yeux */}
-      <circle cx="27" cy="23" r="1" fill="var(--coral)"/>
-      <circle cx="33" cy="23" r="1" fill="var(--coral)"/>
-      {/* Cils */}
-      <path d="M25 21l-1-1.5M27 20.5l0-1.5M29 21l1-1.5" stroke="var(--coral)" strokeWidth=".5"/>
-      <path d="M31 21l-1-1.5M33 20.5l0-1.5M35 21l1-1.5" stroke="var(--coral)" strokeWidth=".5"/>
-      {/* Sourire */}
-      <path d="M27 27c1 1.5 2 2 3 2s2-.5 3-2" stroke="var(--coral)" strokeWidth=".8" fill="none"/>
-      {/* Chapeau à plume */}
-      <ellipse cx="30" cy="12" rx="11" ry="3" fill="var(--coral)" opacity=".2" stroke="var(--coral)" strokeWidth=".8"/>
-      <path d="M30 9l-1-5c2-1 5 0 6 2l-5 3z" fill="var(--gold)" opacity=".5" stroke="var(--gold)" strokeWidth=".6"/>
-      <circle cx="30" cy="9" r="1.5" fill="var(--gold)" opacity=".7"/>
-      {/* Robe élégante */}
-      <path d="M20 34c3-1 7-2 10-2s7 1 10 2v14H20z" fill="var(--coral)" opacity=".08" stroke="var(--coral)" strokeWidth=".6"/>
-      <path d="M24 34v12M30 33v14M36 34v12" stroke="var(--coral)" strokeWidth=".4" opacity=".3"/>
-      {/* Collier */}
-      <path d="M24 34c2 1 4 1.5 6 1.5s4-.5 6-1.5" stroke="var(--gold)" strokeWidth=".7" fill="none"/>
-      <circle cx="30" cy="36" r="1" fill="var(--gold)" opacity=".6"/>
-      {/* Écharpe drapée */}
-      <path d="M18 37l4-2c0 3 1 6 0 9" stroke="var(--coral)" strokeWidth=".7" fill="var(--coral)" opacity=".1"/>
-    </svg>),
-    arlequin:(<svg {...common}>
-      <circle cx="30" cy="30" r="28" fill="#1a1a26" stroke="var(--gold)" strokeWidth="1"/>
-      {/* Costume losanges */}
-      <path d="M20 15l10 3 10-3-5 8 5 8H20l5-8z" fill="var(--gold-dim)" opacity=".3" stroke="var(--gold)" strokeWidth=".8"/>
-      {/* Visage */}
-      <ellipse cx="30" cy="25" rx="10" ry="11" fill="var(--bg-card)" stroke="var(--gold)" strokeWidth="1"/>
-      {/* Sourcils espiègles */}
-      <path d="M24 22l3-1 3 1 3-1 3 1" stroke="var(--gold)" strokeWidth=".8" fill="none"/>
-      {/* Yeux */}
-      <circle cx="26" cy="23" r="1" fill="var(--gold)"/>
-      <circle cx="34" cy="23" r="1" fill="var(--gold)"/>
-      {/* Sourire malicieux */}
-      <path d="M25 29l5 3 5-3" stroke="var(--gold)" strokeWidth="1" fill="none"/>
-      {/* Cornes du chapeau */}
-      <path d="M25 15l-3-5M35 15l3-5" stroke="var(--gold)" strokeWidth=".8"/>
-      <circle cx="22" cy="9" r="1.5" fill="var(--gold)" opacity=".5"/>
-      <circle cx="38" cy="9" r="1.5" fill="var(--violet)" opacity=".5"/>
-      {/* Costume losanges bicolore */}
-      <path d="M20 36v11h20v-11" fill="var(--gold)" opacity=".06" stroke="var(--gold)" strokeWidth=".5"/>
-      <path d="M20 36l5 5.5-5 5.5M30 36l5 5.5-5 5.5M40 36l-5 5.5 5 5.5" stroke="var(--gold)" strokeWidth=".6" opacity=".4"/>
-      <path d="M25 36l5 5.5-5 5.5M35 36l-5 5.5 5 5.5" stroke="var(--violet)" strokeWidth=".6" opacity=".3"/>
-      {/* Boutons */}
-      <circle cx="30" cy="38" r=".8" fill="var(--gold)" opacity=".5"/>
-      <circle cx="30" cy="41.5" r=".8" fill="var(--violet)" opacity=".5"/>
-      <circle cx="30" cy="45" r=".8" fill="var(--gold)" opacity=".5"/>
-    </svg>),
-  };
-  return avatars[id]||avatars.dramaturge;
+  const av=(AVATAR_IDS||[]).includes(id)?id:"dramaturge";
+  return(
+    <div style={{width:size,height:size,borderRadius:'50%',overflow:'hidden',flexShrink:0,
+      background:'linear-gradient(160deg,#20293F,#121829)',
+      border:`${Math.max(1,Math.round(size/44))}px solid rgba(224,184,78,.42)`,
+      boxShadow:size>=48?'0 6px 18px rgba(0,0,0,.4)':'none',
+      display:'flex',alignItems:'flex-start',justifyContent:'center'}}>
+      <img src={`img/a/${av}.svg`} alt="" aria-hidden="true" loading="lazy" decoding="async"
+        onError={e=>{e.target.style.display='none'}}
+        style={{width:'116%',height:'116%',objectFit:'cover',objectPosition:'top center'}}/>
+    </div>
+  );
 }
 const AVATAR_IDS=["dramaturge","tragedia","comedia","mime","diva","arlequin"];
 const AVATAR_NAMES={"dramaturge":"Le Dramaturge","tragedia":"Le Tragédien","comedia":"Le Comédien","mime":"Le Mime","diva":"La Diva","arlequin":"L'Arlequin"};
@@ -459,6 +320,147 @@ const LEVELS=[
   {id:"affiche",name:"La Tête d'Affiche",tier:"pro",icon:"⭐",xp:8500,desc:"C'est votre nom sur l'affiche"},
   {id:"etoile",name:"L'Étoile",tier:"pro",icon:"✨",xp:10500,desc:"Le sommet absolu"},
 ];
+
+/* ═══════════════════════════════════════════════════════════════════
+   DIRECTION ARTISTIQUE — les cartes illustrées
+   Douze dessins : la même comédienne anonyme qui avance du fond noir
+   du plateau jusqu'au centre du faisceau. Le dégradé de la carte suit
+   ce trajet — bleu nuit dans les coulisses, violet dans la pénombre,
+   ocre puis or plein une fois dans la lumière.
+   ═══════════════════════════════════════════════════════════════════ */
+const LV_ART={
+  figurant:    "linear-gradient(135deg,#252D4A,#111729)",
+  apprenti:    "linear-gradient(135deg,#2B3453,#141A2E)",
+  dimanche:    "linear-gradient(135deg,#313B5C,#171D33)",
+  amateur:     "linear-gradient(135deg,#3A3466,#1C1940)",
+  pensionnaire:"linear-gradient(135deg,#423A70,#211D46)",
+  societaire:  "linear-gradient(135deg,#4A407A,#25204C)",
+  interprete:  "linear-gradient(135deg,#6A5228,#332814)",
+  artiste:     "linear-gradient(135deg,#755A2A,#392C16)",
+  metteur:     "linear-gradient(135deg,#806220,#3F3018)",
+  monstre:     "linear-gradient(135deg,#8A6A22,#4A3A18)",
+  affiche:     "linear-gradient(135deg,#95742A,#513E1A)",
+  etoile:      "linear-gradient(135deg,#A17E2E,#57431C)",
+};
+/* Les personnages du répertoire, pour les monologues. */
+const PERSO_ART={harpagon:1,antigone:1,celimene:1,cyrano:1,lucky:1,phedre:1,rodrigue:1};
+
+/* ── La séance du jour ────────────────────────────────────────────────
+   L'app était un catalogue : on ouvrait, on prenait un exercice, on refermait.
+   Rien ne disait quand on avait assez travaillé. La séance donne un début et
+   une fin : trois contenus enchaînés sans repasser par le menu, puis un écran
+   qui dit que c'est fait pour aujourd'hui.
+   Composition : un exercice, une révision due (ou une leçon neuve), puis un
+   second exercice d'une autre catégorie — pour ne pas faire trois fois de la
+   respiration. */
+function construireSeance(st){
+  const lv=getLv(st.xp,st.passedExams),li=LEVELS.indexOf(lv);
+  const ordre=[lv.id,
+    ...LEVELS.filter((_,i)=>i<li).reverse().map(l=>l.id),
+    ...LEVELS.filter((l,i)=>i>li&&st.xp>=l.xp).map(l=>l.id)];
+  const items=[];
+  const libre=m=>!items.some(x=>x.id===m.id);
+  for(const id of ordre){
+    const m=(PR[id]||[]).find(x=>!st.doneEx.includes(x.id)&&x.type!=="video");
+    if(m){items.push({...m,sec:"pr"});break}
+  }
+  const dues=revisionsDues(st);
+  if(dues.length)items.push({...dues[0].mod,sec:"cu",revision:true});
+  else for(const id of ordre){
+    const m=(CU[id]||[]).find(x=>!st.doneCu.includes(x.id));
+    if(m){items.push({...m,sec:"cu"});break}
+  }
+  for(const id of ordre){
+    const m=(PR[id]||[]).find(x=>!st.doneEx.includes(x.id)&&x.type!=="video"&&libre(x)&&(!items[0]||x.cat!==items[0].cat));
+    if(m){items.push({...m,sec:"pr"});break}
+  }
+  return items;
+}
+function dureeSeance(items){
+  const t=items.reduce((a,m)=>a+(durToSecs(m.dur)||300),0);
+  return Math.max(1,Math.round(t/60));
+}
+function seanceFaiteAujourdhui(st){
+  return st.seanceFaite===new Date().toDateString();
+}
+
+/* ── La révision espacée ──────────────────────────────────────────────
+   updateSRS note, pour chaque leçon de culture, la date à laquelle il
+   faudrait la reposer : un jour, puis trois, puis dix, l'écart grandit tant
+   qu'on répond juste et retombe à un jour quand on se trompe. Ces dates
+   étaient écrites depuis le début et jamais relues. Voici la lecture. */
+function revisionsDues(st){
+  const srs=st.srs||{};
+  const auj=new Date();auj.setHours(23,59,59,999);
+  const toutes=Object.values(CU).flat();
+  return Object.keys(srs)
+    .map(id=>{
+      const e=srs[id];
+      const mod=toutes.find(m=>m.id===id);
+      if(!mod||!e||!e.nextReview)return null;
+      if(!(st.doneCu||[]).includes(id))return null;
+      const d=new Date(e.nextReview);
+      if(isNaN(d)||d>auj)return null;
+      return{mod,retard:Math.round((auj-d)/86400000),fragile:(e.wrong||0)>0,ecart:e.interval||1};
+    })
+    .filter(Boolean)
+    .sort((a,b)=>b.retard-a.retard);
+}
+/* La prochaine échéance, quand il n'y a rien à revoir aujourd'hui. */
+function prochaineRevision(st){
+  const srs=st.srs||{};
+  const dates=Object.keys(srs)
+    .filter(id=>(st.doneCu||[]).includes(id))
+    .map(id=>new Date(srs[id].nextReview))
+    .filter(d=>!isNaN(d))
+    .sort((a,b)=>a-b);
+  return dates[0]||null;
+}
+
+/* La flamme affichée. Si la dernière journée travaillée n'est ni aujourd'hui
+   ni hier, la série est rompue : on montre zéro plutôt qu'un chiffre périmé. */
+function serieVive(st){
+  if(!st||!st.lastActiveDate)return 0;
+  const j=new Date(st.lastActiveDate);j.setHours(0,0,0,0);
+  const now=new Date();now.setHours(0,0,0,0);
+  const diff=Math.round((now-j)/86400000);
+  return diff<=1?(st.streak||0):0;
+}
+
+/* « l'examen de Le Figurant » ne se dit pas. On décline l'article. */
+function duNiveau(nom){
+  if(!nom) return "";
+  if(nom.startsWith("Le ")) return "du "+nom.slice(3);
+  if(nom.startsWith("La ")) return "de la "+nom.slice(3);
+  if(nom.startsWith("L'")) return "de l'"+nom.slice(2);
+  return "de "+nom;
+}
+
+/* Le dessin qui déborde du cadre en bas à droite. Chargé à la demande :
+   il ne pèse rien tant que la carte n'est pas à l'écran. */
+function Illus({id,dossier="n",petit,style}){
+  if(!id) return null;
+  return <img className={"illus"+(petit?" illus-sm":"")} src={`img/${dossier}/${id}.svg`}
+    alt="" aria-hidden="true" loading="lazy" decoding="async" style={style}
+    onError={e=>{e.target.style.display='none'}}/>;
+}
+
+/* Rangée d'action : une icône, une étiquette, un titre, un gain.
+   Remplace les grosses cartes empilées qui faisaient défiler l'écran. */
+function Rang({ic,teinte,eb,titre,note,xp,onClick,fait,fleche}){
+  const T=teinte||'var(--gold)';
+  const el=onClick?"button":"div";
+  return React.createElement(el,{className:"rang",onClick,style:onClick?{cursor:'pointer'}:{cursor:'default'}},
+    <div className="rang-ic" style={{background:fait?'rgba(52,211,153,.12)':`color-mix(in srgb, ${T} 16%, transparent)`,color:fait?'var(--emerald)':T}}>{ic}</div>,
+    <div style={{flex:1,minWidth:0}}>
+      {eb&&<span className="eb" style={{color:fait?'var(--emerald)':T,marginBottom:3}}>{eb}</span>}
+      <p className="rang-t" style={{color:fait?'var(--text-2)':'var(--text)'}}>{titre}</p>
+      {note&&<p style={{fontSize:9.5,color:'var(--text-3)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{note}</p>}
+    </div>,
+    xp?<span className="rang-x" style={{color:T}}>{xp}</span>:null,
+    fleche!==false&&onClick?<span style={{color:'var(--text-3)',display:'flex',flexShrink:0}}>{I.chR({size:15,sw:1.8})}</span>:null
+  );
+}
 const QUIZ=[
   /* ── SECTION 1 : Mon expérience (factuel, ne compte pas) ── */
   {q:"Avez-vous déjà pratiqué le théâtre ?",opts:["Jamais, c'est nouveau pour moi","Quelques ateliers ou stages","Plusieurs années en amateur","Formation pro ou conservatoire"],sc:[0,0,0,0],section:"experience",sectionTitle:"Mon expérience",sectionSub:"Parlez-nous de votre parcours. Ces réponses n'influencent pas votre niveau."},
@@ -1126,6 +1128,13 @@ const FEED_CHALLENGES=[
   {title:"La scène du quotidien",desc:"Transformez un moment banal de votre journée en scène de théâtre. Filmez.",xp:60},
   {title:"Le monologue en 1 minute",desc:"Écrivez et jouez un monologue en moins de 60 secondes chrono.",xp:50},
 ];
+/* Les personnages du répertoire déjà dessinés. Les autres textes reçoivent
+   une carte typographique de la même famille — jamais un trou. */
+const MONO_PERSO={fm1:"harpagon",fm2:"cyrano",fm25:"cyrano",fm3:"phedre",fm7:"celimene",fm8:"lucky",fm10:"antigone",fm11:"rodrigue",
+  fm4:"fm4",fm5:"fm5",fm6:"fm6",fm9:"fm9",fm12:"fm12",fm13:"fm13",fm14:"fm14",fm15:"fm15",fm16:"fm16",
+  fm17:"fm17",fm18:"fm18",fm19:"fm19",fm20:"fm20",fm21:"fm21",fm22:"fm22",fm23:"fm23",fm24:"fm24"};
+const MONO_GRAD={1:"linear-gradient(135deg,#8A6A22,#4A3A18)",2:"linear-gradient(135deg,#6A5228,#332814)",3:"linear-gradient(135deg,#3E3468,#221E42)"};
+
 const FEED_MONOLOGUES=[
   {id:"fm1",title:"Harpagon — le vol",source:"Molière — L'Avare, Acte IV, sc.7",text:"Au voleur ! au voleur ! à l'assassin ! au meurtrier ! Justice, juste Ciel ! je suis perdu, je suis assassiné, on m'a coupé la gorge, on m'a dérobé mon argent. Qui peut-ce être ? Qu'est-il devenu ? Où est-il ? Où se cache-t-il ? Que ferai-je pour le trouver ? Où courir ? Où ne pas courir ? N'est-il point là ? N'est-il point ici ? Qui est-ce ? Arrête. Rends-moi mon argent, coquin... Ah ! c'est moi. Mon esprit est troublé, et j'ignore où je suis, qui je suis, et ce que je fais. Hélas ! mon pauvre argent, mon pauvre argent, mon cher ami ! on m'a privé de toi ; et puisque tu m'es enlevé, j'ai perdu mon support, ma consolation, ma joie ; tout est fini pour moi, et je n'ai plus que faire au monde : sans toi, il m'est impossible de vivre. C'en est fait, je n'en puis plus ; je me meurs, je suis mort, je suis enterré. N'y a-t-il personne qui veuille me ressusciter, en me rendant mon cher argent, ou en m'apprenant qui l'a pris ?",tier:"debutant",difficulty:1,genre:"homme",tips:"Jouez la panique croissante. Chaque question est plus désespérée que la précédente. Le corps s'agite, les yeux cherchent partout. Le moment où il s'attrape lui-même est le sommet comique."},
   {id:"fm12",title:"Tartuffe — la séduction",source:"Molière — Tartuffe, Acte III, sc.3",text:"Le Ciel défend, de vrai, certains contentements ; mais on trouve avec lui des accommodements. Selon divers besoins, il est une science d'étendre les liens de notre conscience et de rectifier le mal de l'action avec la pureté de notre intention. De ces secrets, Madame, on saura vous instruire ; vous n'avez seulement qu'à vous laisser conduire. Contentez mon désir, et n'ayez point d'effroi : je vous réponds de tout, et prends le mal sur moi. Ah ! pour être dévot, je n'en suis pas moins homme ; et lorsqu'on vient à voir vos célestes appas, un cœur se laisse prendre, et ne raisonne pas. Je sais qu'un tel discours de moi paraît étrange ; mais, Madame, après tout, je ne suis pas un ange.",tier:"debutant",difficulty:1,genre:"homme",tips:"Tartuffe détourne le langage religieux pour séduire. Jouez la douceur onctueuse, la fausse piété. Le danger est sous le miel. Chaque argument théologique est un pas de plus vers Elmire."},
@@ -1917,10 +1926,10 @@ function Logo({size=140}){
       <line x1="70" y1="108" x2="70" y2="124" stroke="var(--gold-dim)" strokeWidth="1" opacity=".5"/>
       <line x1="16" y1="70" x2="32" y2="70" stroke="var(--gold-dim)" strokeWidth="1" opacity=".5"/>
       <line x1="108" y1="70" x2="124" y2="70" stroke="var(--gold-dim)" strokeWidth="1" opacity=".5"/>
-      <text x="70" y="50" textAnchor="middle" fill="rgba(200,164,78,.6)" style={{fontSize:6.5,fontFamily:'Inter',fontWeight:700,letterSpacing:'0.35em'}}>COMPAGNIE</text>
+      <text x="70" y="50" textAnchor="middle" fill="rgba(200,164,78,.6)" style={{fontSize:6.5,fontFamily:'Archivo',fontWeight:700,letterSpacing:'0.35em'}}>COMPAGNIE</text>
       <text x="70" y="68" textAnchor="middle" fill="var(--text)" style={{fontSize:18,fontFamily:'Cormorant Garamond,serif',fontWeight:600,letterSpacing:'0.1em'}}>CASTIGAT</text>
       <text x="70" y="85" textAnchor="middle" fill="rgba(200,164,78,.6)" style={{fontSize:7.5,fontFamily:'Cormorant Garamond,serif',fontWeight:500,letterSpacing:'0.3em',fontStyle:'italic'}}>Academy</text>
-      <text x="70" y="100" textAnchor="middle" fill="rgba(200,164,78,.35)" style={{fontSize:5.5,fontFamily:'Inter',fontWeight:600,letterSpacing:'0.4em'}}>THÉÂTRE</text>
+      <text x="70" y="100" textAnchor="middle" fill="rgba(200,164,78,.35)" style={{fontSize:5.5,fontFamily:'Archivo',fontWeight:600,letterSpacing:'0.4em'}}>THÉÂTRE</text>
     </svg>
   );
 }
@@ -1973,7 +1982,7 @@ function ExamView({levelId,st,setSt,onPass,onBack}){
 
   if(phase==="intro") return(
     <div className="slide-up" style={{minHeight:'100vh',background:'radial-gradient(ellipse at 50% 35%,var(--gold-glow),var(--bg) 55%)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 28px',textAlign:'center'}}>
-      <div style={{width:70,height:70,borderRadius:'50%',background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:20,boxShadow:'0 8px 40px rgba(200,164,78,.25)'}}>
+      <div style={{width:70,height:70,borderRadius:'50%',background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:20,boxShadow:'0 8px 40px rgba(200,164,78,.25)'}}>
         {I.trophy({size:30,sw:1.8,style:{color:'var(--ink)'}})}
       </div>
       <p className="label-gold" style={{marginBottom:8}}>EXAMEN DE PASSAGE</p>
@@ -2097,11 +2106,25 @@ function ExamView({levelId,st,setSt,onPass,onBack}){
       <p className="body" style={{fontSize:14,marginBottom:4}}>{sc}/{exam.questions.length} bonnes réponses</p>
       <p className="heading gold-shimmer" style={{fontSize:20,marginBottom:8}}>Bienvenue au niveau {nextLv.name}</p>
       <p className="body" style={{fontSize:12,marginBottom:20}}>{nextLv.desc}</p>
-      {st.plan!=="premium"&&st.plan!=="coach"&&(
-        <div style={{padding:'14px 18px',borderRadius:14,background:'linear-gradient(135deg,rgba(167,139,250,.1),rgba(139,92,246,.04))',border:'1px solid rgba(167,139,250,.2)',marginBottom:20,maxWidth:300,textAlign:'center'}}>
-          <p style={{fontSize:11,fontWeight:700,color:'var(--violet)',marginBottom:4}}>Envie d'un regard pro sur votre jeu ?</p>
-          <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.5,marginBottom:10}}>En Premium, enregistrez votre monologue et recevez le retour personnalisé de votre coach sous 48h.</p>
-          <button onClick={()=>window.location.href='https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202'} style={{padding:'8px 20px',borderRadius:10,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',color:'#fff',fontSize:10,fontWeight:700,border:'none',cursor:'pointer'}}>{I.crown({size:12})} Passer en Premium</button>
+      {/* Au sortir d'un examen réussi, on vend l'étape suivante — pas le haut
+          de la gamme. Une abonnée gratuite se voit proposer Standard ; le coach
+          à 29,90 ne s'adresse qu'à celles qui sont déjà abonnées. */}
+      {(st.plan==="free"||!st.plan)&&(
+        <div style={{padding:'16px 18px',borderRadius:16,background:'linear-gradient(158deg,rgba(224,184,78,.10),var(--bg-card) 62%)',border:'1px solid var(--line-s)',marginBottom:20,maxWidth:320}}>
+          <p className="eb eb-or" style={{marginBottom:6}}>Pour aller plus loin</p>
+          <p style={{fontSize:13,fontWeight:800,marginBottom:5}}>4 jours gratuits</p>
+          <p style={{fontSize:10.5,color:'var(--text-2)',lineHeight:1.5,marginBottom:12}}>Les douze niveaux, tous les exercices, le bilan personnalisé et les outils du comédien.</p>
+          <button onClick={()=>{_track('plan_clicked',{plan:'standard',price:9.90,source:'exam_pass'});window.location.href=STRIPE_STANDARD}}
+            className="btn-gold" style={{width:'100%',padding:'12px 0',fontSize:12}}>Essayer gratuitement</button>
+          <p style={{fontSize:9,color:'var(--text-3)',marginTop:8}}>Puis 9,90 €/mois · sans engagement</p>
+        </div>
+      )}
+      {st.plan==="standard"&&(
+        <div style={{padding:'14px 18px',borderRadius:16,background:'linear-gradient(158deg,rgba(184,160,224,.10),var(--bg-card) 62%)',border:'1px solid rgba(184,160,224,.2)',marginBottom:20,maxWidth:320}}>
+          <p className="eb" style={{color:'var(--violet)',marginBottom:6}}>Envie d'un regard pro ?</p>
+          <p style={{fontSize:10.5,color:'var(--text-2)',lineHeight:1.5,marginBottom:11}}>En Premium, enregistrez votre monologue et recevez le retour personnalisé de votre coach sous 48h.</p>
+          <button onClick={()=>{_track('plan_clicked',{plan:'premium',price:29.90,source:'exam_pass'});window.location.href=STRIPE_PREMIUM}}
+            className="btn-v" style={{width:'100%',padding:'11px 0',fontSize:11.5}}>Découvrir Premium — 29,90 €/mois</button>
         </div>
       )}
       <button onClick={onPass} className="btn-gold" style={{padding:'14px 48px',fontSize:13}}>Continuer</button>
@@ -2159,7 +2182,7 @@ function Paywall({source,plan,onClose}){
     <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(5,5,10,.92)',backdropFilter:'blur(8px)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px 0',overflowY:'auto',animation:'fadeIn .25s ease-out'}}>
       <div onClick={e=>e.stopPropagation()} style={{maxWidth:360,width:'90%',padding:'28px 24px',borderRadius:20,background:'var(--bg-card)',border:'1px solid var(--line-s)',textAlign:'center',animation:'fadeUp .35s ease-out',margin:'auto'}}>
 
-        <div style={{width:52,height:52,borderRadius:15,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',boxShadow:'0 8px 28px rgba(200,164,78,.28)'}}>
+        <div style={{width:52,height:52,borderRadius:15,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',boxShadow:'0 8px 28px rgba(200,164,78,.28)'}}>
           {I.crown({size:22,style:{color:'var(--ink)'}})}
         </div>
 
@@ -2335,7 +2358,7 @@ function Onboard({done:onDone,startStep=0}){
     <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',padding:'40px 24px'}}>
       <div className="mw">
         <div style={{textAlign:'center',marginBottom:32}}>
-          <div style={{width:56,height:56,borderRadius:16,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
+          <div style={{width:56,height:56,borderRadius:16,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
             {I.user({size:26,sw:1.6,style:{color:'var(--ink)'}})}
           </div>
           <h1 className="heading" style={{fontSize:28,marginBottom:8}}>Bon retour !</h1>
@@ -2353,71 +2376,70 @@ function Onboard({done:onDone,startStep=0}){
     </div>
   );
 
-  /* Step 0 — Welcome */
+  /* Step 0 — L'affiche. Une image, un titre, une porte d'entrée. */
   if(step===0&&!showInstallStep) return(
-    <div style={{minHeight:'100vh',background:'var(--ink)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative',overflow:'hidden'}}>
-      {/* Dot pattern background */}
-      <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(var(--w04) 1px, transparent 1px)',backgroundSize:'24px 24px',pointerEvents:'none'}}/>
+    <div style={{minHeight:'100vh',position:'relative',overflow:'hidden',display:'flex',flexDirection:'column',
+      background:'radial-gradient(150% 52% at 50% -6%,rgba(224,184,78,.14),transparent 60%), #0A0E1C',color:'#F2F0EA'}}>
 
-      {/* Spotlight cone from top */}
-      <div style={{position:'absolute',top:'-5%',left:'50%',transform:'translateX(-50%)',width:300,height:'70%',background:'linear-gradient(180deg,rgba(200,164,78,.12) 0%,rgba(200,164,78,.03) 50%,transparent 100%)',clipPath:'polygon(35% 0%, 65% 0%, 85% 100%, 15% 100%)',pointerEvents:'none',animation:'spotlight-ray 4s ease-in-out infinite'}}/>
-      {/* Side glows */}
-      <div style={{position:'absolute',top:'20%',left:'-10%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(167,139,250,.06),transparent 70%)',pointerEvents:'none'}}/>
-      <div style={{position:'absolute',top:'30%',right:'-10%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(200,164,78,.05),transparent 70%)',pointerEvents:'none'}}/>
-      <div style={{position:'absolute',bottom:0,left:0,right:0,height:300,background:'linear-gradient(0deg,rgba(167,139,250,.04),transparent)',pointerEvents:'none'}}/>
+      {/* Le filet de l'affiche */}
+      <div style={{position:'absolute',inset:'14px',border:'1px solid rgba(224,184,78,.16)',borderRadius:6,pointerEvents:'none',zIndex:5}}/>
+      <div style={{position:'absolute',inset:0,pointerEvents:'none',opacity:.05,mixBlendMode:'overlay',zIndex:5,
+        backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E\")"}}/>
 
-      {/* Floating particles */}
-      {Landing_particles.map((p,i)=>(
-        <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:p.color==='gold'?'var(--gold-light)':'var(--violet)',opacity:p.opa,left:`${p.left}%`,top:`${p.startY}%`,pointerEvents:'none',animation:`float ${p.dur}s ease-in-out ${p.delay}s infinite`,boxShadow:p.color==='gold'?`0 0 ${p.size*4}px rgba(224,184,78,.5), 0 0 ${p.size*8}px rgba(224,184,78,.2)`:`0 0 ${p.size*4}px rgba(167,139,250,.5), 0 0 ${p.size*8}px rgba(167,139,250,.2)`}}/>
-      ))}
+      {/* Le titre */}
+      <div style={{position:'relative',zIndex:4,padding:'clamp(44px,9vh,80px) 30px 0',textAlign:'center',maxWidth:430,margin:'0 auto',width:'100%'}}>
+        <p style={{fontSize:11,fontWeight:700,letterSpacing:'.34em',color:'rgba(242,240,234,.55)',margin:0,
+          animation:'fadeIn .7s ease both'}}>CASTIGAT<sup style={{fontSize:6,verticalAlign:'super',fontWeight:400}}>®</sup></p>
 
-      {/* Content */}
-      <div style={{position:'relative',zIndex:1,textAlign:'center',maxWidth:380,width:'100%'}}>
+        <h1 style={{fontFamily:'Archivo,sans-serif',fontWeight:900,fontSize:'clamp(44px,15vw,62px)',letterSpacing:'-.03em',
+          lineHeight:.94,margin:'6px 0 0',color:'#F2F0EA',animation:'fadeUp .9s cubic-bezier(.22,1,.36,1) .15s both'}}>ACADEMY</h1>
 
-        {/* CASTIGAT® + ACADEMY */}
-        <div style={{animation:'fadeIn .6s ease both',marginBottom:2}}>
-          <p style={{fontFamily:'Oswald, sans-serif',fontWeight:600,fontSize:24,letterSpacing:'.22em',color:'#fff',margin:0,textTransform:'uppercase'}}>
-            CASTIGAT<sup style={{fontSize:10,verticalAlign:'super',fontWeight:400}}>®</sup>
-          </p>
-        </div>
+        <div style={{width:44,height:1,background:'var(--gold)',opacity:.7,margin:'18px auto 0',
+          animation:'fadeIn .8s ease .5s both'}}/>
 
-        <div style={{animation:'fadeIn .8s ease .2s both'}}>
-          <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:68,letterSpacing:'.08em',color:'#fff',lineHeight:.95,margin:'0 0 10px',textTransform:'uppercase',textShadow:'0 4px 30px var(--w08)'}}>ACADEMY</h1>
-          <div style={{width:90,height:2,background:'linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)',margin:'0 auto',borderRadius:2,boxShadow:'0 0 16px rgba(200,164,78,.4)',animation:'shimmer 3s linear infinite',backgroundSize:'200% auto'}}/>
-        </div>
+        <p style={{fontFamily:'Archivo,sans-serif',fontWeight:800,fontSize:'clamp(16px,4.6vw,19px)',letterSpacing:'.01em',
+          lineHeight:1.25,margin:'18px 0 0',textTransform:'uppercase',animation:'fadeUp .8s cubic-bezier(.22,1,.36,1) .55s both'}}>
+          L'école de <span style={{color:'var(--gold)'}}>théâtre</span><br/>dans votre poche
+        </p>
+        <p style={{fontSize:11,color:'rgba(242,240,234,.45)',marginTop:11,fontWeight:500,
+          animation:'fadeIn .8s ease .8s both'}}>Créé par des professionnels du théâtre</p>
+      </div>
 
-        {/* L'ÉCOLE DE THÉÂTRE DANS VOTRE POCHE */}
-        <div style={{marginTop:30,marginBottom:42}}>
-          <p style={{fontFamily:'Oswald, sans-serif',fontWeight:600,fontSize:28,letterSpacing:'.04em',color:'#fff',lineHeight:1.3,margin:0,textTransform:'uppercase'}}>
-            <span style={{display:'block',animation:'hero-text-in .7s cubic-bezier(.22,1,.36,1) .8s both'}}>L'ÉCOLE DE</span>
-            <span style={{display:'block',animation:'hero-text-in .8s cubic-bezier(.22,1,.36,1) 1.1s both',color:'var(--gold-light)',fontWeight:700,fontSize:34,textShadow:'0 0 24px rgba(200,164,78,.5),0 0 60px rgba(200,164,78,.15)'}}>THÉÂTRE</span>
-            <span style={{display:'block',animation:'hero-text-in .7s cubic-bezier(.22,1,.36,1) 1.4s both'}}>DANS VOTRE</span>
-            <span style={{display:'block',animation:'hero-text-in .7s cubic-bezier(.22,1,.36,1) 1.6s both'}}>POCHE</span>
-          </p>
-        </div>
+      {/* La comédienne dans la lumière */}
+      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'56vh',pointerEvents:'none',zIndex:1,
+        display:'flex',alignItems:'flex-end',justifyContent:'center',
+        animation:'fadeUp 1.2s cubic-bezier(.22,1,.36,1) .5s both'}}>
+        <img src="img/n/etoile.svg" alt="" aria-hidden="true" decoding="async"
+          onError={e=>{e.target.style.display='none'}}
+          style={{height:'100%',maxWidth:'120%',objectFit:'contain',objectPosition:'bottom'}}/>
+      </div>
+      <div style={{position:'absolute',left:0,right:0,bottom:'28vh',height:'30vh',zIndex:2,pointerEvents:'none',
+        background:'linear-gradient(180deg,#0A0E1C 6%,rgba(10,14,28,.7) 46%,rgba(10,14,28,0) 100%)'}}/>
+      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'24vh',zIndex:2,pointerEvents:'none',
+        background:'linear-gradient(0deg,rgba(10,14,28,.94),rgba(10,14,28,0))'}}/>
 
-        {/* CTA */}
-        <div style={{animation:'btn-scale-in .8s cubic-bezier(.22,1,.36,1) 2.2s both',marginBottom:44}}>
-          <button onClick={()=>{SFX.click();const standalone=window.matchMedia('(display-mode:standalone)').matches||navigator.standalone;if(standalone){setStep(1)}else{setInstallDevice(null);setShowInstallStep(true)}}}
-            style={{background:'linear-gradient(135deg,var(--gold),var(--gold-light))',border:'none',borderRadius:16,padding:'20px 48px',cursor:'pointer',display:'inline-block',textAlign:'center',transition:'all .3s',boxShadow:'0 8px 40px rgba(200,164,78,.35),0 0 80px rgba(200,164,78,.12),inset 0 1px 0 rgba(255,255,255,.2)',animation:'btn-glow 3s ease-in-out 3s infinite'}}>
-            <span style={{fontFamily:'Inter, sans-serif',fontSize:12,fontWeight:400,color:'rgba(7,7,12,.6)',letterSpacing:'.04em',display:'block',marginBottom:3}}>entrer en scène</span>
-            <span style={{fontFamily:'Oswald, sans-serif',fontSize:22,fontWeight:700,color:'var(--ink)',letterSpacing:'.14em',textTransform:'uppercase',display:'block'}}>MAINTENANT</span>
-          </button>
-          <p style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:14,fontStyle:'italic',animation:'fadeIn .6s ease 2.8s both'}}>Créé par des professionnels du théâtre</p>
-          {/* On peut voir l'application avant de donner son email */}
-          <button onClick={()=>{SFX.click();onDone(0,{pseudo:'Invitée',avatar:'dramaturge'},{preview:true,skippedQuiz:true})}}
-            style={{display:'block',margin:'18px auto 0',padding:'10px 18px',background:'transparent',border:'1px solid rgba(255,255,255,.16)',borderRadius:12,color:'rgba(255,255,255,.66)',fontSize:11.5,fontWeight:600,cursor:'pointer',animation:'fadeIn .6s ease 3.1s both'}}>
-            Regarder d'abord, sans créer de compte
-          </button>
-        </div>
+      {/* La porte d'entrée */}
+      <div style={{position:'relative',zIndex:4,marginTop:'auto',width:'100%',maxWidth:400,
+        margin:'auto auto 0',padding:'0 30px calc(24px + env(safe-area-inset-bottom,0px))',textAlign:'center'}}>
 
-        {/* 3 features bottom */}
-        <div style={{display:'flex',justifyContent:'center',gap:12,flexWrap:'wrap',width:'100%',maxWidth:340,margin:'0 auto'}}>
-          {[{t:"À votre rythme",ic:'⏱',d:'2.6s'},{t:"Où vous voulez",ic:'🌍',d:'2.8s'},{t:"Vrai coaching",ic:'👨‍🏫',d:'3.0s'}].map((x,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:6,animation:`fadeUp .5s ease ${x.d} both`,padding:'7px 14px',borderRadius:10,background:'var(--w03)',border:'1px solid var(--w06)'}}>
-              <span style={{fontSize:14,filter:'grayscale(1) brightness(10)'}}>{x.ic}</span>
-              <span style={{fontFamily:'Inter, sans-serif',fontSize:11,fontWeight:500,color:'rgba(255,255,255,.7)',letterSpacing:'.02em'}}>{x.t}</span>
-            </div>
+        <button onClick={()=>{SFX.click();const standalone=window.matchMedia('(display-mode:standalone)').matches||navigator.standalone;if(standalone){setStep(1)}else{setInstallDevice(null);setShowInstallStep(true)}}}
+          className="btn-gold" style={{width:'100%',padding:'15px 0',animation:'btn-scale-in .8s cubic-bezier(.22,1,.36,1) 1.1s both'}}>
+          <span style={{display:'block',fontSize:9.5,fontWeight:700,letterSpacing:'.22em',textTransform:'uppercase',opacity:.6,marginBottom:3}}>Entrer en scène</span>
+          <span style={{display:'block',fontSize:19,fontWeight:900,letterSpacing:'.06em',textTransform:'uppercase'}}>Maintenant</span>
+        </button>
+
+        <button onClick={()=>{SFX.click();onDone(0,{pseudo:'Invitée',avatar:'dramaturge'},{preview:true,skippedQuiz:true})}}
+          style={{display:'block',width:'100%',margin:'11px 0 0',padding:'11px 0',background:'transparent',border:'none',
+            color:'rgba(242,240,234,.6)',fontSize:11.5,fontWeight:700,cursor:'pointer',
+            animation:'fadeIn .6s ease 1.5s both'}}>
+          Regarder d'abord, sans créer de compte
+        </button>
+
+        <div style={{display:'flex',justifyContent:'center',gap:15,marginTop:12,animation:'fadeIn .7s ease 1.7s both'}}>
+          {[{t:"À votre rythme",ic:I.clock},{t:"Où vous voulez",ic:I.compass},{t:"Vrai coaching",ic:I.users}].map((x,i)=>(
+            <span key={i} style={{display:'flex',alignItems:'center',gap:5,fontSize:9.5,fontWeight:600,color:'rgba(242,240,234,.42)'}}>
+              {x.ic({size:12,sw:1.7})}{x.t}
+            </span>
           ))}
         </div>
       </div>
@@ -2860,7 +2882,7 @@ function Onboard({done:onDone,startStep=0}){
     <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',padding:'40px 24px'}}>
       <div className="mw">
         <div style={{textAlign:'center',marginBottom:32}}>
-          <div style={{width:56,height:56,borderRadius:16,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
+          <div style={{width:56,height:56,borderRadius:16,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
             {I.user({size:26,sw:1.6,style:{color:'var(--ink)'}})}
           </div>
           <h1 className="heading" style={{fontSize:28,marginBottom:8}}>Créez votre profil</h1>
@@ -2913,7 +2935,7 @@ function Onboard({done:onDone,startStep=0}){
     <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',padding:'40px 24px'}}>
       <div className="mw">
         <div style={{textAlign:'center',marginBottom:32}}>
-          <div style={{width:56,height:56,borderRadius:16,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
+          <div style={{width:56,height:56,borderRadius:16,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
             {I.edit({size:26,sw:1.6,style:{color:'var(--ink)'}})}
           </div>
           <h1 className="heading" style={{fontSize:26,marginBottom:8}}>Choisissez votre pseudo</h1>
@@ -2932,7 +2954,7 @@ function Onboard({done:onDone,startStep=0}){
   /* Step 4 — Intro quiz */
   if(step===4) return(
     <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 32px',textAlign:'center'}}>
-      <div style={{width:64,height:64,borderRadius:18,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 24px',boxShadow:'0 12px 40px rgba(200,164,78,.2)'}}>
+      <div style={{width:64,height:64,borderRadius:18,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 24px',boxShadow:'0 12px 40px rgba(200,164,78,.2)'}}>
         <EI e="📋" s={30}/>
       </div>
       <h2 className="heading" style={{fontSize:26,marginBottom:10}}>Avant de commencer…</h2>
@@ -3039,299 +3061,111 @@ function TierBanner({tierId,unlocked}){
   );
 }
 
-/* ═══ PROGRESSION PATH (Bubble Grid) ═══ */
+/* ═══ LE PARCOURS — l'échelle des douze niveaux ═══
+   Le niveau en cours tient la carte principale, plus haut sur l'écran.
+   Ici viennent les deux suivants, illustrés, puis la suite en lignes.
+   Aucun cadenas muet : chaque verrou dit ce qu'il faut faire. */
 function ProgressPath({st,go,setMod,setExam,setSceneAn}){
   const openPaywall=usePaywall();
   const lv=getLv(st.xp,st.passedExams);
-  const currentNodeRef=useRef(null);
-  const[showPrevLevels,setShowPrevLevels]=useState(false);
-  const currentLevelIdx=LEVELS.indexOf(lv);
-  const startLevelIdx=Math.min(st.lv||0,currentLevelIdx);
+  const iCur=LEVELS.indexOf(lv);
+  const[voirPasses,setVoirPasses]=useState(false);
 
-  /* ── Build level sections ── */
-  const levelSections=[];
-  let globalNodeIdx=0;
-  let prevTier=null;
-  LEVELS.forEach((level,li)=>{
-    if(li<startLevelIdx&&!showPrevLevels)return;
-    const tier=getTier(level);
-    const showTierBanner=!prevTier||prevTier.id!==tier.id;
-    prevTier=tier;
+  const info=LEVELS.map((level,li)=>{
     const prM=PR[level.id]||[],cuM=CU[level.id]||[];
     const saId=LEVEL_SA[level.id];
-    const saObj=saId?SCENE_ANALYSES.find(s=>s.id===saId):null;
-    /* Merge exercises interleaved for sequential unlock */
-    const merged=[];let pi=0,ci=0;
-    while(pi<prM.length||ci<cuM.length){if(pi<prM.length){merged.push({...prM[pi],sec:"pr"});pi++}if(ci<cuM.length){merged.push({...cuM[ci],sec:"cu"});ci++}}
-    /* Insert scene analysis in the middle */
-    const insertAt=saObj?Math.floor(merged.length/2):null;
-    const allItems=[];let nodeCount=0;
-    /* Level gating: only current level and below are accessible */
-    const levelOpen=li<=LEVELS.indexOf(lv)||(st.passedExams||[]).includes(level.id);
-    /* Free plan gating: limit to 3 levels from starting level */
-    const freeWall=st.plan==="free"&&li>=(st.startLevel||0)+3;
-    const levelOpenFinal=levelOpen&&!freeWall;
-    /* For monologue gating: monologues (type video) in current level require all other exercises + all culture done */
-    const nonVideoExDone=(prM.filter(e=>e.type!=="video")||[]).every(e=>st.doneEx.includes(e.id));
-    const lvCuDone=(cuM||[]).length===0||(cuM||[]).every(c=>st.doneCu.includes(c.id));
-    const monoReady=nonVideoExDone&&lvCuDone;
-    merged.forEach((m,mi)=>{
-      /* Only count as "done" if the level is actually unlocked — prevents legacy data from a previous version showing exercises as completed in locked levels */
-      const rawDone=m.sec==="pr"?st.doneEx.includes(m.id):st.doneCu.includes(m.id);
-      const isDone=levelOpenFinal&&rawDone;
-      const isMonologue=m.sec==="pr"&&m.type==="video";
-      const isUnlocked=levelOpenFinal&&(!isMonologue||monoReady||isDone);
-      /* freeWall = verrouillé par l'abonnement (→ mur d'abonnement), sinon verrouillé par la progression (→ rien à vendre) */
-      allItems.push({type:"node",mod:m,isDone,isUnlocked,paywalled:freeWall,globalIdx:globalNodeIdx++});
-      nodeCount++;
-      if(saObj&&nodeCount===insertAt){
-        const rawSaDone=(st.doneSA||[]).includes(saObj.id);
-        const saDone=levelOpenFinal&&rawSaDone;
-        allItems.push({type:"sa",sa:saObj,isDone:saDone,isUnlocked:levelOpenFinal,paywalled:freeWall,globalIdx:globalNodeIdx++});
-      }
-    });
-    /* Level stats */
-    const totalItems=allItems.length;
-    const doneItems=allItems.filter(it=>it.isDone).length;
-    /* Exam */
-    let exam=null;
-    if(li<LEVELS.length-1&&EXAMS[level.id]){
-      const nextLv=LEVELS[li+1];
-      const allDone=merged.every(m=>m.sec==="pr"?st.doneEx.includes(m.id):st.doneCu.includes(m.id));
-      const tierSAs=SCENE_ANALYSES.filter(sa=>sa.tier===level.tier);
-      const allSADone=tierSAs.length===0||tierSAs.every(sa=>(st.doneSA||[]).includes(sa.id));
-      const examReady=st.xp>=level.xp&&allDone&&allSADone;
-      const examPassed=(st.passedExams||[]).includes(level.id);
-      exam={levelId:level.id,level,nextLevel:nextLv,examReady,examPassed};
-    }
-    levelSections.push({level,li,tier,showTierBanner,allItems,totalItems,doneItems,exam,isCurrent:level.id===lv.id});
+    const total=prM.length+cuM.length+(saId?1:0);
+    const fait=prM.filter(m=>st.doneEx.includes(m.id)).length
+              +cuM.filter(m=>st.doneCu.includes(m.id)).length
+              +((saId&&(st.doneSA||[]).includes(saId))?1:0);
+    const mur=st.plan==="free"&&li>=(st.startLevel||0)+3;
+    const ouvert=(li<=iCur||(st.passedExams||[]).includes(level.id))&&!mur;
+    const reussi=(st.passedExams||[]).includes(level.id);
+    const prec=LEVELS[li-1];
+    const raison=mur?null
+      :(prec&&EXAMS[prec.id]&&!(st.passedExams||[]).includes(prec.id))?`Réussissez l'examen ${duNiveau(prec.name)}`
+      :(st.xp<level.xp)?`Atteignez ${level.xp} XP`
+      :null;
+    return{level,li,total,fait,ouvert,mur,reussi,raison,pct:total?Math.round(fait/total*100):0};
   });
 
-  /* Find the global current node — first undone item in current level */
-  let currentGlobalIdx=-1;
-  for(const sec of levelSections){
-    if(sec.isCurrent){
-      for(const it of sec.allItems){
-        if(it.isUnlocked&&!it.isDone&&currentGlobalIdx===-1){currentGlobalIdx=it.globalIdx;break;}
-      }
-      break;
-    }
-  }
+  const passes=info.filter(x=>x.li<iCur);
+  const cartes=info.filter(x=>x.li>iCur&&x.li<=iCur+2);
+  const reste=info.filter(x=>x.li>iCur+2);
+  const iMur=info.findIndex(x=>x.mur);
 
-  /* ── Bubble component (glass design, white emojis) ── */
-  const Bubble=({item,isCurrent,onClick})=>{
-    const isSA=item.type==="sa";
-    const isCul=!isSA&&item.mod?.sec==="cu";
-    const isVideo=!isSA&&item.mod?.type==="video";
-    const icon=isSA?"📜":item.mod.icon;
-    const title=isSA?item.sa.title:item.mod.title;
-    const cat=isSA?"Analyse":isCul?"Culture":item.mod.cat;
-    const accentCol=isSA?'var(--coral)':isCul?'var(--violet)':'var(--gold)';
-    const accentRgba=isSA?'232,116,90':isCul?'167,139,250':'200,164,78';
-    const done=item.isDone;const locked=!item.isUnlocked;
-    const sz=isVideo?54:46;
-    /* Outer ring size */
-    const ring=sz+8;
-    return(
-      <div onClick={onClick} ref={isCurrent?currentNodeRef:null}
-        style={{display:'flex',flexDirection:'column',alignItems:'center',width:78,cursor:(locked&&!item.paywalled)?'default':'pointer',
-          opacity:done?1:isCurrent?1:item.isUnlocked?.65:item.paywalled?.45:.25,transition:'all .35s ease'}}>
-        {/* Outer glow ring */}
-        <div style={{width:ring,height:ring,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',
-          background:done?`linear-gradient(145deg,rgba(${accentRgba},.15),rgba(${accentRgba},.04))`:isCurrent?`linear-gradient(145deg,rgba(${accentRgba},.1),rgba(${accentRgba},.02))`:'transparent',
-          padding:4}}>
-          {/* Inner circle */}
-          <div style={{width:sz,height:sz,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',
-            background:done?`linear-gradient(145deg,rgba(${accentRgba},.35),rgba(${accentRgba},.12))`:isCurrent?`rgba(${accentRgba},.08)`:'var(--w03)',
-            border:done?`2px solid rgba(${accentRgba},.5)`:isCurrent?`2.5px solid rgba(${accentRgba},.6)`:`1.5px solid ${locked?'var(--w04)':`rgba(${accentRgba},.15)`}`,
-            boxShadow:isCurrent?`0 0 0 4px rgba(${accentRgba},.08),0 0 20px rgba(${accentRgba},.15)`:done?`0 2px 10px rgba(${accentRgba},.1),inset 0 1px 1px var(--w05)`:'none',
-            backdropFilter:'blur(8px)',
-            animation:isCurrent?'pathPulse 2.5s ease-in-out infinite':'none'}}>
-            {isCurrent&&<span style={{position:'absolute',top:-30,zIndex:5}}><MiniChar avatar={st.user?.avatar||"dramaturge"} size={20}/></span>}
-            <EI e={locked&&!done?"🔒":icon} s={isVideo?18:15} c={locked&&!done?"var(--text-3)":"#fff"}/>
-          </div>
-          {/* Check badge */}
-          {done&&<span style={{position:'absolute',bottom:1,right:1,width:15,height:15,borderRadius:'50%',
-            background:'linear-gradient(135deg,var(--emerald),var(--emerald))',
-            display:'flex',alignItems:'center',justifyContent:'center',fontSize:8,color:'#fff',fontWeight:900,
-            border:'2px solid var(--bg)',boxShadow:'0 2px 6px rgba(74,222,128,.3)'}}>✓</span>}
-        </div>
-        <p style={{fontSize:7.5,fontWeight:700,color:done?accentCol:isCurrent?'var(--text)':item.isUnlocked?'var(--text-2)':'var(--text-3)',
-          lineHeight:1.2,marginTop:4,textAlign:'center',maxWidth:74,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</p>
-        <p style={{fontSize:6.5,color:done?'var(--emerald)':isCurrent?accentCol:'var(--text-3)',fontWeight:done||isCurrent?700:500,marginTop:1,letterSpacing:'.02em'}}>
-          {done?"TERMINÉ":isCurrent?"▶ GO":cat}
-        </p>
-      </div>
-    );
-  };
+  const ligne=(x,fini)=>(
+    <button key={x.level.id} className="vl"
+      onClick={()=>{if(x.mur)openPaywall('level')}}
+      style={{cursor:x.mur?'pointer':'default',color:fini?'var(--text-2)':'var(--text-3)'}}>
+      <span style={{display:'flex',flexShrink:0,color:fini?'var(--emerald)':'var(--text-3)'}}>
+        {fini?I.check({size:13,sw:2.2}):I.lock({size:12,sw:1.8})}
+      </span>
+      <span className="vl-n">{x.level.name}</span>
+      <span className="vl-x">{fini?`${x.fait}/${x.total}`:`${x.level.xp} XP`}</span>
+    </button>
+  );
 
   return(
     <div style={{maxWidth:360,margin:'0 auto',padding:'0 0 16px'}}>
-      {/* Toggle previous levels */}
-      {startLevelIdx>0&&!showPrevLevels&&(
-        <button onClick={()=>setShowPrevLevels(true)} style={{width:'100%',padding:'10px 0',marginBottom:12,borderRadius:10,border:'1px solid var(--line)',background:'var(--bg-card)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
-          <span style={{fontSize:10,color:'var(--text-2)',fontWeight:600}}>Voir les niveaux précédents ({startLevelIdx})</span>
-          <span style={{fontSize:9,color:'var(--text-3)'}}>▼</span>
-        </button>
-      )}
-      {startLevelIdx>0&&showPrevLevels&&(
-        <button onClick={()=>setShowPrevLevels(false)} style={{width:'100%',padding:'10px 0',marginBottom:12,borderRadius:10,border:'1px solid var(--gold-dim)',background:'rgba(200,164,78,.04)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
-          <span style={{fontSize:10,color:'var(--gold)',fontWeight:600}}>Masquer les niveaux précédents</span>
-          <span style={{fontSize:9,color:'var(--gold)'}}>▲</span>
-        </button>
+
+      {/* Ce qui est derrière — replié par défaut */}
+      {passes.length>0&&(
+        <div style={{marginBottom:cartes.length?18:0}}>
+          <button onClick={()=>setVoirPasses(v=>!v)} className="vl" style={{cursor:'pointer',color:'var(--text-2)'}}>
+            <span style={{display:'flex',color:'var(--emerald)'}}>{I.check({size:13,sw:2.2})}</span>
+            <span className="vl-n">{passes.length} niveau{passes.length>1?"x":""} derrière vous</span>
+            <span className="vl-x">{voirPasses?"Masquer":"Voir"}</span>
+          </button>
+          {voirPasses&&<div style={{paddingLeft:4,borderLeft:'1px solid var(--line)',marginTop:2}}>{passes.map(x=>ligne(x,true))}</div>}
+        </div>
       )}
 
-      {/* ── Level sections ── */}
-      {levelSections.map((sec,si)=>{
-        const{level,allItems,totalItems,doneItems,exam,isCurrent:isCurrentLevel,showTierBanner,tier}=sec;
-        const progress=totalItems>0?Math.round(doneItems/totalItems*100):0;
-        const levelUnlocked=st.xp>=level.xp||(sec.li<=currentLevelIdx);
-        const freeWallBlock=st.plan==="free"&&sec.li>=(st.startLevel||0)+3;
-        const levelUnlockedFinal=levelUnlocked&&!freeWallBlock;
-        const isComplete=doneItems===totalItems&&totalItems>0;
-        /* Level has been fully MASTERED (exam passed) — deserves a special celebration animation */
-        const levelMastered=(st.passedExams||[]).includes(level.id);
-
+      {/* Les deux prochains niveaux, illustrés */}
+      {cartes.map(x=>{
+        const g=LV_ART[x.level.id]||'var(--gr-nuit)';
+        const verrou=!x.ouvert;
         return(
-          <div key={level.id}>
-            {/* Paywall for free users — only show ONCE at the first blocked level */}
-            {freeWallBlock&&st.plan==="free"&&sec.li===(st.startLevel||0)+3&&(
-              <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',background:'linear-gradient(135deg,rgba(200,164,78,.05),rgba(200,164,78,.02))',border:'2px solid rgba(200,164,78,.3)',padding:20,textAlign:'center'}}>
-                <div style={{fontSize:40,marginBottom:12}}>{I.crown({size:40})}</div>
-                <h3 style={{fontSize:22,fontWeight:800,color:'var(--gold)',marginBottom:6}}>4 jours gratuits</h3>
-                <p style={{fontSize:12,color:'var(--text-2)',marginBottom:16}}>Pour continuer le parcours : les 12 niveaux, le classement, le bilan personnalisé et tous les outils</p>
-                <button onClick={()=>openPaywall('level')} style={{display:'inline-block',padding:'13px 22px',borderRadius:10,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',border:'none',color:'var(--ink)',fontWeight:800,fontSize:12.5,cursor:'pointer',boxShadow:'0 6px 18px rgba(200,164,78,.25)',transition:'all .3s'}}>
-                  Essayer gratuitement
-                </button>
-                <p style={{fontSize:9,color:'var(--text-3)',marginTop:10}}>Puis 9,90 €/mois · sans engagement</p>
-              </div>
-            )}
-
-            {/* Tier banner */}
-            {showTierBanner&&<div style={{marginBottom:8}}><TierBanner tierId={tier.id} unlocked={levelUnlockedFinal}/></div>}
-
-            {/* Level card */}
-            <div style={{marginBottom:20,borderRadius:16,overflow:'hidden',position:'relative',
-              background:levelMastered?'linear-gradient(180deg,rgba(74,222,128,.06),rgba(200,164,78,.03))':isCurrentLevel?'linear-gradient(180deg,rgba(200,164,78,.04),var(--bg-card))':'var(--bg-card)',
-              border:levelMastered?'1.5px solid rgba(74,222,128,.45)':isCurrentLevel?'1.5px solid rgba(200,164,78,.2)':'1px solid var(--line)',
-              boxShadow:levelMastered?'0 0 0 1px rgba(200,164,78,.15),0 8px 32px rgba(74,222,128,.08),inset 0 1px 0 rgba(74,222,128,.15)':'none',
-              opacity:levelUnlockedFinal?1:.4,transition:'opacity .3s',
-              animation:levelMastered?'masteredGlow 3.2s ease-in-out infinite':'none'}}>
-
-              {/* MASTERED — shimmer overlay */}
-              {levelMastered&&(
-                <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden',borderRadius:16}}>
-                  <div style={{position:'absolute',top:0,left:'-100%',width:'60%',height:'100%',
-                    background:'linear-gradient(110deg,transparent 0%,transparent 40%,rgba(74,222,128,.08) 50%,rgba(200,164,78,.12) 55%,transparent 65%,transparent 100%)',
-                    animation:'masteredShimmer 4.5s ease-in-out infinite'}}/>
-                </div>
-              )}
-
-              {/* MASTERED — diagonal ribbon */}
-              {levelMastered&&(
-                <div style={{position:'absolute',top:10,right:-32,transform:'rotate(38deg)',
-                  background:'linear-gradient(135deg,var(--emerald),var(--emerald))',
-                  padding:'3px 36px',fontSize:8,fontWeight:900,letterSpacing:'.12em',color:'var(--ink)',
-                  boxShadow:'0 4px 14px rgba(74,222,128,.35)',zIndex:3,pointerEvents:'none'}}>
-                  ✓ MAÎTRISÉ
-                </div>
-              )}
-
-              {/* Level header */}
-              <div style={{padding:'14px 16px 10px',display:'flex',alignItems:'center',gap:12,borderBottom:levelMastered?'1px solid rgba(74,222,128,.15)':'1px solid var(--line)',position:'relative',zIndex:2}}>
-                <div style={{width:40,height:40,borderRadius:12,
-                  background:levelMastered?'linear-gradient(135deg,rgba(74,222,128,.25),rgba(200,164,78,.15))':isCurrentLevel?'linear-gradient(135deg,rgba(200,164,78,.15),rgba(200,164,78,.05))':'var(--w03)',
-                  border:levelMastered?'1.5px solid rgba(74,222,128,.4)':'none',
-                  display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
-                  boxShadow:levelMastered?'0 0 16px rgba(74,222,128,.25)':'none'}}>
-                  <EI e={levelUnlockedFinal?level.icon:"🔒"} s={20} c={levelUnlockedFinal?"#fff":"var(--text-3)"}/>
-                </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
-                    <p style={{fontSize:13,fontWeight:800,color:levelMastered?'var(--emerald)':isCurrentLevel?'var(--gold)':'var(--text)'}}>{level.name}</p>
-                    <p style={{fontSize:10,fontWeight:700,color:levelMastered||isComplete?'var(--emerald)':'var(--text-3)'}}>{doneItems}/{totalItems}</p>
-                  </div>
-                  <div style={{height:4,borderRadius:2,background:'var(--line)',overflow:'hidden'}}>
-                    <div style={{height:'100%',borderRadius:2,width:progress+'%',background:isComplete?'var(--emerald)':'linear-gradient(90deg,var(--gold),var(--gold-light))',transition:'width .5s ease'}}/>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bubble grid — grouped by category */}
-              {(()=>{
-                const exercises=allItems.filter(it=>it.type==="node"&&it.mod.sec==="pr");
-                const culture=allItems.filter(it=>it.type==="node"&&it.mod.sec==="cu");
-                const analyses=allItems.filter(it=>it.type==="sa");
-                const renderGroup=(items,label,color,colorRgba)=>{
-                  if(items.length===0)return null;
-                  return(
-                    <div style={{marginBottom:12}}>
-                      <div style={{display:'flex',alignItems:'center',gap:8,padding:'0 6px',marginBottom:10}}>
-                        <div style={{height:1,flex:1,background:`linear-gradient(90deg,transparent,rgba(${colorRgba},.15))`}}/>
-                        <p style={{fontSize:7.5,fontWeight:800,color,letterSpacing:'.12em',textTransform:'uppercase',whiteSpace:'nowrap'}}>{label}</p>
-                        <div style={{height:1,flex:1,background:`linear-gradient(90deg,rgba(${colorRgba},.15),transparent)`}}/>
-                      </div>
-                      <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:'16px 6px'}}>
-                        {items.map(item=>{
-                          const isCur=item.globalIdx===currentGlobalIdx;
-                          const handleClick=()=>{
-                            const open=item.isDone||item.isUnlocked;
-                            if(!open){
-                              /* Verrouillé par l'abonnement → on tend la main au lieu de ne rien faire */
-                              if(item.paywalled)openPaywall(item.type==="sa"?"analysis":item.mod.sec==="cu"?"culture":item.mod.type==="video"?"monologue":"exercise");
-                              return;
-                            }
-                            if(item.type==="sa"){setSceneAn&&setSceneAn(item.sa)}
-                            else{setMod({...item.mod});go(item.mod.sec==="pr"?"practice":"culture")}
-                          };
-                          return <Bubble key={item.type==="sa"?item.sa.id:item.mod.id} item={item} isCurrent={isCur} onClick={handleClick}/>;
-                        })}
-                      </div>
-                    </div>
-                  );
-                };
-                return(
-                  <div style={{padding:'14px 8px 6px'}}>
-                    {renderGroup(exercises,"Exercices",'var(--gold)','200,164,78')}
-                    {renderGroup(culture,"Culture",'var(--violet)','167,139,250')}
-                    {renderGroup(analyses,"Analyse",'var(--coral)','232,116,90')}
-                  </div>
-                );
-              })()}
-
-              {/* Exam button at bottom of level */}
-              {exam&&(
-                <div style={{padding:'4px 14px 16px',display:'flex',justifyContent:'center'}}>
-                  <button disabled={!exam.examReady&&!exam.examPassed} onClick={()=>{if(exam.examReady&&!exam.examPassed)setExam(exam.levelId)}}
-                    style={{width:'100%',maxWidth:260,padding:'11px 16px',borderRadius:12,
-                      background:exam.examPassed?'linear-gradient(135deg,rgba(74,222,128,.06),rgba(74,222,128,.01))':exam.examReady?'linear-gradient(135deg,rgba(200,164,78,.08),rgba(200,164,78,.02))':'var(--w01)',
-                      border:exam.examPassed?'1.5px solid rgba(74,222,128,.4)':exam.examReady?'1.5px solid rgba(200,164,78,.4)':'1.5px dashed var(--w06)',
-                      cursor:exam.examReady&&!exam.examPassed?'pointer':'default',
-                      opacity:exam.examReady||exam.examPassed?1:.35,
-                      display:'flex',alignItems:'center',justifyContent:'center',gap:10,transition:'all .3s',
-                      backdropFilter:'blur(4px)'}}>
-                    <EI e={exam.examPassed?"✅":exam.examReady?"🎭":"🔒"} s={16} c={exam.examPassed?"#fff":exam.examReady?"#fff":"var(--text-3)"}/>
-                    <div style={{textAlign:'left'}}>
-                      <p style={{fontSize:10,fontWeight:800,color:exam.examPassed?'var(--emerald)':exam.examReady?'var(--gold)':'var(--text-3)',letterSpacing:'.04em'}}>
-                        {exam.examPassed?"EXAMEN RÉUSSI":exam.examReady?"PASSER L'EXAMEN":"EXAMEN"}</p>
-                      <p style={{fontSize:8,color:'var(--text-3)',marginTop:2}}>{exam.examPassed?`${level.name} → ${exam.nextLevel.name} ✓`:exam.examReady?`Débloquer ${exam.nextLevel.name}`:`Complétez tout pour débloquer`}</p>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Elegant connector between levels */}
-            {si<levelSections.length-1&&(
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',margin:'-4px 0 6px',gap:3}}>
-                <div style={{width:1.5,height:8,borderRadius:1,background:isComplete?'rgba(74,222,128,.4)':'var(--w06)'}}/>
-                <div style={{width:6,height:6,borderRadius:'50%',background:isComplete?'rgba(74,222,128,.3)':'var(--w06)',boxShadow:isComplete?'0 0 8px rgba(74,222,128,.2)':'none'}}/>
-                <div style={{width:1.5,height:8,borderRadius:1,background:isComplete?'rgba(74,222,128,.4)':'var(--w06)'}}/>
-              </div>
-            )}
-          </div>
+          <button key={x.level.id}
+            className={"ill-card "+(verrou?"ic-lock":"")}
+            style={{background:verrou?undefined:g,marginBottom:12}}
+            onClick={()=>{if(x.mur)openPaywall('level');else if(x.ouvert)go("practice")}}>
+            <Illus id={x.level.id} petit={verrou}/>
+            <span className="ill-in">
+              <span className="eb">Niveau {x.li+1}</span>
+              <span className="heading" style={{display:'block',fontSize:18,margin:'5px 0'}}>{x.level.name}</span>
+              {!verrou&&<span style={{display:'block',fontSize:11.5,lineHeight:1.45,color:'rgba(242,240,234,.74)',marginBottom:11}}>{x.level.desc}</span>}
+              {verrou&&<span style={{display:'block',height:7}}/>}
+              {x.mur
+                ?<span className="pill" style={{background:'var(--gold)',color:'#0A0E1C'}}>Essayer gratuitement</span>
+                :verrou
+                  ?<span style={{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:600,color:'var(--text-2)'}}>
+                     {I.lock({size:12,sw:1.8})}{x.raison||"Terminez le niveau en cours"}
+                   </span>
+                  :<span className="pill">Commencer</span>}
+            </span>
+          </button>
         );
       })}
+
+      {/* Le mur d'abonnement, une seule fois */}
+      {iMur>=0&&st.plan==="free"&&iMur<=iCur+2&&(
+        <div className="card-gold" style={{padding:20,marginBottom:16,textAlign:'center'}}>
+          <div style={{display:'flex',justifyContent:'center',color:'var(--gold)',marginBottom:10}}>{I.crown({size:30})}</div>
+          <h3 className="heading" style={{fontSize:21,color:'var(--gold)',marginBottom:6}}>4 jours gratuits</h3>
+          <p style={{fontSize:11.5,color:'var(--text-2)',marginBottom:15,lineHeight:1.5}}>Les douze niveaux, le classement, le bilan personnalisé et tous les outils.</p>
+          <button onClick={()=>openPaywall('level')} className="btn-gold" style={{padding:'12px 22px',fontSize:12.5}}>Essayer gratuitement</button>
+          <p style={{fontSize:9,color:'var(--text-3)',marginTop:10}}>Puis 9,90 €/mois · sans engagement</p>
+        </div>
+      )}
+
+      {/* Tout ce qui reste, en lignes */}
+      {reste.length>0&&(
+        <div style={{marginTop:16}}>
+          <div className="sep"><b>La suite</b><i/></div>
+          {reste.map(x=>ligne(x,false))}
+        </div>
+      )}
     </div>
   );
 }
@@ -3359,7 +3193,7 @@ function LevelUpModal({level,isTierChange,onClose}){
 }
 
 /* ═══ HOME ═══ */
-function Home({st,setSt,go,setMod,setExam}){
+function Home({st,setSt,go,setMod,setExam,lancerSeance}){
   const[sceneAn,setSceneAn]=useState(null);
   const[levelUpShow,setLevelUpShow]=useState(null);
   const prevLvRef=useRef(getLv(st.xp,st.passedExams).id);
@@ -3401,20 +3235,26 @@ function Home({st,setSt,go,setMod,setExam}){
   const dailyEx=FEED_DAILY_EXERCISES[dayOfYear%FEED_DAILY_EXERCISES.length];
   const dailyScene=(()=>{const notDone=SCENE_ANALYSES.filter(s=>!(st.doneSA||[]).includes(s.id));return notDone.length>0?notDone[0]:SCENE_ANALYSES[dayOfYear%SCENE_ANALYSES.length]})();
 
+  /* La séance du jour : le bouton principal de l'app et la section qui le
+     détaille sont le même objet, ils partagent donc le même calcul. */
+  const laSeance=lancerSeance?construireSeance(st):[];
+  const dejaFaite=seanceFaiteAujourdhui(st);
+  const enSeance=laSeance.length>=2&&!dejaFaite;
+
   if(sceneAn) return <SceneAnalysis analysis={sceneAn} st={st} setSt={setSt} onClose={()=>setSceneAn(null)}/>;
   if(levelUpShow) return <LevelUpModal level={levelUpShow.level} isTierChange={levelUpShow.isTierChange} onClose={()=>setLevelUpShow(null)}/>;
 
   return(
     <div className="safe-b fade-up" style={{padding:'68px 20px 100px'}}>
       <div className="mw">
-        <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:24}}>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
-            <AvatarSVG id={st.user?.avatar||"dramaturge"} size={48}/>
-            <p style={{fontSize:8,fontWeight:700,color:'var(--text-3)',letterSpacing:'.05em'}}>{AVATAR_NAMES[st.user?.avatar||"dramaturge"]}</p>
-          </div>
-          <div>
-            <h1 className="heading" style={{fontSize:26}}>{new Date().getHours()<18?"Bonjour":"Bonsoir"}{st.user?", "+(st.user.pseudo||st.user.prenom):""}.</h1>
-            <p className="body" style={{fontSize:12}}>{new Date().getHours()<12?"Prêt·e pour l'entraînement du matin ?":new Date().getHours()<18?"On continue l'entraînement ?":"Prêt·e pour une session du soir ?"}</p>
+        {/* En-tête : le bonjour à gauche, les deux chiffres qui comptent à droite */}
+        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,marginBottom:18}}>
+          <div style={{display:'flex',alignItems:'center',gap:11,minWidth:0}}>
+            <AvatarSVG id={st.user?.avatar||"dramaturge"} size={42}/>
+            <div style={{minWidth:0}}>
+              <h1 className="heading" style={{fontSize:25}}>{new Date().getHours()<18?"Bonjour":"Bonsoir"}{st.user?", "+(st.user.pseudo||st.user.prenom):""}.</h1>
+              <p className="body" style={{fontSize:11.5,marginTop:1}}>{new Date().getHours()<12?"Prêt·e pour l'entraînement du matin ?":new Date().getHours()<18?"On continue l'entraînement ?":"Prêt·e pour une session du soir ?"}</p>
+            </div>
           </div>
         </div>
 
@@ -3422,7 +3262,7 @@ function Home({st,setSt,go,setMod,setExam}){
         {st.pendingQuiz&&!st.preview&&(
           <button onClick={()=>{_track('level_quiz_resumed',{xp:st.xp});setSt(p=>({...p,onb:false}))}}
             className="card obj-3d" style={{width:'100%',textAlign:'left',padding:16,marginBottom:18,display:'flex',alignItems:'center',gap:13,cursor:'pointer',background:'linear-gradient(160deg,rgba(167,139,250,.07),var(--bg-card))',border:'1px solid rgba(167,139,250,.2)'}}>
-            <div style={{width:38,height:38,borderRadius:11,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.target({size:17,sw:1.6,style:{color:'#fff'}})}</div>
+            <div style={{width:38,height:38,borderRadius:11,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.target({size:17,sw:1.6,style:{color:'#fff'}})}</div>
             <div style={{flex:1,minWidth:0}}>
               <p style={{fontSize:11.5,fontWeight:700,marginBottom:2}}>Situer votre niveau</p>
               <p style={{fontSize:9.5,color:'var(--text-3)',lineHeight:1.4}}>Le petit test que vous avez passé — 2 minutes, pour ajuster votre parcours.</p>
@@ -3431,139 +3271,146 @@ function Home({st,setSt,go,setMod,setExam}){
           </button>
         )}
 
-{/* Daily tip moved to splash screen */}
-        <div className="card-gold obj-3d" style={{padding:20,marginBottom:22}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <div style={{width:36,height:36,borderRadius:10,background:st.streak>=30?'linear-gradient(135deg,rgba(224,184,78,.2),rgba(224,184,78,.05))':st.streak>=14?'linear-gradient(135deg,rgba(171,71,188,.2),rgba(171,71,188,.05))':st.streak>=7?'linear-gradient(135deg,rgba(79,195,247,.2),rgba(79,195,247,.05))':'linear-gradient(135deg,rgba(212,115,92,.15),rgba(212,115,92,.04))',display:'flex',alignItems:'center',justifyContent:'center',color:st.streak>=30?'var(--gold)':st.streak>=14?'var(--purple)':st.streak>=7?'var(--blue)':'var(--coral)',animation:st.streak>=3?'breatheCircle 2s ease-in-out infinite':'none'}}>{I.flame({size:16})}</div>
-              <div><p style={{fontSize:15,fontWeight:800}}>{st.streak} jour{st.streak>1?"s":""}</p><p style={{fontSize:9,color:'var(--text-3)'}}>{st.streak>=30?"Légendaire !":st.streak>=14?"Épique !":st.streak>=7?"En feu !":st.streak>=3?"Bien parti·e !":"de suite"}</p></div>
-            </div>
-            <div style={{textAlign:'right'}}><p className="heading" style={{fontSize:22,color:'var(--gold)'}}>{st.xp}</p><p className="label-gold">XP</p></div>
-          </div>
-          <Bar val={Math.min(inL,forN)} max={forN} h={4}/>
-          <p style={{fontSize:9,color:'var(--text-3)',marginTop:6}}>{nx?(inL>=forN?`Passez l'examen → ${nx.name}`:`${forN-inL} XP → ${nx.name}`):"Niveau maximum !"}</p>
-        </div>
-
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
-          {nP?<button data-tuto="tuto-exercice" className="card obj-3d" onClick={()=>{setMod({...nP,sec:"pr"});go("practice")}} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(200,164,78,.08),var(--bg-card))',border:'1px solid rgba(200,164,78,.15)'}}>
-            <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:10,boxShadow:'0 6px 20px rgba(200,164,78,.2)'}}>
-              <EI e={nP.icon} s={20}/>
-            </div>
-            <p className="label-gold" style={{marginBottom:4,fontSize:9}}>EXERCICE</p>
-            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>{nP.title}</p>
-            <div style={{display:'flex',alignItems:'center',gap:3,marginTop:10,color:'var(--gold)',fontSize:10,fontWeight:700}}>{I.zap({size:11})}+{nP.xp} XP</div>
-          </button>
-          :examAvailable?<button className="card obj-3d" onClick={()=>setExam(lv.id)} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(74,222,128,.08),var(--bg-card))',border:'1px solid rgba(74,222,128,.15)'}}>
-            <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,rgba(74,222,128,.2),rgba(74,222,128,.6))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:10,boxShadow:'0 6px 20px rgba(74,222,128,.2)'}}>
-              {I.trophy({size:20,sw:1.6,style:{color:'var(--ink)'}})}
-            </div>
-            <p className="label" style={{color:'var(--emerald)',marginBottom:4,fontSize:9}}>EXAMEN DE NIVEAU</p>
-            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>Passer à {nx.name}</p>
-            <div style={{display:'flex',alignItems:'center',gap:3,marginTop:10,color:'var(--emerald)',fontSize:10,fontWeight:700}}>{I.trophy({size:11})} Débloquer le niveau</div>
-          </button>
-          :allPrDone&&examNotPassed?<div className="card" style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(200,164,78,.04),var(--bg-card))',border:'1px solid rgba(74,222,128,.15)'}}>
-            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
-              <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,rgba(74,222,128,.15),rgba(74,222,128,.4))',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <span style={{color:'var(--emerald)'}}>{I.check({size:20})}</span>
-              </div>
-              <span style={{fontSize:8,fontWeight:800,color:'var(--emerald)',padding:'3px 8px',borderRadius:6,background:'rgba(74,222,128,.12)'}}>✓ TERMINÉ</span>
-            </div>
-            <p className="label-gold" style={{color:'var(--emerald)',marginBottom:4,fontSize:9}}>EXERCICES</p>
-            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>Bravo, tous les exercices de ce niveau sont terminés !</p>
-            <p style={{fontSize:10,color:'var(--text-2)',marginTop:6,lineHeight:1.4}}>Concentrez-vous maintenant sur la culture G et l'analyse de scène pour accéder à l'examen.</p>
-          </div>
-          :null}
-          {nC?<button data-tuto="tuto-culture" className="card obj-3d" onClick={()=>{setMod({...nC,sec:"cu"});go("culture")}} style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:'1px solid rgba(167,139,250,.12)'}}>
-            <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:10,boxShadow:'0 6px 20px rgba(167,139,250,.2)'}}>
-              <EI e={nC.icon} s={20}/>
-            </div>
-            <p className="label" style={{color:'var(--violet)',marginBottom:4,fontSize:9}}>CULTURE</p>
-            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>{nC.title}</p>
-            <div style={{display:'flex',alignItems:'center',gap:3,marginTop:10,color:'var(--violet)',fontSize:10,fontWeight:700}}>{I.zap({size:11})}+{nC.xp} XP</div>
-          </button>
-          :allCuDone?<div className="card" style={{padding:18,textAlign:'left',background:'linear-gradient(160deg,rgba(167,139,250,.04),var(--bg-card))',border:'1px solid rgba(74,222,128,.15)'}}>
-            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
-              <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,rgba(74,222,128,.15),rgba(74,222,128,.4))',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <span style={{color:'var(--emerald)'}}>{I.check({size:20})}</span>
-              </div>
-              <span style={{fontSize:8,fontWeight:800,color:'var(--emerald)',padding:'3px 8px',borderRadius:6,background:'rgba(74,222,128,.12)'}}>✓ TERMINÉ</span>
-            </div>
-            <p className="label" style={{color:'var(--emerald)',marginBottom:4,fontSize:9}}>CULTURE</p>
-            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>Bravo, toute la culture G de ce niveau est terminée !</p>
-            <p style={{fontSize:10,color:'var(--text-2)',marginTop:6,lineHeight:1.4}}>Concentrez-vous maintenant sur les exercices et l'analyse de scène pour compléter votre module.</p>
-          </div>
-          :null}
-        </div>
-
-        {/* Analyse de scène card */}
-        {allSADone?<div className="card" style={{width:'100%',padding:18,display:'flex',alignItems:'center',gap:14,textAlign:'left',marginBottom:24,background:'linear-gradient(160deg,rgba(232,116,90,.04),var(--bg-card))',border:'1px solid rgba(74,222,128,.15)'}}>
-          <div style={{width:46,height:46,borderRadius:14,background:'linear-gradient(135deg,rgba(74,222,128,.15),rgba(74,222,128,.4))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            <span style={{color:'var(--emerald)'}}>{I.check({size:20})}</span>
-          </div>
-          <div style={{flex:1}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
-              <p className="label" style={{color:'var(--emerald)',fontSize:9}}>ANALYSE DE SCÈNE</p>
-              <span style={{fontSize:8,fontWeight:800,color:'var(--emerald)',padding:'2px 6px',borderRadius:5,background:'rgba(74,222,128,.12)'}}>✓ TERMINÉ</span>
-            </div>
-            <p style={{fontSize:12,fontWeight:700,lineHeight:1.3}}>Bravo, toutes les analyses de ce niveau sont terminées !</p>
-            <p style={{fontSize:10,color:'var(--text-2)',marginTop:4,lineHeight:1.4}}>Concentrez-vous sur les exercices et la culture G pour compléter votre module.</p>
-          </div>
-        </div>
-        :<button data-tuto="tuto-analyse" className="card obj-3d" onClick={()=>setSceneAn(nSA)} style={{width:'100%',padding:18,display:'flex',alignItems:'center',gap:14,textAlign:'left',marginBottom:24,background:'linear-gradient(160deg,rgba(232,116,90,.06),var(--bg-card))',border:'1px solid rgba(232,116,90,.12)'}}>
-          <div style={{width:46,height:46,borderRadius:14,background:'linear-gradient(135deg,var(--coral),#f09080)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 6px 20px rgba(232,116,90,.2)'}}>
-            {I.scroll({size:20,sw:1.6,style:{color:'var(--ink)'}})}
-          </div>
-          <div style={{flex:1}}>
-            <p className="label" style={{color:'var(--coral)',marginBottom:3,fontSize:9}}>ANALYSE DE SCÈNE</p>
-            <p style={{fontSize:12,fontWeight:700}}>{nSA.title}</p>
-            <p style={{fontSize:9,color:'var(--text-3)',marginTop:3}}>{nSA.source} · {nSA.questions.length} questions</p>
-          </div>
-          <div style={{color:'var(--coral)',fontSize:11,fontWeight:700}}>+{nSA.tier==="avance"?60:nSA.tier==="intermediaire"?45:30} XP</div>
-        </button>}
-
-        {/* Révision de la semaine — 1 module culture aléatoire parmi ceux déjà faits */}
+{/* ── La carte du niveau en cours : le cœur de l'écran ──
+    Le dessin, la progression réelle, et une seule action. */}
         {(()=>{
-          const allCu=Object.values(CU).flat();
-          const doneCuItems=allCu.filter(c=>st.doneCu.includes(c.id));
-          const revDone=st.weekRevision||false;
+          const pct=Math.round(Math.min(inL,forN)/(forN||1)*100);
+          /* Le bouton principal de l'app : la séance du jour. On ne propose plus
+             un contenu isolé, on propose un début et une fin. */
+          const suite=enSeance
+              ?{lab:`Ma séance · ${dureeSeance(laSeance)} min`,act:()=>{_track('seance_lancee',{n:laSeance.length});lancerSeance(laSeance)}}
+            :examAvailable?{lab:"Passer l'examen",act:()=>setExam(lv.id)}
+            :nP?{lab:dejaFaite?"Travailler encore":"Continuer",act:()=>{setMod({...nP,sec:"pr"});go("practice")}}
+            :nC?{lab:dejaFaite?"Travailler encore":"Continuer",act:()=>{setMod({...nC,sec:"cu"});go("culture")}}
+            :(nSA&&!allSADone)?{lab:"Analyser une scène",act:()=>setSceneAn(nSA)}
+            :{lab:"Voir les exercices",act:()=>go("practice")};
+          return(
+            <button className="ill-card ic-ici" style={{background:LV_ART[lv.id]||'var(--gr-nuit)',marginBottom:20}} onClick={suite.act}>
+              <Illus id={lv.id}/>
+              <span className="ill-in">
+                <span className="eb eb-or">Vous êtes ici</span>
+                <span className="heading" style={{display:'block',fontSize:20,margin:'5px 0'}}>{lv.name}</span>
+                <span style={{display:'block',fontSize:11.5,lineHeight:1.45,color:'rgba(242,240,234,.74)',marginBottom:11}}>{lv.desc}</span>
+                <span className="track" style={{display:'block',height:5,marginBottom:5}}>
+                  <span className="fill fill-gold" style={{display:'block',height:'100%',width:pct+'%'}}/>
+                </span>
+                <span style={{display:'block',fontSize:9.5,fontWeight:600,color:'rgba(242,240,234,.66)',marginBottom:12,fontVariantNumeric:'tabular-nums'}}>
+                  {dejaFaite
+                    ?"Séance du jour terminée. À demain."
+                    :nx?(inL>=forN?`Prêt·e pour l'examen → ${nx.name}`:`${forN-inL} XP avant ${nx.name}`):"Le sommet. Il n'y a plus rien au-dessus."}
+                </span>
+                <span className="pill">{suite.lab}</span>
+              </span>
+            </button>
+          );
+        })()}
 
-          if(doneCuItems.length===0){
+        {/* ── Aujourd'hui : les trois choses à faire, en rangées ── */}
+        <div style={{marginBottom:22}}>
+          <div className="sep"><b>{enSeance?"Votre séance":"Aujourd'hui"}</b><i/></div>
+
+          {/* Quand la séance est disponible, cette section EST la séance :
+              on ne propose pas deux fois les mêmes contenus côte à côte. */}
+          {enSeance&&laSeance.map((m,k)=>(
+            <Rang key={m.id} ic={<EI e={m.icon} s={17}/>}
+              teinte={m.sec==="cu"?"var(--violet)":"var(--gold)"}
+              eb={`Étape ${k+1}`} titre={m.title}
+              note={m.revision?"À revoir · "+m.dur:(m.cat||(m.sec==="cu"?"Culture":"Pratique"))+" · "+m.dur}
+              xp={`+${m.xp} XP`}
+              onClick={()=>{_track('seance_lancee',{n:laSeance.length,depuis:'liste'});lancerSeance(laSeance)}}/>
+          ))}
+
+
+          {!enSeance&&<>
+          {nP?<Rang ic={<EI e={nP.icon} s={17}/>} teinte="var(--gold)" eb="Exercice" titre={nP.title}
+                note={`${nP.cat||"Pratique"} · ${nP.dur||"quelques minutes"}`} xp={`+${nP.xp} XP`}
+                onClick={()=>{setMod({...nP,sec:"pr"});go("practice")}}/>
+           :<Rang ic={I.check({size:17})} teinte="var(--emerald)" fait eb="Exercices"
+                titre="Tous les exercices du niveau sont faits." fleche={false}/>}
+
+          {nC?<Rang ic={<EI e={nC.icon} s={17}/>} teinte="var(--violet)" eb="Culture" titre={nC.title}
+                note={nC.dur||"Une lecture courte"} xp={`+${nC.xp} XP`}
+                onClick={()=>{setMod({...nC,sec:"cu"});go("culture")}}/>
+           :<Rang ic={I.check({size:17})} teinte="var(--emerald)" fait eb="Culture"
+                titre="Toute la culture du niveau est faite." fleche={false}/>}
+
+          {(nSA&&!allSADone)?<Rang ic={I.scroll({size:17,sw:1.7})} teinte="var(--coral)" eb="Analyse de scène"
+                titre={nSA.title} note={`${nSA.source} · ${nSA.questions.length} questions`}
+                xp={`+${nSA.tier==="avance"?60:nSA.tier==="intermediaire"?45:30} XP`}
+                onClick={()=>setSceneAn(nSA)}/>
+           :<Rang ic={I.check({size:17})} teinte="var(--emerald)" fait eb="Analyse de scène"
+                titre="L'analyse du niveau est faite." fleche={false}/>}
+
+          {examAvailable&&nx&&(
+            <button className="rang" onClick={()=>setExam(lv.id)}
+              style={{cursor:'pointer',borderColor:'var(--line-s)',background:'linear-gradient(120deg,rgba(224,184,78,.10),var(--bg-card) 70%)'}}>
+              <div className="rang-ic" style={{background:'rgba(224,184,78,.16)',color:'var(--gold)'}}>{I.trophy({size:17,sw:1.7})}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <span className="eb eb-or" style={{marginBottom:3}}>Examen de niveau</span>
+                <p className="rang-t">Tout est prêt — passez {nx.name}</p>
+              </div>
+              <span className="pill" style={{fontSize:9.5,padding:'6px 13px'}}>Y aller</span>
+            </button>
+          )}
+          </>}
+        </div>
+
+        {/* ── À revoir ─────────────────────────────────────────────────
+            Alimentée par les dates de révision espacée écrites à chaque quiz
+            de culture. Remplace l'ancienne « révision de la semaine », qui
+            tirait un module au hasard sans tenir compte de la mémoire. */}
+        {(()=>{
+          const dansLaSeance=enSeance?laSeance.map(m=>m.id):[];
+          const dues=revisionsDues(st).filter(r=>!dansLaSeance.includes(r.mod.id));
+          if(dues.length===0){
+            const p=prochaineRevision(st);
+            if(!p)return null;
+            const j=Math.max(1,Math.ceil((p-new Date())/86400000));
             return(
-              <div className="card" style={{padding:18,marginBottom:24,textAlign:'center',background:'rgba(167,139,250,.03)',border:'1px solid rgba(167,139,250,.1)'}}>
-                <div style={{marginBottom:10}}><EI e="🔄" s={20}/></div>
-                <p className="label" style={{color:'var(--violet)',marginBottom:4}}>RÉVISION DE LA SEMAINE</p>
-                <p style={{fontSize:11,color:'var(--text-2)'}}>Rien à réviser — terminez un premier module culture !</p>
+              <div style={{marginBottom:22}}>
+                <div className="sep"><b>À revoir</b><i/></div>
+                <div className="rang" style={{opacity:.7}}>
+                  <div className="rang-ic" style={{background:'rgba(52,211,153,.12)',color:'var(--emerald)'}}>{I.check({size:17,sw:2.2})}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <p className="rang-t" style={{color:'var(--text-2)'}}>Rien à revoir aujourd'hui.</p>
+                    <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:2}}>Prochaine révision dans {j} jour{j>1?"s":""}.</p>
+                  </div>
+                </div>
               </div>
             );
           }
-
-          /* Pick 1 random culture module per week (stable for the week) */
-          const weekHash=Math.floor(Date.now()/(86400000*7));
-          const weekItem=doneCuItems[weekHash%doneCuItems.length];
-
+          const tete=dues.slice(0,3);
           return(
-            <div className="card" style={{padding:18,marginBottom:24,background:revDone?'linear-gradient(160deg,rgba(74,222,128,.04),var(--bg-card))':'linear-gradient(160deg,rgba(167,139,250,.04),var(--bg-card))',border:revDone?'1px solid rgba(74,222,128,.15)':'1px solid rgba(167,139,250,.1)'}}>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <EI e="🔄" s={18}/>
-                  <p className="label" style={{color:revDone?'var(--emerald)':'var(--violet)'}}>RÉVISION DE LA SEMAINE</p>
-                </div>
-                {revDone&&<span style={{fontSize:8,fontWeight:800,color:'var(--emerald)',padding:'3px 8px',borderRadius:6,background:'rgba(74,222,128,.12)'}}>✓ Fait</span>}
-              </div>
-              <button onClick={()=>{setSt(p=>({...p,weekRevision:true}));setMod({...weekItem,sec:"cu"});go("culture")}}
-                style={{width:'100%',padding:'12px 14px',borderRadius:10,background:'var(--bg-card)',border:revDone?'1px solid rgba(74,222,128,.12)':'1px solid rgba(167,139,250,.12)',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:10}}>
-                <div style={{width:36,height:36,borderRadius:10,background:revDone?'linear-gradient(135deg,rgba(74,222,128,.15),rgba(74,222,128,.04))':'linear-gradient(135deg,rgba(167,139,250,.15),rgba(167,139,250,.04))',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <span style={{fontSize:16}}>{weekItem.icon}</span>
-                </div>
-                <div style={{flex:1}}>
-                  <p style={{fontSize:9,fontWeight:700,color:revDone?'var(--emerald)':'var(--violet)',letterSpacing:'.06em'}}>CULTURE</p>
-                  <p style={{fontSize:11,fontWeight:600,color:'var(--text)',textDecoration:revDone?'line-through':'none'}}>{weekItem.title}</p>
-                </div>
-                <div style={{color:revDone?'var(--emerald)':'var(--violet)',fontSize:10,fontWeight:700}}>{revDone?'Refaire →':'Réviser →'}</div>
-              </button>
+            <div style={{marginBottom:22}}>
+              <div className="sep"><b>À revoir</b><i/></div>
+              {tete.map(r=>(
+                <button key={r.mod.id} className="rang" style={{cursor:'pointer',borderColor:'rgba(184,160,224,.22)'}}
+                  onClick={()=>{_track('revision_opened',{module:r.mod.id,retard:r.retard});setSt(p=>({...p,weekRevision:true}));setMod({...r.mod,sec:"cu"});go("culture")}}>
+                  <div className="rang-ic" style={{background:'rgba(184,160,224,.14)',color:'var(--violet)'}}>{I.refresh({size:16,sw:1.8})}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <span className="eb" style={{color:'var(--violet)',marginBottom:3}}>
+                      {r.fragile?"À consolider":r.retard>=2?`En retard de ${r.retard} jours`:"C'est le moment"}
+                    </span>
+                    <p className="rang-t" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.mod.title}</p>
+                    <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:2}}>Revu il y a {r.ecart+r.retard} jour{(r.ecart+r.retard)>1?"s":""} · {r.mod.dur}</p>
+                  </div>
+                  <span style={{color:'var(--text-3)',display:'flex',flexShrink:0}}>{I.chR({size:15,sw:1.8})}</span>
+                </button>
+              ))}
+              {dues.length>3&&(
+                <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:4,paddingLeft:2}}>
+                  et {dues.length-3} autre{dues.length-3>1?"s":""} à revoir.
+                </p>
+              )}
             </div>
           );
         })()}
+        {/* ── Le parcours : où l'on va, et à quelle condition ── */}
+        <div style={{marginBottom:24}}>
+          <div className="sep"><b>Votre parcours</b><i/></div>
+          <ProgressPath st={st} go={go} setMod={setMod} setExam={setExam} setSceneAn={setSceneAn}/>
+        </div>
+
 
         {/* Objectifs hebdomadaires */}
         {(()=>{
@@ -3604,7 +3451,7 @@ function Home({st,setSt,go,setMod,setExam}){
         {/* Promotional card for Free users */}
         {st.plan==="free"&&(
           <button onClick={()=>{_track('paywall_viewed',{source:'feed_card',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{width:'100%',padding:20,borderRadius:14,background:'linear-gradient(135deg,rgba(200,164,78,.08),rgba(200,164,78,.03))',border:'2px solid transparent',backgroundImage:'linear-gradient(rgba(8,10,20,.95),rgba(8,10,20,.95)),linear-gradient(135deg,var(--gold),var(--gold-light))',backgroundOrigin:'border-box',backgroundClip:'padding-box, border-box',marginBottom:20,display:'flex',alignItems:'center',gap:16,cursor:'pointer',transition:'all .2s',textAlign:'left'}}>
-            <div style={{width:48,height:48,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 6px 20px rgba(200,164,78,.3)'}}>
+            <div style={{width:48,height:48,borderRadius:12,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 6px 20px rgba(200,164,78,.3)'}}>
               {I.star({size:22,sw:2,style:{color:'var(--ink)',fill:'var(--ink)'}})}
             </div>
             <div style={{flex:1}}>
@@ -3823,7 +3670,7 @@ function Home({st,setSt,go,setMod,setExam}){
             return(
               <div className="card" style={{padding:20,marginBottom:20,background:'linear-gradient(160deg,rgba(200,164,78,.06),var(--bg-card))',border:'1.5px solid rgba(200,164,78,.25)',textAlign:'center',position:'relative',overflow:'hidden'}}>
                 <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,transparent,var(--gold),transparent)'}}/>
-                <div style={{width:44,height:44,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',boxShadow:'0 8px 24px rgba(200,164,78,.25)'}}>
+                <div style={{width:44,height:44,borderRadius:12,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',boxShadow:'0 8px 24px rgba(200,164,78,.25)'}}>
                   {I.lock({size:18,sw:2,style:{color:'var(--ink)'}})}
                 </div>
                 <p className="label-gold" style={{fontSize:9,marginBottom:8}}>BILAN PERSONNALISÉ</p>
@@ -3888,7 +3735,7 @@ function Home({st,setSt,go,setMod,setExam}){
               {/* Header */}
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <div style={{width:28,height:28,borderRadius:8,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center'}}>
                     {I.target({size:13,sw:1.6,style:{color:'var(--ink)'}})}
                   </div>
                   <p className="label-gold" style={{fontSize:8}}>MON BILAN PERSONNALISÉ</p>
@@ -4121,8 +3968,6 @@ function Home({st,setSt,go,setMod,setExam}){
           </div>
         )}
 
-        <p className="label" style={{marginBottom:12}}>VOTRE PARCOURS</p>
-        <ProgressPath st={st} go={go} setMod={setMod} setExam={setExam} setSceneAn={setSceneAn}/>
       </div>
     </div>
   );
@@ -4304,7 +4149,7 @@ function Warmup({onClose,st,setSt}){
       <div className="mw">
         <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:24}}>{I.chL({size:16})} Retour</button>
         <div style={{textAlign:'center',marginBottom:28}}>
-          <div style={{width:56,height:56,borderRadius:16,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
+          <div style={{width:56,height:56,borderRadius:16,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',boxShadow:'0 8px 32px rgba(200,164,78,.2)'}}>
             {I.mic({size:24,sw:1.6,style:{color:'var(--ink)'}})}
           </div>
           <h1 className="heading" style={{fontSize:26,marginBottom:6}}>Échauffement vocal</h1>
@@ -4811,7 +4656,7 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
             <textarea value={ans.userText||""} onChange={e=>setUserText(e.target.value)} disabled={ans.revealed}
               placeholder="Écrivez votre analyse ici... (minimum 10 caractères)"
               style={{width:'100%',minHeight:100,padding:14,borderRadius:12,background:'var(--bg-card)',border:'1px solid var(--line)',color:'var(--text)',
-                fontFamily:'Noto Sans, Inter, sans-serif',fontSize:12,lineHeight:1.7,resize:'vertical',outline:'none'}}/>
+                fontFamily:'Archivo, sans-serif',fontSize:12,lineHeight:1.7,resize:'vertical',outline:'none'}}/>
             {ans.revealed&&(
               <div style={{marginTop:12}}>
                 {/* AI correction feedback */}
@@ -4873,7 +4718,7 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
             <textarea value={ans.userText||""} onChange={e=>setUserText(e.target.value)} disabled={ans.revealed}
               placeholder="Donnez votre position et argumentez... (minimum 10 caractères)"
               style={{width:'100%',minHeight:100,padding:14,borderRadius:12,background:'var(--bg-card)',border:'1px solid var(--line)',color:'var(--text)',
-                fontFamily:'Noto Sans, Inter, sans-serif',fontSize:12,lineHeight:1.7,resize:'vertical',outline:'none'}}/>
+                fontFamily:'Archivo, sans-serif',fontSize:12,lineHeight:1.7,resize:'vertical',outline:'none'}}/>
             {ans.revealed&&q.positions&&(
               <div style={{marginTop:12}}>
                 <p className="label" style={{color:'var(--coral)',marginBottom:10}}>PERSPECTIVES</p>
@@ -5492,9 +5337,9 @@ function AvantScene({onClose,st}){
           const mainFormats=AVANTSCENE_FORMATS.filter(f=>!f.group);
           const introFormats=AVANTSCENE_FORMATS.filter(f=>f.group==="introspection");
           const colors=[
-            {bg:'linear-gradient(135deg,var(--gold-dim),var(--gold))',label:'var(--gold)'},
-            {bg:'linear-gradient(135deg,var(--violet-dim),var(--violet))',label:'var(--violet)'},
-            {bg:'linear-gradient(135deg,var(--coral),#e8977f)',label:'var(--coral)'},
+            {bg:'rgba(224,184,78,.14)',label:'var(--gold)'},
+            {bg:'rgba(184,160,224,.14)',label:'var(--violet)'},
+            {bg:'rgba(232,135,90,.14)',label:'var(--coral)'},
           ];
           return(
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
@@ -5503,8 +5348,8 @@ function AvantScene({onClose,st}){
                 return(
                   <button key={f.id} onClick={()=>setFormat(f.id)} className="card obj-3d"
                     style={{padding:18,display:'flex',alignItems:'center',gap:14,textAlign:'left'}}>
-                    <div style={{width:44,height:44,borderRadius:12,background:c.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                      <span style={{fontSize:'20px',filter:'grayscale(1) brightness(10)'}}>{f.icon}</span>
+                    <div style={{width:44,height:44,borderRadius:13,background:c.bg,color:c.label,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <EI e={f.icon} s={20}/>
                     </div>
                     <div style={{flex:1}}>
                       <p style={{fontSize:14,fontWeight:700}}>{f.name}</p>
@@ -5556,7 +5401,7 @@ function AvantScene({onClose,st}){
       <div className="mw" style={{textAlign:'center'}}>
         <Confetti count={30}/>
         <div style={{marginTop:40,marginBottom:20}}>
-          <div style={{width:80,height:80,borderRadius:'50%',background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 12px 40px rgba(200,164,78,.3)'}}>
+          <div style={{width:80,height:80,borderRadius:'50%',background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 12px 40px rgba(200,164,78,.3)'}}>
             {I.check({size:32,sw:2.5,style:{color:'var(--ink)'}})}
           </div>
           <h2 className="heading" style={{fontSize:24,marginBottom:6}}>Vous êtes prêt·e</h2>
@@ -6030,7 +5875,7 @@ function MonTexte({st,setSt,onClose}){
           <div style={{display:'flex',justifyContent:'space-between'}}>
             <button onClick={()=>qi>0?setQi(qi-1):setPhase("intro")} className="btn-outline" style={{padding:'10px 18px',fontSize:11}}>← Précédent</button>
             {qi<etape.questions.length-1?
-              <button onClick={()=>setQi(qi+1)} className="btn-gold" style={{padding:'10px 18px',fontSize:11}}>Suivant →</button>
+              <button onClick={()=>setQi(qi+1)} className="pill">Suivant</button>
               :<button onClick={()=>{validateStep(etape.id);saveTime();setTimerOn(false);setStepIdx(null);setPhase("intro");setQi(0);SFX.xp();setSt(p=>({...p,xp:p.xp+20,weekXP:(p.weekXP||0)+20}))}} className="btn-gold" style={{padding:'10px 24px',fontSize:11}}>Valider cette étape ✓</button>
             }
           </div>
@@ -6141,7 +5986,7 @@ function MonTexte({st,setSt,onClose}){
       <div className="mw">
         <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:20}}>{I.chL({size:16})} Retour</button>
         <div style={{textAlign:'center',marginBottom:24}}>
-          <div style={{width:56,height:56,borderRadius:14,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px',boxShadow:'0 8px 30px rgba(167,139,250,.2)'}}>
+          <div style={{width:56,height:56,borderRadius:14,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px',boxShadow:'0 8px 30px rgba(167,139,250,.2)'}}>
             {I.book({size:26,sw:1.6,style:{color:'#fff'}})}
           </div>
           <h1 className="heading" style={{fontSize:26,marginBottom:4}}>Mon Texte</h1>
@@ -6273,7 +6118,7 @@ function CoachChat({st,setSt,onClose}){
       <div className="mw">
         <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:20}}>{I.chL({size:16})} Retour</button>
         <div style={{textAlign:'center',marginBottom:20}}>
-          <div style={{width:56,height:56,borderRadius:14,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px',boxShadow:'0 8px 30px rgba(167,139,250,.2)'}}>
+          <div style={{width:56,height:56,borderRadius:14,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px',boxShadow:'0 8px 30px rgba(167,139,250,.2)'}}>
             {I.users({size:26,sw:1.6,style:{color:'#fff'}})}
           </div>
           <h1 className="heading" style={{fontSize:24,marginBottom:4}}>Mon Coach</h1>
@@ -6467,7 +6312,7 @@ function Feed({st,setSt}){
           <div style={{display:'flex',justifyContent:'space-between'}}>
             <button onClick={()=>monoQi>0?setMonoQi(monoQi-1):setMonoPhase("intro")} className="btn-outline" style={{padding:'10px 18px',fontSize:11}}>← Précédent</button>
             {monoQi<etape.questions.length-1?
-              <button onClick={()=>setMonoQi(monoQi+1)} className="btn-gold" style={{padding:'10px 18px',fontSize:11}}>Suivant →</button>
+              <button onClick={()=>setMonoQi(monoQi+1)} className="pill">Suivant</button>
               :<button onClick={()=>{updateMonoProgress(workingMono.id,p=>({...p,validated:[...(p.validated||[]),etape.id]}));setMonoTimer(0);setMonoTimerOn(false);setMonoStepIdx(null);setMonoPhase("intro");setMonoQi(0);SFX.xp();setSt(p=>({...p,xp:p.xp+20,weekXP:(p.weekXP||0)+20}))}} className="btn-gold" style={{padding:'10px 24px',fontSize:11}}>Valider cette étape ✓</button>
             }
           </div>
@@ -6666,7 +6511,7 @@ function Feed({st,setSt}){
       </div>
       <div className="mw" style={{textAlign:'center'}}>
         <button onClick={()=>setViewDailyEx(false)} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12,marginBottom:24}}>{I.chL({size:16})} Retour</button>
-        <div style={{width:64,height:64,borderRadius:16,background:'linear-gradient(135deg,var(--emerald),#6ee7a0)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 8px 30px rgba(74,222,128,.2)'}}>
+        <div style={{width:64,height:64,borderRadius:16,background:'rgba(52,211,153,.14)',color:'var(--emerald)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 8px 30px rgba(74,222,128,.2)'}}>
           {I.target({size:28,sw:1.6,style:{color:'#000'}})}
         </div>
         <p className="label" style={{color:'var(--emerald)',marginBottom:8}}>EXERCICE DU JOUR</p>
@@ -6707,7 +6552,7 @@ function Feed({st,setSt}){
 
         {/* Unlock banner — cliquable */}
         <button onClick={()=>openPaywall("tools")} style={{width:'100%',textAlign:'left',padding:'14px 16px',borderRadius:14,background:'linear-gradient(135deg,rgba(167,139,250,.12),rgba(139,92,246,.06))',border:'1px solid rgba(167,139,250,.25)',marginBottom:18,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
-          <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.crown({size:16})}</div>
+          <div style={{width:36,height:36,borderRadius:10,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{I.crown({size:16})}</div>
           <div style={{flex:1}}>
             <p style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:2}}>Débloquez tous les outils</p>
             <p style={{fontSize:10,color:'var(--text-2)'}}>4 jours gratuits, puis 9,90 €/mois</p>
@@ -6717,10 +6562,10 @@ function Feed({st,setSt}){
 
         {/* Outils verrouillés — visibles ET cliquables : le clic ouvre le mur d'abonnement */}
         {[
-          {src:"challenge",label:"CHALLENGE DICTION",sub:"60 secondes chrono",col:"var(--coral)",bg:"linear-gradient(135deg,rgba(248,113,113,.3),var(--coral))",ic:I.zap,icCol:"#fff"},
-          {src:"avantscene",label:"AVANT-SCÈNE",sub:"Préparez-vous avant de jouer",col:"var(--violet)",bg:"linear-gradient(135deg,var(--violet-dim),var(--violet))",ic:I.compass,icCol:"#fff"},
-          {src:"warmup",label:"ÉCHAUFFEMENT VOCAL",sub:"Préparez votre voix",col:"var(--gold)",bg:"linear-gradient(135deg,var(--gold-dim),var(--gold))",ic:I.headphones,icCol:"var(--ink)"},
-          {src:"montexte",label:"MON TEXTE",sub:"Travaillez vos textes",col:"var(--gold)",bg:"rgba(200,164,78,.12)",ic:I.book,icCol:"var(--gold)"}
+          {src:"challenge",label:"CHALLENGE DICTION",sub:"60 secondes chrono",col:"var(--coral)",bg:"rgba(232,135,90,.14)",ic:I.zap,icCol:"var(--coral)"},
+          {src:"avantscene",label:"AVANT-SCÈNE",sub:"Préparez-vous avant de jouer",col:"var(--violet)",bg:"rgba(184,160,224,.14)",ic:I.compass,icCol:"var(--violet)"},
+          {src:"warmup",label:"ÉCHAUFFEMENT VOCAL",sub:"Préparez votre voix",col:"var(--gold)",bg:"rgba(224,184,78,.14)",ic:I.headphones,icCol:"var(--gold)"},
+          {src:"montexte",label:"MON TEXTE",sub:"Travaillez vos textes",col:"var(--gold)",bg:"rgba(224,184,78,.14)",ic:I.book,icCol:"var(--gold)"}
         ].map(t=>(
           <button key={t.src} onClick={()=>openPaywall(t.src)} className="card obj-3d"
             style={{width:'100%',textAlign:'left',padding:18,marginBottom:12,display:'flex',alignItems:'center',gap:14,cursor:'pointer',opacity:.8,transition:'opacity .2s'}}
@@ -6748,7 +6593,7 @@ function Feed({st,setSt}){
 
         {/* 0. MON COACH (Coach plan only) */}
         {st.plan==="premium"&&<button onClick={()=>{setCoachChat(true);setUnreadCoach(0);}} className="card obj-3d" style={{padding:18,marginBottom:14,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:unreadCoach>0?'linear-gradient(160deg,rgba(167,139,250,.12),var(--bg-card))':'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:unreadCoach>0?'1px solid rgba(167,139,250,.25)':'1px solid rgba(167,139,250,.1)',animation:unreadCoach>0?'breatheCircle 2s ease-in-out infinite':'none'}}>
-          <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative'}}>
+          <div style={{width:42,height:42,borderRadius:12,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative'}}>
             {I.users({size:18,sw:1.6,style:{color:'#fff'}})}
             {unreadCoach>0&&<span style={{position:'absolute',top:-4,right:-4,minWidth:18,height:18,borderRadius:9,background:'var(--red)',color:'#fff',fontSize:9,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',border:'2px solid var(--bg)',boxShadow:'0 2px 8px rgba(239,68,68,.4)'}}>{unreadCoach}</span>}
           </div>
@@ -6762,22 +6607,22 @@ function Feed({st,setSt}){
 
         {/* CHALLENGE DICTION */}
         <button onClick={()=>setShowChallenge(true)} className="card obj-3d" style={{padding:18,marginBottom:14,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:'linear-gradient(160deg,rgba(248,113,113,.06),var(--bg-card))',border:'1px solid rgba(248,113,113,.1)'}}>
-          <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,rgba(248,113,113,.3),var(--coral))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            {I.zap({size:18,sw:1.6,style:{color:'#fff'}})}
+          <div style={{width:42,height:42,borderRadius:12,background:'rgba(232,135,90,.14)',color:'var(--coral)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            {I.zap({size:18,sw:1.6})}
           </div>
           <div style={{flex:1}}>
             <p className="label" style={{color:'var(--coral)',marginBottom:3}}>CHALLENGE DICTION</p>
             <p style={{fontSize:11,fontWeight:700}}>60 secondes chrono</p>
             <p style={{fontSize:9,color:'var(--text-3)',marginTop:2}}>Dites un max de phrases correctement</p>
-            {(st.challengeScores)&&<p style={{fontSize:8,color:'var(--gold)',marginTop:3,fontWeight:600}}>Record : {Math.max(...Object.values(st.challengeScores||{0:0}))} phrases</p>}
+            {Object.values(st.challengeScores||{}).length>0&&<p style={{fontSize:8,color:'var(--gold)',marginTop:3,fontWeight:600}}>Record : {Math.max(...Object.values(st.challengeScores))} phrases</p>}
           </div>
           {I.chR({size:16,sw:1.5,style:{color:'var(--coral)'}})}
         </button>
 
         {/* 2. AVANT-SCÈNE */}
         <button onClick={()=>setAvantScene(true)} className="card obj-3d" style={{padding:18,marginBottom:14,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:'1px solid rgba(167,139,250,.1)'}}>
-          <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            {I.compass({size:18,sw:1.6,style:{color:'#fff'}})}
+          <div style={{width:42,height:42,borderRadius:12,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            {I.compass({size:18,sw:1.6})}
           </div>
           <div style={{flex:1}}>
             <p className="label" style={{color:'var(--violet)',marginBottom:3}}>AVANT-SCÈNE</p>
@@ -6787,7 +6632,21 @@ function Feed({st,setSt}){
           {I.chR({size:16,sw:1.5,style:{color:'var(--violet)'}})}
         </button>
 
-        {/* 3. MON TEXTE */}
+        {/* 3. ÉCHAUFFEMENT VOCAL — vendu dans le mur d'abonnement, il n'avait
+               jusqu'ici aucune porte d'entrée dans l'app. La voici. */}
+        <button onClick={()=>setWarmup(true)} className="card obj-3d" style={{padding:18,marginBottom:14,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:'linear-gradient(160deg,rgba(224,184,78,.06),var(--bg-card))',border:'1px solid rgba(224,184,78,.12)'}}>
+          <div style={{width:42,height:42,borderRadius:12,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            {I.headphones({size:18,sw:1.6})}
+          </div>
+          <div style={{flex:1}}>
+            <p className="label" style={{color:'var(--gold)',marginBottom:3}}>ÉCHAUFFEMENT VOCAL</p>
+            <p style={{fontSize:11,fontWeight:700}}>Préparez votre voix</p>
+            <p style={{fontSize:9,color:'var(--text-3)',marginTop:2}}>Virelangues guidés, au micro, niveau par niveau</p>
+          </div>
+          {I.chR({size:16,sw:1.5,style:{color:'var(--gold)'}})}
+        </button>
+
+        {/* 4. MON TEXTE */}
         <button onClick={()=>setMonTexte(true)} className="card obj-3d" style={{padding:18,marginBottom:14,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14}}>
           <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,rgba(200,164,78,.15),rgba(200,164,78,.04))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:'1px solid rgba(200,164,78,.2)'}}>
             {I.book({size:18,sw:1.6,style:{color:'var(--gold)'}})}
@@ -6814,7 +6673,7 @@ function Feed({st,setSt}){
           return(
             <div style={{marginBottom:14}}>
               <button onClick={()=>setMonoExpanded(!monoExpanded)} className="card obj-3d" style={{padding:18,marginBottom:monoExpanded?10:0,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14}}>
-                <div style={{width:42,height:42,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <div style={{width:42,height:42,borderRadius:12,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                   {I.drama({size:18,sw:1.6,style:{color:'var(--ink)'}})}
                 </div>
                 <div style={{flex:1}}>
@@ -6835,25 +6694,40 @@ function Feed({st,setSt}){
                     ))}
                   </div>
 
-                  <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                  <div style={{display:'flex',flexDirection:'column',gap:11}}>
                     {filteredMonos.map((m,idx)=>{
                       const prog=monoProgress.progress[m.id]||{validated:[],answers:{},timeSpent:0,videoSent:false,coachRequested:false};
                       const done=(prog.validated||[]).length;
                       const unlocked=idx===0||(monoProgress.progress[filteredMonos[idx-1].id]?.validated||[]).length===MONTEXTE_PARCOURS.length;
                       const isComplete=done===MONTEXTE_PARCOURS.length;
+                      const premierVerrouMono=!unlocked&&idx>0&&(monoProgress.progress[filteredMonos[idx-1].id]?.validated||[]).length<MONTEXTE_PARCOURS.length&&(idx===1||(monoProgress.progress[filteredMonos[idx-2].id]?.validated||[]).length===MONTEXTE_PARCOURS.length);
+                      const perso=MONO_PERSO[m.id];
+                      const auteur=(m.source||"").split("—")[0].trim();
                       return(
-                        <button key={m.id} disabled={!unlocked} onClick={()=>{setWorkingMono(m);setMonoStepIdx(null);setMonoPhase("intro");setMonoQi(0);}} style={{padding:'12px 14px',borderRadius:10,border:'1px solid',borderColor:!unlocked?'var(--line)':'var(--line-s)',background:'var(--bg-card)',cursor:unlocked?'pointer':'default',opacity:unlocked?1:.5,textAlign:'left',display:'flex',alignItems:'center',gap:10,transition:'all .2s',transform:unlocked?'scale(1)':'scale(0.98)'}}>
-                          <div style={{width:8,height:8,borderRadius:4,background:m.difficulty===3?'var(--violet)':m.difficulty===2?'var(--coral)':'var(--gold)',flexShrink:0}}/>
-                          <div style={{flex:1,minWidth:0}}>
-                            <p style={{fontSize:11,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</p>
-                            <p style={{fontSize:8,color:'var(--text-3)',marginTop:2}}>{m.source}</p>
-                            {done>0&&<Bar val={done} max={MONTEXTE_PARCOURS.length} cls={isComplete?"fill-emerald":"fill-gold"} h={2} />}
-                          </div>
-                          <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
-                            <span style={{fontSize:8,color:'var(--text-3)',fontWeight:600}}>{'★'.repeat(m.difficulty)}</span>
-                            {!unlocked&&I.lock({size:12,sw:1.5,style:{color:'var(--text-3)'}})}
-                            {isComplete&&<EI e="✅" s={9} c="var(--emerald)"/>}
-                          </div>
+                        <button key={m.id} disabled={!unlocked}
+                          onClick={()=>{setWorkingMono(m);setMonoStepIdx(null);setMonoPhase("intro");setMonoQi(0);}}
+                          className="ill-card"
+                          style={{background:MONO_GRAD[m.difficulty]||MONO_GRAD[1],marginBottom:0,cursor:unlocked?'pointer':'default',opacity:unlocked?1:.62}}>
+                          {perso
+                            ?<Illus id={perso} dossier="p" style={unlocked?null:{filter:'grayscale(.7)',opacity:.5}}/>
+                            :<span aria-hidden="true" style={{position:'absolute',right:16,bottom:-30,zIndex:2,pointerEvents:'none',
+                                fontFamily:"'Cormorant Garamond',Georgia,serif",fontStyle:'italic',fontWeight:600,
+                                fontSize:132,lineHeight:1,color:'rgba(242,240,234,.11)',letterSpacing:'-.04em'}}>{(m.title||"?").trim()[0]}</span>}
+                          <span className="ill-in" style={{padding:'13px 15px 12px',maxWidth:perso?'66%':'62%'}}>
+                            {isComplete
+                              ?<span className="tag tag-fil">À reprendre</span>
+                              :done>0?<span className="tag tag-or">En cours</span>
+                              :<span className="eb">{"★".repeat(m.difficulty)}</span>}
+                            <span className="heading" style={{display:'block',fontSize:15.5,margin:'6px 0 3px'}}>{m.title}</span>
+                            <span className="vers" style={{display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden',fontSize:12.5,color:'rgba(242,240,234,.72)'}}>{m.source}</span>
+                            {done>0&&<span style={{display:'block',marginTop:8}}><Bar val={done} max={MONTEXTE_PARCOURS.length} cls={isComplete?"fill-emerald":"fill-gold"} h={3} /></span>}
+                            <span style={{display:'flex',alignItems:'center',gap:9,marginTop:10}}>
+                              {unlocked
+                                ?<span className="pill" style={{fontSize:9.5,padding:'6px 14px'}}>{done>0?"Reprendre":"Travailler"}</span>
+                                :<span style={{display:'flex',alignItems:'center',gap:5,fontSize:10,fontWeight:600,color:'var(--text-2)'}}>{I.lock({size:11,sw:1.8})}{premierVerrouMono?"Terminez le texte précédent":"À débloquer"}</span>}
+                              {isComplete&&<span style={{color:'var(--emerald)',display:'flex'}}>{I.check({size:14,sw:2.2})}</span>}
+                            </span>
+                          </span>
                         </button>
                       );
                     })}
@@ -6867,7 +6741,7 @@ function Feed({st,setSt}){
         {/* Tools upgrade CTA for Free users */}
         {st.plan==="free"&&(
           <button onClick={()=>{_track('paywall_viewed',{source:'tools_cta',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} className="card" style={{padding:18,marginBottom:24,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:'linear-gradient(160deg,rgba(200,164,78,.08),rgba(200,164,78,.02))',border:'2px solid transparent',backgroundImage:'linear-gradient(rgba(8,10,20,.9),rgba(8,10,20,.9)),linear-gradient(135deg,var(--gold),var(--gold-light))',backgroundOrigin:'border-box',backgroundClip:'padding-box, border-box',transition:'all .2s'}}>
-            <div style={{width:46,height:46,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <div style={{width:46,height:46,borderRadius:12,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
               {I.crown({size:20,sw:1.6,style:{color:'var(--ink)'}})}
             </div>
             <div style={{flex:1}}>
@@ -6888,7 +6762,7 @@ function Feed({st,setSt}){
         {/* ÉCHANGES — Community */}
         <div className="card" style={{padding:20,marginBottom:14,marginTop:8}}>
           <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
-            <div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,var(--emerald),#6ee7a0)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <div style={{width:32,height:32,borderRadius:10,background:'rgba(52,211,153,.14)',color:'var(--emerald)',display:'flex',alignItems:'center',justifyContent:'center'}}>
               {I.rss({size:14,sw:1.6,style:{color:'var(--ink)'}})}
             </div>
             <div>
@@ -6969,10 +6843,20 @@ function Feed({st,setSt}){
 /* ═══ MODULE LIST ═══ */
 function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
   const[showQuiz,setShowQuiz]=useState(false);
+  const openPaywall=usePaywall();
   const lv=getLv(st.xp,st.passedExams);const li=LEVELS.indexOf(lv);
   const sorted=[lv,...LEVELS.filter((_,i)=>i<li).reverse(),...LEVELS.filter((_,i)=>i>li)];
   if(active&&active.sec===sec){
-    if(sec==="pr")return<ExV mod={active} st={st} setSt={setSt} back={()=>setMod(null)}/>;
+    if(sec==="pr"){
+      /* Ce qui vient après : l'écran de fin ne doit jamais être un cul-de-sac. */
+      const suite=(()=>{
+        const ordre=sorted.flatMap(l=>(mods[l.id]||[]).map(m=>({...m,lid:l.id})));
+        const i=ordre.findIndex(m=>m.id===active.id);
+        return ordre.slice(i+1).find(m=>!st[dk].includes(m.id))||null;
+      })();
+      return<ExV mod={active} st={st} setSt={setSt} back={()=>setMod(null)}
+        next={suite} onNext={()=>suite&&setMod({...suite,sec})}/>;
+    }
     return<CuV mod={active} st={st} setSt={setSt} back={()=>setMod(null)}/>;
   }
   if(showQuiz&&sec==="cu")return<GlossaireQuiz st={st} setSt={setSt} onClose={()=>setShowQuiz(false)}/>;
@@ -7010,6 +6894,9 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
         )}
         {sorted.map(l=>{
           const u=st.xp>=l.xp,ms=mods[l.id]||[],cur=l.id===lv.id;
+          /* Le mur d'abonnement, identique à celui du parcours. Sans lui, cet
+             onglet ouvrait les douze niveaux en deux gestes. */
+          const mur=st.plan==="free"&&LEVELS.indexOf(l)>=(st.startLevel||0)+3;
           /* For culture: check if previous level's exam was passed (required to unlock higher-level culture) */
           const levelIdx=LEVELS.indexOf(l);
           const prevLevelId=levelIdx>0?LEVELS[levelIdx-1].id:null;
@@ -7017,16 +6904,40 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
           /* Culture above current level: show greyed out with lock */
           const cultureUnlocked=sec!=="cu"||levelIdx<=li||examPassedForPrev;
           if(!ms.length)return null;
-          return(<div key={l.id} style={{marginBottom:26}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-              <EI e={l.icon} s={15}/>
-              <p className="label-gold" style={{color:u?'var(--gold-dim)':'var(--text-3)'}}>{l.name}</p>
-              {cur&&<span style={{fontSize:7,fontWeight:700,padding:'2px 7px',borderRadius:20,background:'var(--gold-glow)',color:'var(--gold)',border:'1px solid var(--line-s)'}}>VOTRE NIVEAU</span>}
-              {!u&&<span style={{fontSize:8,color:'var(--text-3)',fontWeight:600,opacity:.5}}>({LEVELS.find(ll=>ll.id===l.id)?.xp||0} XP)</span>}
-              {sec==="cu"&&!cultureUnlocked&&<span style={{fontSize:7,fontWeight:700,padding:'2px 7px',borderRadius:20,background:'var(--w03)',color:'var(--text-3)',border:'1px solid var(--line)'}}>EXAMEN REQUIS</span>}
-            </div>
-            <div style={{display:'flex',flexDirection:'column',gap:4}}>
-              {ms.map((m,idx)=>{
+          return(<div key={l.id} style={{marginBottom:mur?0:26}}>
+            {mur&&LEVELS.indexOf(l)===(st.startLevel||0)+3&&(
+              <div className="card-gold" style={{padding:18,marginBottom:14,textAlign:'center'}}>
+                <div style={{display:'flex',justifyContent:'center',color:'var(--gold)',marginBottom:9}}>{I.crown({size:26})}</div>
+                <h3 className="heading" style={{fontSize:19,color:'var(--gold)',marginBottom:5}}>4 jours gratuits</h3>
+                <p style={{fontSize:11.5,color:'var(--text-2)',marginBottom:14,lineHeight:1.5}}>La suite du parcours, les douze niveaux et tous les outils.</p>
+                <button onClick={()=>openPaywall('level')} className="btn-gold" style={{padding:'11px 20px',fontSize:12}}>Essayer gratuitement</button>
+                <p style={{fontSize:9,color:'var(--text-3)',marginTop:9}}>Puis 9,90 €/mois · sans engagement</p>
+              </div>
+            )}
+            {/* Un niveau muré tient sur une ligne : inutile de faire défiler
+                quatre-vingts rangées grisées pour arriver au bas de l'onglet. */}
+            {mur
+              ?<button className="vl" onClick={()=>openPaywall('level')} style={{cursor:'pointer',color:'var(--text-3)'}}>
+                 <span style={{display:'flex',flexShrink:0}}>{I.lock({size:12,sw:1.8})}</span>
+                 <span className="vl-n">{l.name}</span>
+                 <span className="vl-x">{ms.length} contenus</span>
+               </button>
+              :cur
+              ?<div className="ill-card" style={{background:LV_ART[l.id]||'var(--gr-nuit)',marginBottom:10,minHeight:90}}>
+                 <Illus id={l.id} petit/>
+                 <span className="ill-in" style={{padding:'13px 15px 12px'}}>
+                   <span className="eb eb-or">Votre niveau</span>
+                   <span className="heading" style={{display:'block',fontSize:17,marginTop:4}}>{l.name}</span>
+                 </span>
+               </div>
+              :<div className="sep" style={{marginTop:2}}>
+                 <b style={{color:u?'var(--text-2)':'var(--text-3)'}}>{l.name}</b>
+                 {!u&&<b style={{color:'var(--text-3)',letterSpacing:'.06em'}}>{LEVELS.find(ll=>ll.id===l.id)?.xp||0} XP</b>}
+                 {sec==="cu"&&!cultureUnlocked&&<b style={{color:'var(--text-3)',letterSpacing:'.06em'}}>Examen requis</b>}
+                 <i/>
+               </div>}
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {(mur?[]:ms).map((m,idx)=>{
                 const d=st[dk].includes(m.id);
                 /* Monologues unlock by total exercise count, others need previous done */
                 const isMonologue=m.cat==="Monologue";
@@ -7034,21 +6945,38 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
                 const monoIdx=isMonologue?(()=>{const allMonos=Object.values(PR).flat().filter(e=>e.cat==="Monologue");return allMonos.findIndex(e=>e.id===m.id)})():-1;
                 const monoUnlocked=isMonologue&&monoIdx>=0&&monoIdx<monoThresholds.length?st.doneEx.length>=monoThresholds[monoIdx]:false;
                 const prevDone=idx===0||st[dk].includes(ms[idx-1].id);
-                const isLocked=d?false:isMonologue?!monoUnlocked:(!u||!prevDone||!cultureUnlocked);
-                return(<button key={m.id} onClick={()=>{if(!isLocked)setMod({...m,sec})}}
-                  className="card" style={{padding:'11px 12px',display:'flex',alignItems:'center',gap:10,opacity:isLocked?.3:1,cursor:isLocked?'default':'pointer',textAlign:'left',pointerEvents:isLocked?'none':'auto'}}>
-                  <div className="em-box" style={{width:38,height:38,background:d?'rgba(74,222,128,.06)':isLocked?'var(--w01)':'var(--w02)',borderColor:d?'rgba(74,222,128,.12)':'var(--w04)'}}>
-                    <EI e={isLocked?"🔒":m.icon} s={16} c={isLocked?"var(--text-3)":"#fff"}/>
+                const isLocked=mur?true:d?false:isMonologue?!monoUnlocked:(!u||!prevDone||!cultureUnlocked);
+                /* Le motif « Terminez l'exercice précédent » ne s'affiche qu'une fois :
+                   sur le premier verrou. Au-delà, la ligne se contente d'être grise. */
+                const premierVerrou=isLocked&&!ms.slice(0,idx).some((mm,j)=>{
+                  const dd=st[dk].includes(mm.id);
+                  if(dd)return false;
+                  const mo=mm.cat==="Monologue";
+                  const pd=j===0||st[dk].includes(ms[j-1].id);
+                  return mo?true:(!u||!pd||!cultureUnlocked);
+                });
+                const teinte=sec==="cu"?'var(--violet)':'var(--gold)';
+                return(<button key={m.id} onClick={()=>{if(mur)openPaywall(sec==="cu"?"culture":isMonologue?"monologue":"exercise");else if(!isLocked)setMod({...m,sec})}}
+                  className="rang" style={{marginBottom:0,opacity:isLocked?.42:1,cursor:(mur||!isLocked)?'pointer':'default',pointerEvents:(mur||!isLocked)?'auto':'none',
+                    borderColor:d?'rgba(52,211,153,.18)':'var(--line)'}}>
+                  <div className="rang-ic" style={{background:d?'rgba(52,211,153,.12)':isLocked?'var(--w02)':`color-mix(in srgb, ${teinte} 14%, transparent)`,color:isLocked?'var(--text-3)':d?'var(--emerald)':teinte}}>
+                    {isLocked?I.lock({size:15,sw:1.8}):<EI e={m.icon} s={16}/>}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',alignItems:'center',gap:5}}>
-                      <p style={{fontSize:11,fontWeight:700,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:isLocked?'var(--text-3)':'var(--text)'}}>{m.title}</p>
-                      {m.premium&&!isLocked&&<span style={{fontSize:7,fontWeight:700,padding:'1px 6px',borderRadius:20,background:'rgba(167,139,250,.12)',color:'var(--violet)'}}>PREMIUM</span>}
+                      <p className="rang-t" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:isLocked?'var(--text-3)':'var(--text)'}}>{m.title}</p>
+                      {m.premium&&!isLocked&&<span className="tag" style={{background:'rgba(184,160,224,.14)',color:'var(--violet)'}}>Premium</span>}
                     </div>
-                    <p style={{fontSize:9,color:'var(--text-3)',marginTop:1}}>{isLocked?(sec==="cu"&&!cultureUnlocked?"Passez l'examen du niveau précédent":sec==="pr"?"Terminez l'exercice précédent":"Terminez la leçon précédente"):m.cat+" · "+m.dur}</p>
+                    <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                      {mur
+                        ?"Compris dans l'abonnement"
+                        :isLocked
+                          ?(premierVerrou?(sec==="cu"&&!cultureUnlocked?"Passez l'examen du niveau précédent":sec==="pr"?"Terminez l'exercice précédent":"Terminez la leçon précédente"):m.cat+" · "+m.dur)
+                          :m.cat+" · "+m.dur}
+                    </p>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:5,flexShrink:0}}>
-                    {isLocked?<EI e="🔒" s={12} c="var(--text-3)"/>:d&&st.stars?.[m.id]?<div style={{display:'flex',gap:1}}>{[1,2,3].map(s=><span key={s}>{I.star({size:10,sw:1.5,style:{color:s<=st.stars[m.id]?'var(--gold)':'var(--text-3)',fill:s<=st.stars[m.id]?'var(--gold)':'none'}})}</span>)}</div>:d?<span style={{color:'var(--emerald)'}}>{I.check({size:14})}</span>:<span style={{fontSize:9,fontWeight:800,color:'var(--gold)'}}>+{m.xp}</span>}
+                    {isLocked?null:d&&st.stars?.[m.id]?<div style={{display:'flex',gap:1}}>{[1,2,3].map(s=><span key={s}>{I.star({size:11,sw:1.5,style:{color:s<=st.stars[m.id]?'var(--gold)':'var(--text-3)',fill:s<=st.stars[m.id]?'var(--gold)':'none'}})}</span>)}</div>:d?<span style={{color:'var(--emerald)'}}>{I.check({size:15,sw:2.2})}</span>:<span className="rang-x" style={{color:teinte}}>+{m.xp}</span>}
                   </div>
                 </button>);
               })}
@@ -7156,7 +7084,7 @@ function GlossaireQuiz({st,setSt,onClose}){
             {!shuffledOpts[selectedAns]?.correct&&<p style={{fontSize:10,color:'var(--text-2)'}}>La bonne réponse : {current.def}</p>}
           </div>
         )}
-        <button onClick={nextQuestion} disabled={!answered} className="btn-gold" style={{width:'100%',padding:'12px 0',fontSize:12,opacity:answered?1:.3}}>
+        <button onClick={nextQuestion} disabled={!answered} className="pill" style={{width:'100%',padding:'13px 0',fontSize:11.5,opacity:answered?1:.3}}>
           {currentIdx+1===terms.length?"Voir les résultats":"Question suivante"}
         </button>
       </div>
@@ -7279,17 +7207,73 @@ function breathPlan(steps){
   return plan.length>=2?plan:null;
 }
 
+/* ── Le cycle de respiration se joue d'un seul tenant ──────────────────
+   « Inspirez (4s) » et « Expirez (6s) » étaient deux consignes séparées : il
+   fallait lancer la première, attendre, appuyer sur Suivant, relancer. On
+   regroupe les consignes de souffle qui se suivent en un seul bloc, et on
+   absorbe le « Répétez 10 fois » qui vient juste après pour en faire le
+   nombre de cycles. Une seule pression sur Démarrer, puis ça respire tout
+   seul. */
+function blocSouffle(steps,i){
+  if(!steps||!steps[i])return null;
+  if(!parseStep(steps[i]).phase)return null;
+  /* on ne démarre un bloc que sur sa première consigne */
+  if(i>0&&parseStep(steps[i-1]).phase)return null;
+  const plan=[];let j=i;
+  while(j<steps.length){
+    const m=parseStep(steps[j]);
+    if(!m.phase)break;
+    plan.push({phase:m.phase,secs:m.secs||BREATH_DEFAULT[m.phase],texte:steps[j]});
+    j++;
+  }
+  if(plan.length<2)return null;
+  let cycles=1,fin=j-1;
+  const apres=steps[j]?parseStep(steps[j]):null;
+  if(apres&&!apres.phase&&apres.loop&&apres.reps){cycles=Math.min(apres.reps,30);fin=j}
+  return{plan,cycles,debut:i,fin};
+}
+
 /* Ce qu'il faut guider pour une consigne donnée — ou rien si elle ne se chronomètre pas */
 function stepGuide(steps,i){
   const meta=parseStep(steps[i]);
+  const bloc=blocSouffle(steps,i);
+  if(bloc)return{plan:bloc.plan,cycles:bloc.cycles,bloc};
   const bp=breathPlan(steps);
   if(meta.loop&&meta.reps&&bp)return{plan:bp,cycles:meta.reps};
   if(meta.phase)return{plan:[{phase:meta.phase,secs:meta.secs||BREATH_DEFAULT[meta.phase]}],cycles:meta.reps||1};
   /* Au-delà de 5 minutes, le nombre lu décrit un projet (« un spectacle de 15 minutes »),
      pas une consigne à chronométrer : on ne guide pas. */
   if(meta.secs&&meta.secs<=300)return{plan:[{phase:"timer",secs:meta.secs}],cycles:meta.reps||1};
-  if(meta.reps&&meta.reps<=20)return{plan:[{phase:"timer",secs:4}],cycles:meta.reps};
+  /* « Lisez à voix haute 3 fois » : une répétition se compte, elle ne se
+     chronomètre pas. L'ancien code posait un minuteur de quatre secondes par
+     répétition — quatre secondes pour lire une tirade de Hamlet. */
+  if(meta.reps&&meta.reps<=20)return{compteur:meta.reps};
   return null;
+}
+
+/* Le compteur de répétitions : c'est elle qui décide quand une est faite. */
+function Compteur({total,onComplete}){
+  const[fait,setFait]=useState(0);
+  const fini=fait>=total;
+  return(
+    <div style={{marginTop:16,padding:'18px 16px',borderRadius:14,background:'var(--w02)',border:'1px solid var(--line)',textAlign:'center'}}>
+      <div style={{display:'flex',justifyContent:'center',gap:9,marginBottom:14}}>
+        {Array.from({length:total}).map((_,k)=>(
+          <span key={k} style={{width:13,height:13,borderRadius:'50%',
+            background:k<fait?'var(--gold)':'transparent',
+            border:k<fait?'none':'1.5px solid var(--line-s)',
+            transition:'background .3s',display:'block'}}/>
+        ))}
+      </div>
+      <p style={{fontSize:11,color:fini?'var(--emerald)':'var(--text-2)',fontWeight:700,marginBottom:14}}>
+        {fini?"C'est fait.":`${fait} sur ${total}`}
+      </p>
+      {!fini
+        ?<button onClick={()=>{const n=fait+1;setFait(n);SFX.tap&&SFX.tap();if(n>=total){SFX.success();onComplete&&onComplete()}}}
+           className="pill" style={{padding:'11px 24px'}}>{fait===0?"J'ai fait la première":"Encore une de faite"}</button>
+        :<button onClick={()=>setFait(0)} style={{padding:'9px 16px',fontSize:10.5,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Recommencer</button>}
+    </div>
+  );
 }
 
 const fmtDur=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
@@ -7367,6 +7351,16 @@ function Guide({plan,cycles=1,onComplete,soft=false}){
         </div>
       </div>
 
+      {/* Les consignes du cycle, celle en cours en évidence : on suit sans lire. */}
+      {plan.some(x=>x.texte)&&(
+        <div style={{marginBottom:12}}>
+          {plan.map((x,k)=>(
+            <p key={k} style={{fontSize:12,lineHeight:1.5,textAlign:'center',fontWeight:(running&&k===pos.i)?700:500,
+              color:(running&&k===pos.i)?'var(--text)':'var(--text-3)',transition:'color .3s,font-weight .3s',
+              margin:'2px 0'}}>{x.texte}</p>
+          ))}
+        </div>
+      )}
       {cycles>1&&<p style={{textAlign:'center',fontSize:10.5,color:'var(--text-2)',marginBottom:12,fontWeight:600}}>Cycle {pos.c} / {cycles} <span style={{color:'var(--text-3)',fontWeight:400}}>· {fmtDur(totalSecs)} en tout</span></p>}
       {cycles<=1&&<p style={{textAlign:'center',fontSize:10.5,color:'var(--text-3)',marginBottom:12}}>{soft?"Temps suggéré : ":"Durée : "}{fmtDur(totalSecs)}</p>}
 
@@ -7381,7 +7375,7 @@ function Guide({plan,cycles=1,onComplete,soft=false}){
   );
 }
 
-function ExV({mod,st,setSt,back}){
+function ExV({mod,st,setSt,back,next,onNext,seance}){
   const[step,setStep]=useState(0);
   const[done,setDone]=useState(st.doneEx.includes(mod.id));
   const[xp,setXp]=useState(false);
@@ -7395,13 +7389,18 @@ function ExV({mod,st,setSt,back}){
   const isV=mod.type==="video";const steps=isV?mod.instructions:mod.steps;
   /* Guidage de la consigne en cours + temps réellement passé sur l'exercice */
   const guide=React.useMemo(()=>stepGuide(steps,step),[mod.id,step]);
+  /* Un cycle de souffle regroupe plusieurs consignes : elles avancent ensemble. */
+  const finEtape=guide?.bloc?guide.bloc.fin:step;
   /* Consigne sans durée écrite : on répartit la durée annoncée de l'exercice, à titre de repère */
   const durSecs=React.useMemo(()=>durToSecs(mod.dur),[mod.id]);
-  const softSecs=(!guide&&durSecs>0&&steps&&steps.length)?Math.max(30,Math.min(120,Math.round(durSecs/steps.length/10)*10)):0;
+  /* Ancien « minuteur · prendre le temps » : une durée inventée en divisant la
+     durée annoncée par le nombre de consignes, posée sur des instructions qui
+     ne se chronomètrent pas (« posez une main sur le ventre »). Retiré. */
+  const softSecs=0;
   const startedAt=useRef(Date.now());
   const[elapsed,setElapsed]=useState(0);
   useEffect(()=>{const id=setInterval(()=>setElapsed(Math.floor((Date.now()-startedAt.current)/1000)),1000);return()=>clearInterval(id)},[]);
-  const finish=(starCount)=>{if(!done){setDone(true);setXp(true);setShowCelebration(true);SFX.xp();const s=starCount||3;const now=new Date().toISOString();setSt(p=>({...p,xp:p.xp+mod.xp,weekXP:(p.weekXP||0)+mod.xp,weekEx:(p.weekEx||0)+1,doneEx:[...p.doneEx,mod.id],stars:{...p.stars,[mod.id]:Math.max(s,p.stars?.[mod.id]||0)},catLastPracticed:{...(p.catLastPracticed||{}),[mod.cat]:now}}))}};
+  const finish=(starCount)=>{if(!done){setDone(true);setXp(true);setShowCelebration(true);SFX.xp();const s=(typeof starCount==="number"&&starCount>0)?starCount:3;const now=new Date().toISOString();setSt(p=>({...p,xp:p.xp+mod.xp,weekXP:(p.weekXP||0)+mod.xp,weekEx:(p.weekEx||0)+1,doneEx:[...p.doneEx,mod.id],stars:{...p.stars,[mod.id]:Math.max(s,p.stars?.[mod.id]||0)},catLastPracticed:{...(p.catLastPracticed||{}),[mod.cat]:now}}))}};
   const giveFeedback=(level)=>{/* level: "easy","ok","hard" */
     setFeedbackGiven(true);SFX.click();
     setSt(p=>({...p,exFeedback:{...(p.exFeedback||{}),[mod.id]:{level,cat:mod.cat,date:new Date().toISOString()}}}));
@@ -7410,7 +7409,8 @@ function ExV({mod,st,setSt,back}){
   const CHEERS=["Un pas de plus vers la gloire !","Le rideau se lève sur votre talent !","Vous montez en puissance !","Bravo, l'artiste !","La scène vous attend !","Chaque exercice vous rapproche des planches !","Le public va adorer !","Vous êtes sur la bonne voie !","Quel travail, chapeau !","La persévérance paie toujours !","Stanislavski serait fier !","Encore un effort et vous brillerez !"];
   const cheer=CHEERS[Math.abs((mod.id||"").split("").reduce((a,c)=>a+c.charCodeAt(0),0))%CHEERS.length];
   if(showCelebration&&!isV) return(
-    <div className="slide-up" style={{minHeight:'100vh',background:'radial-gradient(ellipse at 50% 40%,rgba(74,222,128,.06),var(--bg) 55%)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 28px',textAlign:'center'}}>
+    <div className="slide-up" style={{minHeight:'100vh',background:'radial-gradient(ellipse at 50% 34%,rgba(224,184,78,.07),var(--bg) 58%)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+      padding:'calc(var(--barre-haut) + 26px) 28px calc(96px + env(safe-area-inset-bottom,0px))',textAlign:'center'}}>
       {xp&&<XPPop n={mod.xp} done={()=>setXp(false)}/>}
       <Confetti count={30} duration={2500}/>
       <div style={{width:80,height:80,borderRadius:'50%',background:'linear-gradient(135deg,rgba(74,222,128,.15),rgba(74,222,128,.05))',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:20,border:'2px solid var(--emerald)',animation:'pathPulse 2s ease-in-out infinite'}}>
@@ -7421,12 +7421,13 @@ function ExV({mod,st,setSt,back}){
       <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:10}}>
         {[1,2,3].map(i=><span key={i} style={{fontSize:24,color:i<=(st.stars?.[mod.id]||3)?'var(--gold)':'var(--text-3)',filter:i<=(st.stars?.[mod.id]||3)?'none':'grayscale(1) brightness(.5)',transition:'all .3s',animationDelay:i*0.15+'s'}}>{I.star({size:24,sw:i<=(st.stars?.[mod.id]||3)?2:1.5,style:{color:i<=(st.stars?.[mod.id]||3)?'var(--gold)':'var(--text-3)',fill:i<=(st.stars?.[mod.id]||3)?'var(--gold)':'none'}})}</span>)}
       </div>
-      <p className="body" style={{fontSize:14,marginBottom:6}}>{mod.title} terminé</p>
+      <p style={{fontSize:11,color:'var(--text-3)',marginBottom:2}}>Vous venez de terminer</p>
+      <p className="heading" style={{fontSize:16,marginBottom:8}}>{mod.title}</p>
       <p className="heading gold-shimmer" style={{fontSize:22,marginBottom:20}}>+{mod.xp} XP</p>
       {st.plan==="free"||!st.plan?(
         <div style={{marginBottom:20,padding:16,borderRadius:14,background:'linear-gradient(135deg,rgba(167,139,250,.06),rgba(200,164,78,.04))',border:'1px solid rgba(167,139,250,.15)',animation:'fadeIn .6s ease-out'}}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-            <div style={{width:32,height:32,borderRadius:8,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.pulse({size:14,sw:1.6,style:{color:'#fff'}})}</div>
+            <div style={{width:32,height:32,borderRadius:8,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center'}}>{I.pulse({size:14,sw:1.6,style:{color:'#fff'}})}</div>
             <p style={{fontSize:12,fontWeight:700}}>Suivi personnalisé</p>
           </div>
           <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.5,marginBottom:12}}>Débloquez le suivi de votre progression : notez chaque exercice et recevez un bilan personnalisé adapté à vos forces et axes d'amélioration.</p>
@@ -7453,7 +7454,27 @@ function ExV({mod,st,setSt,back}){
           <p style={{fontSize:11,fontWeight:600,color:'var(--emerald)'}}>Noté — votre bilan personnalisé en tient compte !</p>
         </div>
       )}
-      <button onClick={back} className="btn-gold" style={{padding:'14px 48px',fontSize:13,letterSpacing:'.04em'}}>Continuer</button>
+      {/* On propose la suite immédiatement : c'est là que la séance se poursuit
+          ou s'arrête. Jusqu'ici l'écran ne menait nulle part. */}
+      {next
+        ?<div style={{width:'100%',maxWidth:340}}>
+           <button onClick={()=>{setShowCelebration(false);onNext&&onNext()}} className="rang"
+             style={{cursor:'pointer',borderColor:'var(--line-s)',background:'linear-gradient(120deg,rgba(224,184,78,.10),var(--bg-card) 70%)',textAlign:'left'}}>
+             <div className="rang-ic" style={{background:'rgba(224,184,78,.16)',color:'var(--gold)'}}><EI e={next.icon} s={17}/></div>
+             <div style={{flex:1,minWidth:0}}>
+               <span className="eb eb-or" style={{marginBottom:3}}>{seance?`Étape ${seance.i+1} sur ${seance.n}`:"La suite"}</span>
+               <p className="rang-t" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{next.title}</p>
+               <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:2}}>{next.cat} · {next.dur}</p>
+             </div>
+             <span className="rang-x" style={{color:'var(--gold)'}}>+{next.xp}</span>
+           </button>
+           <button onClick={back} style={{width:'100%',padding:'12px 0',marginTop:4,fontSize:11.5,fontWeight:700,color:'var(--text-2)',background:'none',border:'none',cursor:'pointer'}}>
+             J'arrête ici pour aujourd'hui
+           </button>
+         </div>
+        :seance
+          ?<button onClick={()=>{setShowCelebration(false);onNext&&onNext()}} className="btn-gold" style={{padding:'14px 40px',fontSize:13,letterSpacing:'.04em'}}>Terminer la séance</button>
+          :<button onClick={back} className="btn-gold" style={{padding:'14px 48px',fontSize:13,letterSpacing:'.04em'}}>Continuer</button>}
       {st.plan==="free"&&(
         <div style={{marginTop:24,padding:16,borderRadius:12,background:'var(--bg-card)',border:'2px solid rgba(200,164,78,.3)',animation:'fadeIn .8s ease-out'}}>
           <p style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:10}}>Passe en Standard pour débloquer le suivi personnalisé et tous les niveaux</p>
@@ -7464,54 +7485,68 @@ function ExV({mod,st,setSt,back}){
   );
 
   return(
-    <div className="safe-b fade-up" style={{minHeight:'100vh'}}>
-      <div className="back-bar"><button onClick={back}>{I.chL({size:16})} Retour</button></div>
+    <div className="safe-b fade-up sous-barre" style={{minHeight:'100vh'}}>
+      <div className="back-bar"><button onClick={back}>{I.chL({size:16})} {seance?"Quitter la séance":"Retour"}</button></div>
       <div className="mw" style={{padding:'16px 20px 100px'}}>
         {xp&&<XPPop n={mod.xp} done={()=>setXp(false)}/>}
-        <div style={{textAlign:'center',marginBottom:24}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginBottom:8}}><EI e={mod.icon} s={36}/></div>
-          <h1 className="heading" style={{fontSize:22}}>{mod.title}</h1>
-          <p style={{fontSize:10,color:'var(--text-3)',marginTop:4}}>{mod.cat} · {mod.dur} · <span style={{color:'var(--gold)'}}>+{mod.xp} XP</span></p>
-          <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:5,display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>
-            {I.clock({size:11,sw:1.5})} {fmtDur(elapsed)} de pratique
-          </p>
+        <div style={{display:'flex',alignItems:'flex-start',gap:13,marginBottom:22}}>
+          <div className="rang-ic" style={{width:44,height:44,borderRadius:13,background:'rgba(224,184,78,.14)',color:'var(--gold)'}}><EI e={mod.icon} s={20}/></div>
+          <div style={{flex:1,minWidth:0}}>
+            <span className="eb eb-or">{seance?`Séance · étape ${seance.i} sur ${seance.n}`:mod.cat}</span>
+            <h1 className="heading" style={{fontSize:22,margin:'4px 0 4px'}}>{mod.title}</h1>
+            <p style={{fontSize:10,color:'var(--text-3)',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+              <span>{mod.dur}</span>
+              <span style={{color:'var(--gold)',fontWeight:700}}>+{mod.xp} XP</span>
+              <span style={{display:'flex',alignItems:'center',gap:4}}>{I.clock({size:11,sw:1.5})}{fmtDur(elapsed)}</span>
+            </p>
+          </div>
         </div>
         {EX_PURPOSE[mod.id]&&<div style={{padding:14,borderRadius:12,background:'linear-gradient(135deg,rgba(200,164,78,.04),rgba(167,139,250,.04))',border:'1px solid rgba(200,164,78,.1)',marginBottom:16}}>
           <div style={{display:'flex',gap:8,alignItems:'flex-start'}}><span style={{color:'var(--gold)',flexShrink:0,marginTop:1}}>{I.target({size:13,sw:1.4})}</span>
           <div><p className="label-gold" style={{marginBottom:3,fontSize:8}}>OBJECTIF DE L'EXERCICE</p><p className="body" style={{fontSize:11,lineHeight:1.5,color:'var(--text)'}}>{EX_PURPOSE[mod.id]}</p></div></div>
         </div>}
+        {/* Un monologue ne se travaille pas en quatre consignes : il passe par
+            la méthode de travail à la table. */}
         {isV&&mod.text&&(
-          <div style={{padding:20,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:18}}>
-            <p className="label-gold" style={{marginBottom:8}}>TEXTE</p>
-            <p className="body" style={{fontSize:14,color:'var(--text)',lineHeight:1.85,fontWeight:400}}>{mod.text}</p>
-            {mod.author&&<p style={{fontSize:9,color:'var(--text-3)',marginTop:10}}>— {mod.author}</p>}
+          <TravailTexte mod={mod} st={st} setSt={setSt} seance={seance}
+            onFini={()=>{if(!done)finish()}}/>
+        )}
+        {isV&&mod.text&&done&&(
+          <div className="card-gold" style={{padding:18,marginTop:18,textAlign:'center'}}>
+            <p className="eb eb-or" style={{marginBottom:6}}>Pour aller plus loin</p>
+            <p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.55}}>Les trois dernières étapes — rapports de force, rythme et corps, interprétation — vous attendent dans <strong style={{color:'var(--text)'}}>Mon Texte</strong>, dans l'onglet Outils.</p>
           </div>
         )}
-        <div style={{marginBottom:14}}>
-          <Bar val={step+1} max={steps.length} cls="fill-coral" h={2.5}/>
-          <p style={{fontSize:8,color:'var(--text-3)',marginTop:4,textAlign:'right'}}>ÉTAPE {step+1} / {steps.length}</p>
-        </div>
-        <div style={{padding:22,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:18,minHeight:150,display:'flex',flexDirection:'column',justifyContent:'space-between'}}>
+        {!(isV&&mod.text)&&<div style={{marginBottom:14}}>
+          <Bar val={finEtape+1} max={steps.length} cls="fill-coral" h={2.5}/>
+          <p style={{fontSize:8,color:'var(--text-3)',marginTop:4,textAlign:'right'}}>ÉTAPE {finEtape+1} / {steps.length}</p>
+        </div>}
+        {!(isV&&mod.text)&&<div style={{padding:22,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:18,minHeight:150,display:'flex',flexDirection:'column',justifyContent:'space-between'}}>
           <div>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-              <div style={{width:24,height:24,borderRadius:7,background:'var(--gold-glow)',border:'1px solid var(--line-s)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'var(--gold)'}}>{step+1}</div>
-              <p className="label">ÉTAPE {step+1}</p>
+              <div style={{width:24,height:24,borderRadius:7,background:'var(--gold-glow)',border:'1px solid var(--line-s)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'var(--gold)'}}>{finEtape+1}</div>
+              <p className="label">ÉTAPE {finEtape+1}</p>
             </div>
-            <p className="body" style={{fontSize:13,color:'var(--text)',lineHeight:1.7}}>{steps[step]}</p>
-            {guide&&<Guide key={mod.id+"-"+step} plan={guide.plan} cycles={guide.cycles}
-              onComplete={()=>{if(step<steps.length-1)setStep(step+1);else if(!isV&&!done)finish()}}/>}
+            {!guide?.bloc&&<p className="body" style={{fontSize:13,color:'var(--text)',lineHeight:1.7}}>{steps[step]}</p>}
+            {guide?.bloc&&<p className="body" style={{fontSize:13,color:'var(--text)',lineHeight:1.7}}>
+              Suivez le cycle. Appuyez une fois sur Démarrer : le souffle s'enchaîne tout seul.
+            </p>}
+            {guide?.compteur&&<Compteur key={mod.id+"-c-"+step} total={guide.compteur}
+              onComplete={()=>{}}/>}
+            {guide?.plan&&<Guide key={mod.id+"-"+step} plan={guide.plan} cycles={guide.cycles}
+              onComplete={()=>{if(finEtape<steps.length-1)setStep(finEtape+1);else if(!isV&&!done)finish()}}/>}
             {!guide&&softSecs>0&&<Guide key={mod.id+"-soft-"+step} soft plan={[{phase:"timer",secs:softSecs}]} cycles={1}
-              onComplete={()=>{if(step<steps.length-1)setStep(step+1);else if(!isV&&!done)finish()}}/>}
+              onComplete={()=>{if(finEtape<steps.length-1)setStep(finEtape+1);else if(!isV&&!done)finish()}}/>}
           </div>
           <div style={{display:'flex',justifyContent:'space-between',marginTop:18}}>
             <button onClick={()=>setStep(Math.max(0,step-1))} className="btn-outline" style={{padding:'8px 14px',fontSize:10,opacity:step===0?.3:1}}>← Précédent</button>
-            {step<steps.length-1?<button onClick={()=>setStep(step+1)} className="btn-gold" style={{padding:'8px 16px',fontSize:10}}>Suivant →</button>
-            :!isV?<button onClick={done?back:finish} style={{padding:'8px 18px',fontSize:10,fontWeight:700,borderRadius:10,background:done?'rgba(74,222,128,.12)':'var(--emerald)',color:done?'var(--emerald)':'var(--ink)'}}>{done?"✓ Terminé":"Valider ✓"}</button>
+            {finEtape<steps.length-1?<button onClick={()=>setStep(finEtape+1)} className="pill">Suivant</button>
+            :!isV?<button onClick={done?back:()=>finish()} className="pill" style={done?{background:'rgba(52,211,153,.14)',color:'var(--emerald)'}:null}>{done?"Terminé":"Valider"}</button>
             :null}
           </div>
-        </div>
-        {isV&&step===steps.length-1&&(<>
-          {!done&&<button onClick={finish} style={{width:'100%',padding:'12px 0',fontSize:11,fontWeight:700,borderRadius:10,background:'var(--emerald)',color:'var(--ink)',display:'flex',alignItems:'center',justifyContent:'center',gap:5,marginBottom:12}}>{I.check({size:14})} J'ai travaillé ce monologue</button>}
+        </div>}
+        {isV&&mod.text&&(<>
+          {!done&&<button onClick={()=>finish()} style={{width:'100%',padding:'12px 0',fontSize:11,fontWeight:700,borderRadius:10,background:'var(--emerald)',color:'var(--ink)',display:'flex',alignItems:'center',justifyContent:'center',gap:5,marginBottom:12}}>{I.check({size:14})} J'ai travaillé ce monologue</button>}
           {done&&!vid&&<div style={{textAlign:'center',padding:'8px 0 12px'}}><span style={{color:'var(--emerald)'}}>{I.check({size:18})}</span><p style={{fontSize:11,fontWeight:700,color:'var(--emerald)',marginTop:2}}>Exercice validé</p>
             <button onClick={back} className="btn-gold" style={{marginTop:12,padding:'10px 28px',fontSize:12}}>Terminer</button></div>}
           <div className="card-v" style={{padding:22,textAlign:'center'}}>
@@ -7540,7 +7575,7 @@ function ExV({mod,st,setSt,back}){
                 )}
               </>):(<>
                 {/* ── Free/Standard user: upsell to Premium ── */}
-                <div style={{width:44,height:44,borderRadius:12,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>{I.crown({size:20})}</div>
+                <div style={{width:44,height:44,borderRadius:12,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>{I.crown({size:20})}</div>
                 <p className="heading" style={{fontSize:16,marginBottom:4}}>Feedback personnalisé</p>
                 <p className="body" style={{fontSize:10,marginBottom:4}}>Retour d'un metteur en scène pro sous 48h.</p>
                 <p style={{fontSize:9,color:'var(--violet)',fontWeight:700,marginBottom:14}}>Premium</p>
@@ -7555,7 +7590,7 @@ function ExV({mod,st,setSt,back}){
         </div>}
         {showPremiumModal&&<div style={{position:'fixed',inset:0,background:'rgba(5,5,10,.92)',backdropFilter:'blur(8px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',animation:'fadeIn .3s ease-out'}} onClick={()=>setShowPremiumModal(false)}>
           <div style={{maxWidth:340,width:'90%',padding:28,borderRadius:20,background:'var(--bg-card)',border:'1px solid var(--line-s)',textAlign:'center',animation:'fadeUp .4s ease-out'}} onClick={e=>e.stopPropagation()}>
-            <div style={{width:56,height:56,borderRadius:16,background:'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>{I.crown({size:24})}</div>
+            <div style={{width:56,height:56,borderRadius:16,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>{I.crown({size:24})}</div>
             <h3 className="heading" style={{fontSize:20,marginBottom:6}}>Passez à Premium</h3>
             <p className="body" style={{fontSize:11,marginBottom:20,lineHeight:1.6}}>Débloquez le feedback vidéo professionnel, tous les niveaux, et bien plus encore.</p>
             <div style={{textAlign:'left',marginBottom:20}}>
@@ -7586,27 +7621,136 @@ function ExV({mod,st,setSt,back}){
   );
 }
 
+/* ═══ LE TRAVAIL DU TEXTE ═══
+   Les exercices de monologue se contentaient de quatre consignes plates
+   (« Lisez à voix haute 3 fois »). L'application contient pourtant une vraie
+   méthode de travail à la table — celle de l'outil Mon Texte. On la branche
+   ici : les quatre premières étapes, celles qui se font en un quart d'heure.
+   Les trois dernières (rapports de force, rythme et corps, interprétation)
+   restent dans Mon Texte, et l'écran de fin y renvoie. */
+const ETAPES_EXERCICE=["e1","e2","e3","e4"];
+
+function TravailTexte({mod,st,setSt,onFini,seance}){
+  const etapes=React.useMemo(()=>MONTEXTE_PARCOURS.filter(e=>ETAPES_EXERCICE.includes(e.id)),[]);
+  const[si,setSi]=useState(0);
+  const[qi,setQi]=useState(-1);          /* -1 = l'intro de l'étape */
+  const[voirTexte,setVoirTexte]=useState(true);
+  const etape=etapes[si];
+  const notes=(st.texteNotes||{})[mod.id]||{};
+  const total=etapes.reduce((a,e)=>a+e.questions.length,0);
+  const faites=etapes.slice(0,si).reduce((a,e)=>a+e.questions.length,0)+Math.max(0,qi);
+
+  const noter=(v)=>setSt(p=>({...p,texteNotes:{...(p.texteNotes||{}),
+    [mod.id]:{...((p.texteNotes||{})[mod.id]||{}),[etape.id+"_"+qi]:v}}}));
+
+  const avancer=()=>{
+    if(qi<etape.questions.length-1){setQi(qi+1);window.scrollTo(0,0);return}
+    if(si<etapes.length-1){setSi(si+1);setQi(-1);window.scrollTo(0,0);return}
+    onFini&&onFini();
+  };
+  const reculer=()=>{
+    if(qi>-1){setQi(qi-1);return}
+    if(si>0){setSi(si-1);setQi(etapes[si-1].questions.length-1)}
+  };
+
+  return(
+    <>
+      {/* Le texte reste sous les yeux : on ne travaille pas de mémoire. */}
+      <div className="card" style={{padding:0,marginBottom:16,overflow:'hidden'}}>
+        <button onClick={()=>setVoirTexte(v=>!v)}
+          style={{width:'100%',display:'flex',alignItems:'center',gap:9,padding:'12px 15px',background:'none',border:'none',cursor:'pointer',textAlign:'left'}}>
+          <span style={{color:'var(--gold)',display:'flex',flexShrink:0}}>{I.book({size:15,sw:1.6})}</span>
+          <span style={{flex:1,minWidth:0}}>
+            <span className="eb eb-or">Le texte</span>
+            <span style={{display:'block',fontSize:11,color:'var(--text-3)',marginTop:2}}>{mod.author}</span>
+          </span>
+          <span style={{color:'var(--text-3)',display:'flex',transform:voirTexte?'rotate(90deg)':'none',transition:'transform .2s'}}>{I.chR({size:15,sw:1.8})}</span>
+        </button>
+        {voirTexte&&(
+          <div style={{padding:'0 15px 15px'}}>
+            <p className="vers" style={{fontSize:15,lineHeight:1.75,color:'var(--text)'}}>{mod.text}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Où en est-on dans la méthode */}
+      <div style={{marginBottom:14}}>
+        <div style={{display:'flex',gap:5,marginBottom:7}}>
+          {etapes.map((e,k)=>(
+            <span key={e.id} style={{flex:1,height:3,borderRadius:3,transition:'background .3s',
+              background:k<si?'var(--gold)':k===si?'var(--gold-dim)':'var(--w06)'}}/>
+          ))}
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+          <p className="eb eb-or">Étape {si+1} sur {etapes.length} · {etape.name}</p>
+          <p style={{fontSize:9,color:'var(--text-3)',fontVariantNumeric:'tabular-nums'}}>{faites}/{total}</p>
+        </div>
+      </div>
+
+      {qi===-1?(
+        /* L'intro de l'étape : pourquoi on fait ça */
+        <div className="card-gold" style={{padding:20,marginBottom:16}}>
+          <h2 className="heading" style={{fontSize:20,marginBottom:10}}>{etape.name}</h2>
+          <p className="body" style={{fontSize:13,lineHeight:1.75,color:'var(--text)'}}>{etape.intro}</p>
+          <button onClick={()=>setQi(0)} className="pill" style={{marginTop:16,width:'100%',padding:'13px 0'}}>
+            {etape.questions.length} question{etape.questions.length>1?"s":""} — commencer
+          </button>
+        </div>
+      ):(
+        <>
+          <div className="card" style={{padding:19,marginBottom:11}}>
+            <p style={{fontSize:14.5,lineHeight:1.65,fontWeight:600,color:'var(--text)'}}>{etape.questions[qi].q}</p>
+          </div>
+          <div style={{display:'flex',gap:9,padding:'12px 14px',borderRadius:12,background:'rgba(224,184,78,.05)',border:'1px solid var(--line)',marginBottom:14}}>
+            <span style={{color:'var(--gold)',flexShrink:0,marginTop:1}}>{I.info({size:13,sw:1.5})}</span>
+            <p className="vers" style={{fontSize:13.5,color:'var(--text-2)',lineHeight:1.55}}>{etape.questions[qi].tip}</p>
+          </div>
+          <label className="input-label">Votre réponse</label>
+          <textarea key={etape.id+"_"+qi} defaultValue={notes[etape.id+"_"+qi]||""}
+            onBlur={e=>noter(e.target.value)} rows={4}
+            placeholder="Écrivez ici — personne ne le lira, c'est votre carnet."
+            className="input-field" style={{resize:'vertical',lineHeight:1.6,marginBottom:16}}/>
+        </>
+      )}
+
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
+        <button onClick={reculer} className="btn-outline"
+          style={{padding:'10px 16px',fontSize:10.5,opacity:(si===0&&qi<=-1)?.3:1}}>← Précédent</button>
+        {qi>-1&&<button onClick={avancer} className="pill">
+          {(si===etapes.length-1&&qi===etape.questions.length-1)?"Terminer":"Suivant"}
+        </button>}
+      </div>
+    </>
+  );
+}
+
 /* ═══ CULTURE VIEW ═══ */
-function CuV({mod,st,setSt,back}){
+function CuV({mod,st,setSt,back,next,onNext,seance}){
   const[ph,setPh]=useState("lesson");const[ci,setCi]=useState(0);const[qi,setQi]=useState(0);const[sc,setSc]=useState(0);const[sel,setSel]=useState(null);const[xp,setXp]=useState(false);const[showCorrection,setShowCorrection]=useState(false);
   const advance=(ns)=>{setSel(null);setShowCorrection(false);
     if(qi<mod.quiz.length-1)setQi(qi+1);
-    else{setPh("result");if(!st.doneCu.includes(mod.id)){setXp(true);SFX.xp();const ratio=ns/mod.quiz.length,cStars=ratio>=1?3:ratio>=0.6?2:1;setSt(p=>({...p,xp:p.xp+mod.xp,weekXP:(p.weekXP||0)+mod.xp,weekCulture:true,doneCu:[...p.doneCu,mod.id],perf:p.perf+(ns===mod.quiz.length?1:0),stars:{...p.stars,[mod.id]:Math.max(cStars,p.stars?.[mod.id]||0)},
+    else{setPh("result");
+      /* La révision espacée se règle une fois, sur le résultat d'ensemble.
+         Elle était appelée à chaque question, ce qui multipliait l'intervalle
+         par quatre sur un quiz de quatre questions. */
+      updateSRS(st,setSt,mod.id,ns/mod.quiz.length>=0.6);
+      if(!st.doneCu.includes(mod.id)){setXp(true);SFX.xp();const ratio=ns/mod.quiz.length,cStars=ratio>=1?3:ratio>=0.6?2:1;setSt(p=>({...p,xp:p.xp+mod.xp,weekXP:(p.weekXP||0)+mod.xp,weekCulture:true,doneCu:[...p.doneCu,mod.id],perf:p.perf+(ns===mod.quiz.length?1:0),stars:{...p.stars,[mod.id]:Math.max(cStars,p.stars?.[mod.id]||0)},
       cuResults:{...(p.cuResults||{}),[mod.id]:{score:ns,total:mod.quiz.length,cat:mod.cat,date:new Date().toISOString()}}
     }))}}
   };
   const scoreRef=React.useRef(sc);scoreRef.current=sc;
   const answer=idx=>{setSel(idx);
-    const ok=idx===mod.quiz[qi].a;updateSRS(st,setSt,mod.id,ok);
+    const ok=idx===mod.quiz[qi].a;
     const ns=ok?sc+1:sc;setSc(ns);
     if(ok){SFX.success();setTimeout(()=>advance(ns),900)}
     else{SFX.play(220,.2,'triangle',.03);setShowCorrection(true)}
   };
   return(
-    <div className="safe-b fade-up" style={{minHeight:'100vh'}}>
-      <div className="back-bar"><button onClick={back}>{I.chL({size:16})} Retour</button></div>
+    <div className="safe-b fade-up sous-barre" style={{minHeight:'100vh'}}>
+      <div className="back-bar"><button onClick={back}>{I.chL({size:16})} {seance?"Quitter la séance":"Retour"}</button></div>
       <div className="mw" style={{padding:'16px 20px 100px'}}>
         {xp&&<XPPop n={mod.xp} done={()=>setXp(false)}/>}
+        {seance&&<p className="eb eb-or" style={{textAlign:'center',marginBottom:8}}>Séance · étape {seance.i} sur {seance.n}</p>}
         <div style={{textAlign:'center',marginBottom:24}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginBottom:8}}><EI e={mod.icon} s={36}/></div>
           <h1 className="heading" style={{fontSize:22}}>{mod.title}</h1>
@@ -7618,8 +7762,8 @@ function CuV({mod,st,setSt,back}){
             <p className="body" style={{fontSize:14,color:'var(--text)',lineHeight:1.85,fontWeight:400}}>{mod.content[ci]}</p>
             <div style={{display:'flex',justifyContent:'space-between',marginTop:18}}>
               <button onClick={()=>setCi(Math.max(0,ci-1))} className="btn-outline" style={{padding:'8px 14px',fontSize:10,opacity:ci===0?.3:1}}>←</button>
-              {ci<mod.content.length-1?<button onClick={()=>setCi(ci+1)} className="btn-v" style={{padding:'8px 16px',fontSize:10}}>Suivant →</button>
-              :<button onClick={()=>setPh("quiz")} className="btn-gold" style={{padding:'8px 20px',fontSize:10}}>Quiz</button>}
+              {ci<mod.content.length-1?<button onClick={()=>setCi(ci+1)} className="pill">Suivant</button>
+              :<button onClick={()=>setPh("quiz")} className="pill">Passer au quiz</button>}
             </div>
           </div>
         </>)}
@@ -7659,10 +7803,97 @@ function CuV({mod,st,setSt,back}){
               <p style={{fontSize:12,color:'var(--text-2)',fontStyle:'italic',marginBottom:12,animation:'fadeIn 1.5s ease-out'}}>{cuCheer}</p>
               <p className="body" style={{fontSize:14,marginBottom:16}}>{sc}/{mod.quiz.length}</p>
               <p className="heading gold-shimmer" style={{fontSize:20,marginBottom:24}}>+{mod.xp} XP</p>
-              <button onClick={back} className="btn-gold" style={{width:'100%',padding:'12px 0',fontSize:12}}>Continuer</button>
+              {seance
+                ?<>
+                   <button onClick={()=>onNext&&onNext()} className="pill" style={{width:'100%',padding:'13px 0',fontSize:11.5}}>
+                     {next?`Étape ${seance.i+1} sur ${seance.n} · ${next.title}`:"Terminer la séance"}
+                   </button>
+                   {next&&<button onClick={back} style={{width:'100%',padding:'11px 0',marginTop:4,fontSize:11,fontWeight:700,color:'var(--text-2)',background:'none',border:'none',cursor:'pointer'}}>J'arrête ici pour aujourd'hui</button>}
+                 </>
+                :<button onClick={back} className="btn-gold" style={{width:'100%',padding:'12px 0',fontSize:12}}>Continuer</button>}
             </div>
           </div>);
         })()}
+      </div>
+    </div>
+  );
+}
+
+/* ═══ LA SÉANCE ═══ */
+function Seance({items,st,setSt,onQuit,onFini}){
+  const[i,setI]=useState(0);
+  const[fini,setFini]=useState(false);
+  const debut=useRef(Date.now());
+  const xpDebut=useRef(st.xp);
+  const avancer=()=>{
+    if(i+1<items.length){setI(i+1);window.scrollTo(0,0)}
+    else{
+      setFini(true);SFX.levelUp();
+      setSt(p=>({...p,seanceFaite:new Date().toDateString(),seances:(p.seances||0)+1}));
+    }
+  };
+  if(fini)return <SeanceFin minutes={Math.max(1,Math.round((Date.now()-debut.current)/60000))}
+    xp={Math.max(0,st.xp-xpDebut.current)} n={items.length} onClose={onFini}/>;
+  const it=items[i];
+  const info={i:i+1,n:items.length};
+  const suivant=items[i+1]||null;
+  return it.sec==="pr"
+    ? <ExV key={it.id} mod={it} st={st} setSt={setSt} back={onQuit} next={suivant} onNext={avancer} seance={info}/>
+    : <CuV key={it.id} mod={it} st={st} setSt={setSt} back={onQuit} next={suivant} onNext={avancer} seance={info}/>;
+}
+
+function SeanceFin({minutes,xp,n,onClose}){
+  const MOTS=["Le travail d'aujourd'hui est fait.","Voilà une journée de plus sur le métier.",
+    "C'est comme ça qu'on construit un comédien.","Rien de spectaculaire, juste du travail. C'est ce qui compte."];
+  const mot=MOTS[minutes%MOTS.length];
+  /* Le salut au rideau : la comédienne s'incline, la lumière monte sur elle.
+     C'est la félicitation — pas des confettis, un moment de théâtre. */
+  return(
+    <div style={{minHeight:'100vh',position:'relative',overflow:'hidden',display:'flex',flexDirection:'column',
+      background:'#0A0E1C',color:'#F2F0EA'}}>
+
+      {/* La lumière monte */}
+      <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:0,
+        background:'radial-gradient(120% 60% at 50% 108%,rgba(224,184,78,.30),rgba(224,184,78,.07) 45%,transparent 72%)',
+        animation:'lumiere-monte 1.6s cubic-bezier(.22,1,.36,1) both'}}/>
+      <div style={{position:'absolute',inset:'14px',border:'1px solid rgba(224,184,78,.16)',borderRadius:6,pointerEvents:'none',zIndex:6}}/>
+
+      {/* Le texte */}
+      <div style={{position:'relative',zIndex:4,padding:'calc(var(--barre-haut) + 8vh) 32px 0',textAlign:'center',maxWidth:420,margin:'0 auto',width:'100%'}}>
+        <p className="eb eb-or" style={{animation:'fadeIn .7s ease .2s both'}}>Séance terminée</p>
+        <h2 className="heading" style={{fontSize:'clamp(26px,7.6vw,32px)',margin:'10px 0 0',
+          animation:'fadeUp .9s cubic-bezier(.22,1,.36,1) .35s both'}}>C'est fait pour aujourd'hui.</h2>
+        <p className="vers" style={{fontSize:15,color:'rgba(242,240,234,.72)',marginTop:12,
+          animation:'fadeUp .8s ease .6s both'}}>{mot}</p>
+
+        <div style={{display:'flex',gap:9,marginTop:26,justifyContent:'center',animation:'fadeUp .8s ease .8s both'}}>
+          {[{v:n,l:n>1?"contenus":"contenu"},{v:minutes+" min",l:"de travail"},{v:"+"+xp,l:"XP"}].map((c,k)=>(
+            <div key={k} style={{flex:1,maxWidth:104,padding:'13px 6px',textAlign:'center',borderRadius:14,
+              background:'rgba(242,240,234,.04)',border:'1px solid rgba(224,184,78,.18)'}}>
+              <p className="heading" style={{fontSize:19,color:'var(--gold)'}}>{c.v}</p>
+              <p style={{fontSize:9,color:'rgba(242,240,234,.5)',marginTop:3}}>{c.l}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Le salut */}
+      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'52vh',pointerEvents:'none',zIndex:1,
+        display:'flex',alignItems:'flex-end',justifyContent:'center',
+        animation:'salut 1.4s cubic-bezier(.22,1,.36,1) .55s both'}}>
+        <img src="img/n/monstre.svg" alt="" aria-hidden="true" decoding="async"
+          onError={e=>{e.target.style.display='none'}}
+          style={{height:'100%',maxWidth:'118%',objectFit:'contain',objectPosition:'bottom'}}/>
+      </div>
+      <div style={{position:'absolute',left:0,right:0,bottom:'26vh',height:'28vh',zIndex:2,pointerEvents:'none',
+        background:'linear-gradient(180deg,#0A0E1C 6%,rgba(10,14,28,.7) 46%,rgba(10,14,28,0) 100%)'}}/>
+      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'26vh',zIndex:2,pointerEvents:'none',
+        background:'linear-gradient(0deg,#0A0E1C 18%,rgba(10,14,28,.72) 58%,rgba(10,14,28,0))'}}/>
+
+      <div style={{position:'relative',zIndex:4,marginTop:'auto',padding:'0 32px calc(30px + env(safe-area-inset-bottom,0px))',
+        textAlign:'center',animation:'fadeUp .7s ease 1.5s both'}}>
+        <button onClick={onClose} className="pill" style={{padding:'14px 36px',fontSize:11.5}}>Revenir à l'accueil</button>
+        <p style={{fontSize:10,color:'rgba(242,240,234,.45)',marginTop:13}}>À demain.</p>
       </div>
     </div>
   );
@@ -7715,25 +7946,32 @@ function Profile({st,setSt}){
   return(
     <div className="safe-b fade-up" style={{padding:'68px 20px 100px'}}>
       <div className="mw">
-        <div style={{textAlign:'center',marginBottom:28}}>
-          <div style={{margin:'0 auto 12px'}}><AvatarSVG id={st.user?.avatar||"dramaturge"} size={editMode?72:96}/></div>
-          {!editMode&&<>
-            <p style={{fontSize:12,fontWeight:700,color:'var(--text-2)',marginBottom:8,fontFamily:'Cormorant Garamond, serif'}}>{AVATAR_NAMES[st.user?.avatar||"dramaturge"]}</p>
-            <h1 className="heading" style={{fontSize:20}}>{st.user?st.user.pseudo||st.user.prenom+" "+st.user.nom:"Comédien·ne"}</h1>
-          </>}
-          {st.user&&!editMode&&<p className="body" style={{fontSize:10,marginTop:3}}>{st.user.email}</p>}
-          <div style={{display:'inline-flex',alignItems:'center',gap:6,marginTop:8,padding:'4px 14px',borderRadius:20,background:'var(--gold-glow)',border:'1px solid var(--line-s)'}}>
-            <EI e={lv.icon} s={14}/>
-            <span style={{fontSize:10,fontWeight:700,color:'var(--gold)'}}>{lv.name}</span>
-          </div>
-          <p style={{fontSize:9,color:'var(--text-3)',marginTop:4}}>{tier?.name}</p>
-          <button onClick={()=>setEditMode(!editMode)} className="btn-outline" style={{marginTop:16,padding:'8px 18px',fontSize:11,fontWeight:700}}>
+        {/* La carte du comédien : son nom, son rang, et le dessin de son niveau */}
+        <div className="ill-card" style={{background:LV_ART[lv.id]||'var(--gr-nuit)',marginBottom:16}}>
+          <Illus id={lv.id}/>
+          <span className="ill-in" style={{padding:'16px 17px 15px',maxWidth:'68%'}}>
+            <span style={{display:'flex',alignItems:'center',gap:9,marginBottom:9}}>
+              <AvatarSVG id={st.user?.avatar||"dramaturge"} size={editMode?38:44}/>
+              <span style={{minWidth:0}}>
+                <span className="eb">{AVATAR_NAMES[st.user?.avatar||"dramaturge"]}</span>
+                <span className="heading" style={{display:'block',fontSize:21,marginTop:2}}>{st.user?st.user.pseudo||st.user.prenom+" "+st.user.nom:"Comédien·ne"}</span>
+              </span>
+            </span>
+            <span style={{display:'flex',alignItems:'center',gap:7,marginBottom:3}}>
+              <span className="tag tag-fil" style={{textTransform:'none',letterSpacing:'.01em',fontSize:9.5,fontWeight:700,whiteSpace:'nowrap'}}>{lv.name}</span>
+              <span style={{fontSize:9.5,fontWeight:600,color:'rgba(242,240,234,.6)',whiteSpace:'nowrap'}}>{tier?.name}</span>
+            </span>
+            {st.user&&!editMode&&<span style={{display:'block',fontSize:9.5,color:'rgba(242,240,234,.55)',marginTop:5,overflow:'hidden',textOverflow:'ellipsis'}}>{st.user.email}</span>}
+          </span>
+        </div>
+        <div style={{textAlign:'center',marginBottom:24}}>
+          <button onClick={()=>setEditMode(!editMode)} className="btn-outline" style={{padding:'9px 20px',fontSize:11,fontWeight:700}}>
             {editMode?"Fermer":"Modifier mon profil"}
           </button>
         </div>
 
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:24}}>
-          {[{v:st.xp,l:"XP total",c:'var(--gold)',ic:I.zap},{v:st.streak,l:"Jours",c:'var(--coral)',ic:I.flame},{v:BADGES.filter(b=>b.c(st)).length,l:"Badges",c:'var(--violet)',ic:I.trophy}].map((s,i)=>(
+          {[{v:st.xp,l:"XP total",c:'var(--gold)',ic:I.zap},{v:serieVive(st),l:"Jours de suite",c:'var(--coral)',ic:I.flame},{v:BADGES.filter(b=>b.c(st)).length,l:"Badges",c:'var(--violet)',ic:I.trophy}].map((s,i)=>(
             <div key={i} style={{padding:14,borderRadius:12,background:'var(--bg-card)',border:'1px solid var(--line)',textAlign:'center'}}>
               <div style={{color:s.c,marginBottom:4}}>{s.ic({size:14})}</div>
               <p className="heading" style={{fontSize:20,color:'var(--text)'}}>{s.v}</p>
@@ -8319,7 +8557,7 @@ return(
   );
 }
 
-const defaultSt={xp:0,initialXp:0,streak:0,lastActiveDate:null,doneEx:[],doneCu:[],doneSA:[],perf:0,vid:0,lv:0,startLevel:0,onb:false,preview:false,pendingQuiz:false,resumeSignup:false,user:null,plan:"free",showCGU:false,theme:"dark",stars:{},weekXP:0,weekEx:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:null,perfectWeeks:0,weekStart:new Date().toDateString(),srs:{},seenBadges:[],warmups:0,avantScenes:0,connexions:0,challenges:0,totalBreaths:0,coachMessages:[],seenTuto:false,exFeedback:{},catLastPracticed:{},firstActivityDate:null,saResults:{},cuResults:{},lastSADate:null,dailyPulse:{answers:[],lastAnswerDate:null},challengeScores:{},passedExams:[],unreadMessageCount:0,messages:[]};
+const defaultSt={xp:0,initialXp:0,streak:0,lastActiveDate:null,seanceFaite:null,seances:0,doneEx:[],doneCu:[],doneSA:[],perf:0,vid:0,lv:0,startLevel:0,onb:false,preview:false,pendingQuiz:false,resumeSignup:false,user:null,plan:"free",showCGU:false,theme:"dark",stars:{},weekXP:0,weekEx:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:null,perfectWeeks:0,weekStart:new Date().toDateString(),srs:{},seenBadges:[],warmups:0,avantScenes:0,connexions:0,challenges:0,totalBreaths:0,coachMessages:[],seenTuto:false,exFeedback:{},catLastPracticed:{},firstActivityDate:null,saResults:{},cuResults:{},lastSADate:null,dailyPulse:{answers:[],lastAnswerDate:null},challengeScores:{},passedExams:[],unreadMessageCount:0,messages:[]};
 
 const DAILY_TIPS=["La discipline, c'est la clé. Un peu chaque jour vaut mieux qu'un marathon une fois par mois.","Un bon comédien écoute plus qu'il ne parle.","Le corps ne ment jamais sur scène.","Respirez. La respiration est le fondement de tout jeu.","Osez le silence — c'est souvent là que se joue l'essentiel.","Ne jouez pas l'émotion, jouez l'intention. L'émotion viendra.","Le trac n'est pas votre ennemi, c'est de l'énergie brute à canaliser.","Chaque texte a un rythme. Trouvez-le avant de chercher les émotions.","Le regard, c'est 80% du jeu. Travaillez-le.","Un acteur qui s'ennuie ennuie le public. Restez curieux.","La voix est un instrument — accordez-la chaque jour.","Ne cherchez pas à être naturel. Cherchez à être vrai.","Le sous-texte est plus important que le texte.","Travaillez vos points faibles, mais jouez sur vos forces.","La scène est un terrain de jeu, pas un tribunal.","L'improvisation se prépare. Paradoxal, mais vrai.","Écoutez votre partenaire comme si c'était la première fois.","Le personnage commence dans le corps, pas dans la tête.","Chaque réplique est une action. Que faites-vous à l'autre ?","La perfection n'existe pas. L'authenticité, oui.","Répétez jusqu'à ce que ce soit facile. Puis rendez-le frais.","Le théâtre est un sport : échauffez-vous avant de jouer.","Votre plus grand outil, c'est votre vulnérabilité.","Ne jouez jamais seul·e. Même un monologue s'adresse à quelqu'un.","Observez les gens. La vie est la meilleure école de jeu.","La lenteur sur scène n'est pas l'ennui — c'est de la précision.","Articulez. Si le public ne comprend pas, il décroche.","Chaque entrée en scène est un événement. N'entrez jamais neutre.","Le jeu, c'est réagir. Pas réciter.","Le plaisir de jouer est contagieux. Amusez-vous."];
 
@@ -8345,6 +8583,7 @@ function App(){
   const[tab,setTab]=useState("home");
   const[mod,setMod]=useState(null);
   const[exam,setExam]=useState(null);
+  const[seance,setSeance]=useState(null);/* la séance du jour, une fois lancée */
   const[badgePopup,setBadgePopup]=useState(null);
   const[paywall,setPaywall]=useState(null);
   const openPaywall=React.useCallback(src=>{SFX.whoosh&&SFX.whoosh();setPaywall(src||"default")},[]);
@@ -8368,23 +8607,31 @@ function App(){
     else document.documentElement.classList.remove("light");
   },[st.theme]);
 
-  /* Streak management — check on app load and track daily visits */
+  /* ── La série ────────────────────────────────────────────────────────
+     Elle comptait les ouvertures de l'app : ouvrir sans rien faire suffisait
+     à garder sa flamme. Elle avance désormais le jour où quelque chose a été
+     travaillé — c'est-à-dire le jour où de l'XP est gagnée. Un exercice, une
+     leçon, une analyse, un examen, un outil : tout ce qui rapporte compte. */
+  const xpVu=useRef(null);
   useEffect(()=>{
     if(!st.onb)return;
+    if(xpVu.current===null){xpVu.current=st.xp;return}   /* premier rendu : on note, on ne compte pas */
+    if(st.xp<=xpVu.current){xpVu.current=st.xp;return}   /* rien gagné */
+    xpVu.current=st.xp;
     const today=new Date().toDateString();
-    if(st.lastActiveDate===today)return;/* already counted today */
+    if(st.lastActiveDate===today)return;                 /* déjà compté aujourd'hui */
     const last=st.lastActiveDate?new Date(st.lastActiveDate):null;
     const now=new Date();now.setHours(0,0,0,0);
     let newStreak=1;
     if(last){
       const prev=new Date(last);prev.setHours(0,0,0,0);
       const diff=Math.round((now-prev)/(1000*60*60*24));
-      if(diff===1)newStreak=st.streak+1;/* consecutive day */
-      else if(diff===0)newStreak=st.streak;/* same day */
-      else newStreak=1;/* streak broken */
+      if(diff===1)newStreak=(st.streak||0)+1;            /* hier aussi : la série continue */
+      else if(diff===0)newStreak=st.streak||1;
+      else newStreak=1;                                  /* trou : on repart à un */
     }
     setSt(p=>({...p,streak:newStreak,lastActiveDate:today,firstActivityDate:p.firstActivityDate||today}));
-  },[st.onb,st.lastActiveDate]);
+  },[st.xp,st.onb]);
   /* Weekly reset — reset objectives every Monday, save last week score */
   useEffect(()=>{
     if(!st.onb)return;
@@ -8398,21 +8645,8 @@ function App(){
       setSt(p=>({...p,weekStart:String(weekId),weekEx:0,weekXP:0,weekAnalysis:false,weekCulture:false,weekRevision:false,lastWeekScore:lastScore,perfectWeeks}));
     }
   },[st.onb]);
-  /* Also re-check streak when tab becomes visible (user returns to app) */
-  useEffect(()=>{
-    const onVisible=()=>{if(document.visibilityState==="visible"&&st.onb){
-      const today=new Date().toDateString();
-      if(st.lastActiveDate!==today){
-        const last=st.lastActiveDate?new Date(st.lastActiveDate):null;
-        const now=new Date();now.setHours(0,0,0,0);
-        let newStreak=1;
-        if(last){const prev=new Date(last);prev.setHours(0,0,0,0);const diff=Math.round((now-prev)/(1000*60*60*24));if(diff===1)newStreak=st.streak+1;else if(diff===0)newStreak=st.streak;else newStreak=1}
-        setSt(p=>({...p,streak:newStreak,lastActiveDate:today,firstActivityDate:p.firstActivityDate||today}));
-      }
-    }};
-    document.addEventListener("visibilitychange",onVisible);
-    return()=>document.removeEventListener("visibilitychange",onVisible);
-  },[st.onb,st.lastActiveDate,st.streak]);
+  /* (L'ancien rattrapage au retour d'onglet est retiré : revenir sur l'app
+     n'est pas travailler.) */
 
   /* Sync plan from Supabase profiles on startup (source of truth) */
   useEffect(()=>{
@@ -8430,20 +8664,16 @@ function App(){
     })();
   },[]);
 
-  /* Validate passedExams — remove exams if the level content isn't actually complete */
+  /* Un examen réussi est un fait acquis : on ne le retire jamais.
+     L'ancien contrôle exigeait les six analyses de scène du palier alors que
+     trois seulement sont atteignables — il effaçait donc la réussite à chaque
+     ouverture de l'app. On ne nettoie plus que les identifiants qui n'existent
+     pas (données d'une version précédente). */
   useEffect(()=>{
     if(!st.onb||!st.passedExams||st.passedExams.length===0)return;
-    const validExams=st.passedExams.filter(levelId=>{
-      const level=LEVELS.find(l=>l.id===levelId);
-      if(!level)return false;
-      const prDone=(PR[levelId]||[]).length===0||(PR[levelId]||[]).every(m=>st.doneEx.includes(m.id));
-      const cuDone=(CU[levelId]||[]).length===0||(CU[levelId]||[]).every(m=>st.doneCu.includes(m.id));
-      const tierSAs=SCENE_ANALYSES.filter(sa=>sa.tier===level.tier);
-      const saDone=tierSAs.length===0||tierSAs.every(sa=>(st.doneSA||[]).includes(sa.id));
-      return prDone&&cuDone&&saDone;
-    });
+    const validExams=st.passedExams.filter(levelId=>LEVELS.some(l=>l.id===levelId));
     if(validExams.length!==st.passedExams.length){
-      console.log('passedExams cleaned:',st.passedExams,'→',validExams);
+      console.log('passedExams : identifiants inconnus retirés',st.passedExams,'→',validExams);
       setSt(p=>({...p,passedExams:validExams}));
     }
   },[st.onb]);
@@ -8508,64 +8738,63 @@ function App(){
   const dismissTip=()=>{if(showTip==="visible"){SFX.whoosh();setShowTip("exiting");setTimeout(()=>setShowTip(false),2000)}};
   /* En mode découverte, on ne met pas un écran de plus entre elle et l'application */
   if(showTip&&!st.preview){
-    const tipIdx=Math.floor(Date.now()/86400000)%DAILY_TIPS.length;
+    const jour=Math.floor(Date.now()/86400000);
+    const tipIdx=jour%DAILY_TIPS.length;
     const isExiting=showTip==="exiting";
+    /* Un personnage du répertoire par jour : le dessin fait la page. */
+    const galerie=["harpagon","cyrano","celimene","antigone","phedre","lucky","rodrigue",
+      "fm12","fm15","fm16","fm17","fm19","fm21","fm22","fm23","fm24","fm4","fm5","fm6","fm9","fm13","fm14","fm18","fm20"];
+    const perso=galerie[jour%galerie.length];
+    const dateFr=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long'});
     return(
-      <div style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative',overflow:'hidden'}}>
+      <div style={{minHeight:'100vh',position:'relative',overflow:'hidden',
+        background:'radial-gradient(150% 55% at 50% -8%,rgba(224,184,78,.13),transparent 62%), #0A0E1C',color:'#F2F0EA',
+        display:'flex',flexDirection:'column',
+        animation:isExiting?'tip-fade-out .55s ease-out forwards':'none'}}>
 
-        {/* ── Background: dot pattern + violet halos ── */}
-        <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(var(--w04) 1px, transparent 1px)',backgroundSize:'24px 24px',pointerEvents:'none'}}/>
-        <div style={{position:'absolute',top:'20%',left:'-10%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(167,139,250,.06),transparent 70%)',pointerEvents:'none'}}/>
-        <div style={{position:'absolute',bottom:0,left:0,right:0,height:300,background:'linear-gradient(0deg,rgba(167,139,250,.04),transparent)',pointerEvents:'none'}}/>
+        {/* Le filet du programme imprimé */}
+        <div style={{position:'absolute',inset:'14px',border:'1px solid rgba(224,184,78,.16)',borderRadius:6,pointerEvents:'none'}}/>
+        {/* Le grain, comme sur les cartes */}
+        <div style={{position:'absolute',inset:0,pointerEvents:'none',opacity:.05,mixBlendMode:'overlay',
+          backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E\")"}}/>
 
-        {/* Ambient floating particles — drifters + twinkles + embers */}
-        {tipParticles.map((p,i)=>{
-          const col=p.gold?'var(--gold-light)':'var(--violet)';
-          const glow=p.gold?`0 0 ${p.size*6}px rgba(224,184,78,.8),0 0 ${p.size*12}px rgba(224,184,78,.3)`:`0 0 ${p.size*6}px rgba(167,139,250,.8),0 0 ${p.size*12}px rgba(167,139,250,.3)`;
-          if(p.kind==='ember')return <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:'var(--gold-light)',left:p.left+'%',bottom:'0%',pointerEvents:'none',boxShadow:`0 0 ${p.size*6}px rgba(224,184,78,.9)`,animation:`tip-rise ${p.dur}s linear ${p.delay}s infinite`}}/>;
-          if(p.kind==='twink')return <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:col,left:p.left+'%',top:p.top+'%',pointerEvents:'none',boxShadow:glow,animation:`tip-twinkle ${p.dur}s ease-in-out ${p.delay}s infinite`}}/>;
-          return <div key={i} style={{position:'absolute',width:p.size,height:p.size,borderRadius:'50%',background:col,left:p.left+'%',top:p.top+'%',pointerEvents:'none',boxShadow:glow,animation:`${p.anim} ${p.dur}s ease-in-out ${p.delay}s infinite`}}/>;
-        })}
+        {/* Le texte, dans le haut de la page */}
+        <div style={{position:'relative',zIndex:3,flex:'0 0 auto',padding:'clamp(56px,13vh,110px) 34px 0',textAlign:'center',maxWidth:430,margin:'0 auto',width:'100%'}}>
+          <p className="eb eb-or" style={{animation:'fadeIn .7s ease both'}}>Le conseil du jour</p>
+          <p style={{fontSize:10,color:'rgba(242,240,234,.45)',marginTop:5,fontWeight:500,animation:'fadeIn .7s ease .1s both'}}>{dateFr}</p>
 
-        {/* ── STAR BURST on exit ── */}
-        {isExiting&&burstStars.map((s,i)=>{
-          const col=s.gold?'var(--gold-light)':'var(--violet)';
-          const glow=s.gold?`0 0 ${s.size*4}px rgba(224,184,78,.9), 0 0 ${s.size*8}px rgba(224,184,78,.4)`:`0 0 ${s.size*4}px rgba(167,139,250,.9), 0 0 ${s.size*8}px rgba(167,139,250,.4)`;
-          const base={position:'absolute',bottom:'40%',left:'50%',pointerEvents:'none','--bx':s.x+'px','--by':s.y+'px','--br':s.rot+'deg'};
-          if(s.shape==='trail')return <div key={'burst'+i} style={{...base,width:2,height:s.size*3,borderRadius:2,background:`linear-gradient(to top,${col},transparent)`,boxShadow:glow,animation:`star-trail ${s.speed*1.2}s ease-out ${s.delay}s both`}}/>;
-          if(s.shape==='star')return <svg key={'burst'+i} width={s.size*2.5} height={s.size*2.5} viewBox="0 0 24 24" style={{...base,animation:`star-burst-up ${s.speed}s cubic-bezier(.15,.8,.3,1) ${s.delay}s both`,filter:`drop-shadow(0 0 ${s.size*2}px ${s.gold?'rgba(224,184,78,.8)':'rgba(167,139,250,.8)'})`}}><path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4 5.6 21.2 8 14 2 9.2h7.6z" fill={s.gold?'#E0B84E':'#b8a0e0'}/></svg>;
-          return <div key={'burst'+i} style={{...base,width:s.size,height:s.size,borderRadius:'50%',background:col,boxShadow:glow,animation:`star-burst-up ${s.speed}s cubic-bezier(.15,.8,.3,1) ${s.delay}s both`}}/>;
-        })}
+          <p className="vers" style={{fontSize:'clamp(23px,6.4vw,29px)',lineHeight:1.42,color:'var(--text)',
+            margin:'26px 0 0',animation:'fadeUp .9s cubic-bezier(.22,1,.36,1) .25s both'}}>
+            <span style={{color:'var(--gold)',fontStyle:'normal'}}>«&nbsp;</span>
+            {DAILY_TIPS[tipIdx]}
+            <span style={{color:'var(--gold)',fontStyle:'normal'}}>&nbsp;»</span>
+          </p>
 
-        {/* ── Content (fades out on exit) ── */}
-        <div style={{position:'relative',zIndex:1,textAlign:'center',maxWidth:340,width:'100%',animation:isExiting?'tip-fade-out .6s ease-out forwards':'none'}}>
+          <div style={{width:38,height:1,background:'var(--gold)',opacity:.55,margin:'24px auto 0',
+            animation:'fadeIn .8s ease .7s both'}}/>
+          <p style={{fontSize:8.5,fontWeight:800,letterSpacing:'.24em',textTransform:'uppercase',
+            color:'rgba(242,240,234,.45)',marginTop:13,animation:'fadeIn .8s ease .8s both'}}>Castigat Academy</p>
+        </div>
 
-          {/* CASTIGAT® */}
-          <div style={{animation:'fadeIn .6s ease both',marginBottom:6}}>
-            <p style={{fontFamily:'Oswald, sans-serif',fontWeight:600,fontSize:13,letterSpacing:'.28em',color:'var(--text-3)'}}>CASTIGAT<sup style={{fontSize:6,verticalAlign:'super',fontWeight:400}}>®</sup></p>
-          </div>
+        {/* Le personnage occupe le bas de la page et déborde */}
+        <div style={{position:'absolute',left:0,right:0,bottom:0,height:'62vh',pointerEvents:'none',zIndex:1,
+          display:'flex',alignItems:'flex-end',justifyContent:'center',
+          animation:'fadeUp 1.1s cubic-bezier(.22,1,.36,1) .45s both'}}>
+          <img src={`img/p/${perso}.svg`} alt="" aria-hidden="true" decoding="async"
+            onError={e=>{e.target.style.display='none'}}
+            style={{height:'100%',maxWidth:'118%',objectFit:'contain',objectPosition:'bottom',
+              filter:'drop-shadow(0 -14px 46px rgba(0,0,0,.55))'}}/>
+        </div>
+        {/* Le haut du dessin se fond dans la page ; le bas déborde franchement. */}
+        <div style={{position:'absolute',left:0,right:0,bottom:'34vh',height:'30vh',zIndex:2,pointerEvents:'none',
+          background:'linear-gradient(180deg,#0A0E1C 4%,rgba(10,14,28,.72) 42%,rgba(10,14,28,0) 100%)'}}/>
 
-          {/* CONSEIL / DU JOUR */}
-          <div style={{animation:'fadeIn .8s ease .2s both',marginTop:18}}>
-            <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:56,letterSpacing:'.06em',color:'var(--text)',lineHeight:1,margin:0,textShadow:'0 4px 30px var(--w08)'}}>CONSEIL</h1>
-            <h1 style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:56,letterSpacing:'.06em',lineHeight:1,margin:0,color:'var(--gold-light)',textShadow:'0 0 24px rgba(200,164,78,.5),0 0 60px rgba(200,164,78,.15)'}}>DU JOUR</h1>
-          </div>
-
-          {/* The quote — Cormorant Garamond droit, with decorative quote marks behind */}
-          <div style={{position:'relative',marginTop:38,marginBottom:28,animation:'fadeUp .8s ease .6s both'}}>
-            <span style={{position:'absolute',top:-50,left:-28,fontFamily:"'Playfair Display', serif",fontWeight:700,fontSize:220,lineHeight:.8,color:'var(--gold)',opacity:.22,pointerEvents:'none',userSelect:'none',textShadow:'0 0 40px rgba(200,164,78,.3)'}}>“</span>
-            <span style={{position:'absolute',bottom:-110,right:-28,fontFamily:"'Playfair Display', serif",fontWeight:700,fontSize:220,lineHeight:.8,color:'var(--gold)',opacity:.22,pointerEvents:'none',userSelect:'none',textShadow:'0 0 40px rgba(200,164,78,.3)'}}>”</span>
-            <p style={{position:'relative',zIndex:1,fontFamily:"'Cormorant Garamond', serif",fontWeight:500,fontSize:22,lineHeight:1.55,color:'var(--text)',letterSpacing:'.01em',margin:0}}>
-              {DAILY_TIPS[tipIdx]}
-            </p>
-          </div>
-
-          {/* CTA button — violet outline */}
-          <div style={{animation:'fadeUp .6s ease-out 1s both',marginTop:40}}>
-            <button onClick={dismissTip} style={{background:'rgba(167,139,250,.08)',border:'1.5px solid var(--violet)',borderRadius:14,padding:'17px 40px',cursor:'pointer',display:'inline-block',textAlign:'center',boxShadow:'0 0 24px rgba(167,139,250,.25),0 0 60px rgba(167,139,250,.1),inset 0 0 20px rgba(167,139,250,.05)',animation:'btn-violet-glow 3s ease-in-out 1.8s infinite',transition:'transform .15s, background .2s',WebkitTapHighlightColor:'transparent',backdropFilter:'blur(8px)'}} onTouchStart={e=>{e.currentTarget.style.transform='scale(.96)';e.currentTarget.style.background='rgba(167,139,250,.15)'}} onTouchEnd={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.background='rgba(167,139,250,.08)'}}>
-              <span style={{fontFamily:'Oswald, sans-serif',fontSize:14,fontWeight:700,color:'var(--violet)',letterSpacing:'.14em',textTransform:'uppercase'}}>C'est noté.</span>
-            </button>
-          </div>
+        {/* L'action, posée sur le voile */}
+        <div style={{position:'relative',zIndex:4,marginTop:'auto',padding:'0 34px calc(38px + env(safe-area-inset-bottom,0px))',
+          display:'flex',justifyContent:'center',animation:'fadeUp .7s ease-out 1.05s both'}}>
+          <button onClick={dismissTip} className="pill" style={{padding:'15px 42px',fontSize:11.5,letterSpacing:'.14em'}}>
+            C'est noté
+          </button>
         </div>
       </div>
     );
@@ -8590,10 +8819,10 @@ function App(){
 
             {/* Header doré */}
             <div style={{padding:'24px 20px 16px',textAlign:'center',background:'linear-gradient(180deg,rgba(200,164,78,.10),transparent)'}}>
-              <div style={{width:44,height:44,borderRadius:14,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 10px',boxShadow:'0 6px 24px rgba(200,164,78,.25)'}}>
+              <div style={{width:44,height:44,borderRadius:14,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 10px',boxShadow:'0 6px 24px rgba(200,164,78,.25)'}}>
                 {I.lock({size:18,sw:1.8,style:{color:'var(--ink)'}})}
               </div>
-              <p style={{fontFamily:'Oswald, sans-serif',fontWeight:700,fontSize:11,letterSpacing:'.16em',color:'var(--gold)',marginBottom:4}}>PULSE DU JOUR</p>
+              <p style={{fontFamily:'Archivo, sans-serif',fontWeight:700,fontSize:11,letterSpacing:'.16em',color:'var(--gold)',marginBottom:4}}>PULSE DU JOUR</p>
               <p style={{fontSize:12,fontWeight:600,color:'var(--text)',lineHeight:1.5}}>Réponds chaque jour pour nourrir ton bilan personnalisé</p>
             </div>
 
@@ -8620,7 +8849,7 @@ function App(){
             <div style={{padding:'16px 20px 20px'}}>
               <button onClick={()=>{_track('paywall_viewed',{source:'pulse_teaser',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{width:'100%',padding:'14px 0',borderRadius:12,background:'linear-gradient(135deg,var(--gold),var(--gold-light))',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,boxShadow:'0 6px 24px rgba(200,164,78,.3)',transition:'transform .15s',WebkitTapHighlightColor:'transparent'}} onTouchStart={e=>e.currentTarget.style.transform='scale(.97)'} onTouchEnd={e=>e.currentTarget.style.transform='scale(1)'}>
                 {I.crown({size:14,sw:1.6,style:{color:'var(--ink)'}})}
-                <span style={{fontFamily:'Oswald, sans-serif',fontSize:13,fontWeight:700,color:'var(--ink)',letterSpacing:'.06em'}}>DÉBLOQUER — STANDARD</span>
+                <span style={{fontFamily:'Archivo, sans-serif',fontSize:13,fontWeight:700,color:'var(--ink)',letterSpacing:'.06em'}}>DÉBLOQUER — STANDARD</span>
               </button>
               <p style={{textAlign:'center',fontSize:8,color:'var(--text-3)',marginTop:8}}>4 jours gratuits puis 9,90€/mois</p>
             </div>
@@ -8639,7 +8868,7 @@ function App(){
         <div style={{width:'100%',maxWidth:380}}>
           {/* Header */}
           <div style={{textAlign:'center',marginBottom:24}}>
-            <div style={{width:40,height:40,borderRadius:12,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>
+            <div style={{width:40,height:40,borderRadius:12,background:'rgba(224,184,78,.14)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>
               {I.mic({size:18,sw:1.4,style:{color:'var(--ink)'}})}
             </div>
             <p className="label-gold" style={{fontSize:8,marginBottom:6}}>PULSE DU JOUR</p>
@@ -8671,6 +8900,9 @@ function App(){
   }
 
   if(exam) return <ExamView levelId={exam} st={st} setSt={setSt} onPass={()=>{SFX.levelUp();setExam(null)}} onBack={()=>setExam(null)}/>;
+  if(seance) return <Seance items={seance} st={st} setSt={setSt}
+    onQuit={()=>{_track('seance_abandonnee',{});setSeance(null)}}
+    onFini={()=>{_track('seance_terminee',{n:seance.length});setSeance(null);setTab("home")}}/>;
 
   return(
     <PaywallCtx.Provider value={openPaywall}>
@@ -8678,9 +8910,9 @@ function App(){
       {!st.seenTuto&&!st.preview&&tab==="home"&&<TutoOverlay step={tutoStep} onNext={()=>setTutoStep(tutoStep+1)} onDone={()=>setSt(p=>({...p,seenTuto:true}))}/>}
       {badgePopup&&<BadgePopup badge={badgePopup} onClose={()=>setBadgePopup(null)}/>}
       {paywall&&<Paywall source={paywall} plan={st.plan} onClose={()=>setPaywall(null)}/>}
-      <Top xp={st.xp} streak={st.streak} passedExams={st.passedExams}/>
+      <Top xp={st.xp} streak={serieVive(st)} passedExams={st.passedExams}/>
       {!st.preview&&<InstallPrompt st={st}/>}
-      {tab==="home"&&<Home st={st} setSt={setSt} go={go} setMod={setMod} setExam={setExam}/>}
+      {tab==="home"&&<Home st={st} setSt={setSt} go={go} setMod={setMod} setExam={setExam} lancerSeance={setSeance}/>}
       {tab==="practice"&&<ModList title="Pratique" sub="Exercices progressifs" mods={PR} dk="doneEx" st={st} setSt={setSt} active={mod} setMod={setMod} sec="pr"/>}
       {tab==="culture"&&<ModList title="Culture" sub="Histoire, auteurs, techniques" mods={CU} dk="doneCu" st={st} setSt={setSt} active={mod} setMod={setMod} sec="cu"/>}
       {tab==="feed"&&<Feed st={st} setSt={setSt}/>}

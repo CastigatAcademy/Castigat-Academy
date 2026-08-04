@@ -64,3 +64,89 @@ Dans l'onglet Pratique, les exercices ne sont filtrés que par l'XP, pas par le
 plan : une compte gratuit avec assez d'XP peut ouvrir des exercices de niveaux
 que le parcours, lui, verrouille derrière l'abonnement. C'est un choix
 commercial, pas un bug de code — à décider avant de le refermer.
+
+## Chantier DA — 4 août 2026
+
+Application de la direction artistique validée (monologues illustrés + parcours)
+à toute l'app.
+
+### La racine
+- `castigat-academy.html`, bloc `<style>` : jetons `:root` refaits (nuit bleue
+  `#0A0E1C`, carte `#121829`, deux ors, violet `#B8A0E0`), plus `--gr-or`,
+  `--gr-violet`, `--gr-nuit`, `--ombre`.
+- Typographie : **Archivo** partout (`.heading` = 900, `-.025em`),
+  **Cormorant Garamond italique** réservé aux vers via `.vers`.
+  Bebas Neue, Inter, Noto Sans, Oswald et Playfair Display supprimés du chargement.
+- Nouveaux composants : `.ill-card` (+ `::before` voile, `::after` grain),
+  `.illus`, `.ill-in`, `.pill`, `.tag`, `.sep`, `.rang`, `.vl`.
+
+### Les dessins
+- `img/n/*.svg` — les 12 niveaux ; `img/p/*.svg` — 7 personnages du répertoire.
+- Optimisés à svgo, fond opaque retiré, chargés en `loading="lazy"`.
+  **Ce sont des fichiers du dépôt : ils doivent être poussés avec le HTML.**
+- Composant `Illus` dans `src-app.jsx`, table `LV_ART` (dégradé par niveau) et
+  `MONO_PERSO` / `MONO_GRAD` (monologues).
+- Un texte sans dessin reçoit une capitale ornée en Cormorant — jamais un trou.
+
+### Les écrans
+- `Home` : en-tête compact, carte illustrée du niveau, section « Aujourd'hui »
+  en rangées, puis `ProgressPath` remonté juste après.
+- `ProgressPath` entièrement réécrit : niveaux passés repliés, deux prochains en
+  cartes illustrées, le reste en lignes. La grille de bulles a disparu (elle
+  doublait l'onglet Pratique).
+- `ModList` : bandeau illustré pour le niveau en cours, rangées `.rang`.
+- Bibliothèque de monologues : cartes illustrées.
+- `Profile` : carte du comédien illustrée.
+- `ExV` : en-tête refait ; l'écran de fin reçoit `next` / `onNext` depuis
+  `ModList` et propose l'exercice suivant.
+
+### Corrections embarquées
+1. `passedExams` n'est plus purgé au démarrage (ne restaient que les identifiants
+   inconnus).
+2. Bouton d'examen mort supprimé avec la réécriture de `ProgressPath`.
+3. `finish()` n'accepte plus qu'un nombre — les étoiles ne sont plus `null`.
+4. Échauffement vocal : bouton ajouté dans l'onglet Outils.
+
+### Reste à faire
+- 17 monologues sur 25 n'ont pas encore leur dessin (crédits Higgsfield jusqu'au
+  13 août 2026).
+- Décision commerciale : l'onglet Pratique ne lit toujours pas `st.plan`.
+- `index.html` force encore un re-téléchargement complet à chaque visite.
+
+## Corrections du 4 août (soir)
+
+- **Mur d'abonnement sur Pratique et Culture.** `ModList` lit désormais
+  `st.plan` : au-delà de `startLevel + 3`, les niveaux se replient sur une
+  ligne et le clic ouvre l'offre. L'onglet passait de 20 hauteurs d'écran à
+  3,4 pour un compte gratuit, et le parcours payant n'est plus accessible
+  par cette porte.
+- **La série compte le travail, plus les ouvertures.** L'effet qui
+  incrémentait `streak` au chargement et au retour d'onglet est supprimé ;
+  la série avance quand l'XP augmente. `serieVive(st)` affiche zéro si la
+  dernière journée travaillée n'est ni aujourd'hui ni hier.
+- **Le Monstre Sacré** redessiné (le salut au rideau) : l'ancien gardait un
+  bloc sombre rectangulaire.
+
+## La séance et la révision espacée — 4 août
+
+### La séance du jour
+- `construireSeance(st)` compose trois contenus : un exercice, une révision
+  due (ou une leçon neuve), puis un second exercice d'une autre catégorie.
+- Le composant `Seance` monte `ExV` / `CuV` à la suite, sans repasser par le
+  menu, et `SeanceFin` clôt la journée (contenus, minutes, XP).
+- `ExV` et `CuV` acceptent `seance={i,n}` : compteur d'étape en en-tête, et
+  l'écran de fin enchaîne au lieu de renvoyer au menu.
+- L'accueil : la carte du niveau porte « Ma séance · N min », et la section
+  qui suit **est** la séance (les trois étapes). Une fois faite, la section
+  redevient « Aujourd'hui » à la carte et la carte dit « À demain ».
+- `st.seanceFaite` (date) et `st.seances` (compteur).
+
+### La révision espacée
+- `updateSRS` était appelée à **chaque question** du quiz de culture, ce qui
+  multipliait l'intervalle par quatre sur un quiz de quatre questions. Elle
+  n'est plus appelée qu'une fois, à la fin, sur le résultat d'ensemble.
+- `revisionsDues(st)` et `prochaineRevision(st)` : la lecture, qui n'existait
+  pas. Une section « À revoir » sur l'accueil, triée par retard, qui dit
+  depuis combien de temps la leçon n'a pas été revue et si elle est fragile.
+- Ce qui est déjà dans la séance du jour n'est pas répété dans « À revoir ».
+- L'ancienne « révision de la semaine » (un module au hasard) est supprimée.
