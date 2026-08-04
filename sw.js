@@ -1,5 +1,5 @@
 /* ═══ Castigat Academy — Service Worker ═══ */
-const CACHE_NAME = 'castigat-academy-v10';
+const CACHE_NAME = 'castigat-academy-v11';
 const OFFLINE_URL = '/castigat-academy.html';
 
 // Assets to pre-cache on install
@@ -11,9 +11,11 @@ const PRECACHE_URLS = [
   '/icons/icon-512x512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js',
-  'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&display=swap'
 ];
+
+/* Les dessins des niveaux : mis en cache à la volée par la règle « statique »
+   ci-dessous, pas au démarrage — l'installation reste légère. */
 
 // Listen for SKIP_WAITING message from the app (triggers immediate activation)
 self.addEventListener('message', event => {
@@ -69,7 +71,7 @@ self.addEventListener('fetch', event => {
   }
 
   // Static assets (CDN scripts, fonts, icons): cache-first
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/icons/')) {
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/img/')) {
     event.respondWith(
       caches.match(event.request).then(cached => {
         if (cached) return cached;
