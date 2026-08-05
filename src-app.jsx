@@ -345,6 +345,26 @@ const LV_ART={
 /* Les personnages du répertoire, pour les monologues. */
 const PERSO_ART={harpagon:1,antigone:1,celimene:1,cyrano:1,lucky:1,phedre:1,rodrigue:1};
 
+/* ── Les familles de la culture ───────────────────────────────────────
+   Quarante-huit leçons, douze dessins. Un dessin par famille plutôt qu'un
+   par leçon : les objets et les lieux du théâtre, jamais des visages, pour
+   ne pas entrer en concurrence avec les personnages du répertoire. */
+const CU_FAMILLE={
+  origines:["h_f1","h_d1","h_d3"],
+  commedia:["h_d2","h_ar4"],
+  elisabethain:["h_f2","h_mo3"],
+  classique:["h_a1","h_a4","h_so1","h_so2","h_so4","h_am4"],
+  romantisme:["h_pe4"],
+  realisme:["h_am2","h_am1","h_et2","h_am3"],
+  absurde:["h_pe1","h_me4","h_ar1","h_af3"],
+  avantgarde:["h_in1","h_in2","h_in3","h_me1","h_ar3","h_me2","h_af4"],
+  corps:["h_pe2","h_me3","h_in4"],
+  voix:["h_a3","h_f4","h_a2","h_d4"],
+  plateau:["h_f3","h_so3","h_pe3","h_ar2","h_af2"],
+  metier:["h_mo1","h_mo2","h_mo4","h_af1","h_et1","h_et3","h_et4"],
+};
+const CU_DESSIN=(()=>{const m={};for(const f of Object.keys(CU_FAMILLE))for(const id of CU_FAMILLE[f])m[id]=f;return m})();
+
 /* ── La séance du jour ────────────────────────────────────────────────
    L'app était un catalogue : on ouvrait, on prenait un exercice, on refermait.
    Rien ne disait quand on avait assez travaillé. La séance donne un début et
@@ -358,23 +378,28 @@ function construireSeance(st){
   const ordre=[lv.id,
     ...LEVELS.filter((_,i)=>i<li).reverse().map(l=>l.id),
     ...LEVELS.filter((l,i)=>i>li&&st.xp>=l.xp).map(l=>l.id)];
-  const items=[];
-  const libre=m=>!items.some(x=>x.id===m.id);
   for(const id of ordre){
     const m=(PR[id]||[]).find(x=>!st.doneEx.includes(x.id)&&x.type!=="video");
-    if(m){items.push({...m,sec:"pr"});break}
+    if(!m)continue;
+    /* Format cinq temps : la séance se suffit à elle-même — elle touche
+       déjà les cinq domaines, culture comprise. Une par jour, point. */
+    if(m.temps)return[{...m,sec:"pr"}];
+    /* Ancien format (niveaux pas encore réécrits) : on complète comme avant
+       avec une leçon de culture et un second exercice d'une autre famille. */
+    const items=[{...m,sec:"pr"}];
+    const dues=revisionsDues(st);
+    if(dues.length)items.push({...dues[0].mod,sec:"cu",revision:true});
+    else for(const cid of ordre){
+      const c=(CU[cid]||[]).find(x=>!st.doneCu.includes(x.id));
+      if(c){items.push({...c,sec:"cu"});break}
+    }
+    for(const pid of ordre){
+      const p2=(PR[pid]||[]).find(x=>!st.doneEx.includes(x.id)&&x.type!=="video"&&x.id!==m.id&&x.cat!==m.cat);
+      if(p2){items.push({...p2,sec:"pr"});break}
+    }
+    return items;
   }
-  const dues=revisionsDues(st);
-  if(dues.length)items.push({...dues[0].mod,sec:"cu",revision:true});
-  else for(const id of ordre){
-    const m=(CU[id]||[]).find(x=>!st.doneCu.includes(x.id));
-    if(m){items.push({...m,sec:"cu"});break}
-  }
-  for(const id of ordre){
-    const m=(PR[id]||[]).find(x=>!st.doneEx.includes(x.id)&&x.type!=="video"&&libre(x)&&(!items[0]||x.cat!==items[0].cat));
-    if(m){items.push({...m,sec:"pr"});break}
-  }
-  return items;
+  return[];
 }
 function dureeSeance(items){
   const t=items.reduce((a,m)=>a+(durToSecs(m.dur)||300),0);
@@ -382,6 +407,22 @@ function dureeSeance(items){
 }
 function seanceFaiteAujourdhui(st){
   return st.seanceFaite===new Date().toDateString();
+}
+/* La séance du jour est FIXÉE au premier calcul de la journée, pas recalculée
+   à chaque rendu. Sans ça, dès qu'une étape est faite, construireSeance() la
+   retire et la remplace par la suivante non faite : la liste change sous les
+   yeux, on dirait qu'une étape en efface une autre au lieu de se griser.
+   st.seanceDuJour garde donc un instantané du jour ; les étapes qui avancent
+   dans doneEx/doneCu se grisent sur place (voir fait= dans Home), la liste
+   elle-même ne bouge plus. */
+function seanceDuJourFigee(st){
+  const sj=st.seanceDuJour;
+  return(sj&&sj.date===new Date().toDateString())?sj.items:[];
+}
+/* Abonnées : accès illimité aux séances du jour. Gratuit : une séance,
+   puis on revient demain — ou on débloque plus. */
+function peutRefaireUneSeance(st){
+  return st.plan==="standard"||st.plan==="premium"||st.plan==="coach";
 }
 
 /* ── La révision espacée ──────────────────────────────────────────────
@@ -450,14 +491,17 @@ function Illus({id,dossier="n",petit,style}){
 function Rang({ic,teinte,eb,titre,note,xp,onClick,fait,fleche}){
   const T=teinte||'var(--gold)';
   const el=onClick?"button":"div";
-  return React.createElement(el,{className:"rang",onClick,style:onClick?{cursor:'pointer'}:{cursor:'default'}},
-    <div className="rang-ic" style={{background:fait?'rgba(52,211,153,.12)':`color-mix(in srgb, ${T} 16%, transparent)`,color:fait?'var(--emerald)':T}}>{ic}</div>,
+  /* Grisé = toute la rangée baisse d'opacité, pas juste la couleur d'un
+     sous-élément — sinon l'œil ne voit pas la différence au premier coup
+     d'œil. Même traitement que les rangées de niveau dans ModList. */
+  return React.createElement(el,{className:"rang",onClick,style:{cursor:onClick?'pointer':'default',opacity:fait?.55:1,transition:'opacity .3s ease'}},
+    <div className="rang-ic" style={{background:fait?'rgba(52,211,153,.12)':`color-mix(in srgb, ${T} 16%, transparent)`,color:fait?'var(--emerald)':T}}>{fait?I.check({size:15,sw:2.2}):ic}</div>,
     <div style={{flex:1,minWidth:0}}>
       {eb&&<span className="eb" style={{color:fait?'var(--emerald)':T,marginBottom:3}}>{eb}</span>}
-      <p className="rang-t" style={{color:fait?'var(--text-2)':'var(--text)'}}>{titre}</p>
+      <p className="rang-t" style={{color:fait?'var(--text-2)':'var(--text)',textDecoration:fait?'line-through':'none'}}>{titre}</p>
       {note&&<p style={{fontSize:9.5,color:'var(--text-3)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{note}</p>}
     </div>,
-    xp?<span className="rang-x" style={{color:T}}>{xp}</span>:null,
+    xp?<span className="rang-x" style={{color:fait?'var(--text-3)':T}}>{xp}</span>:null,
     fleche!==false&&onClick?<span style={{color:'var(--text-3)',display:'flex',flexShrink:0}}>{I.chR({size:15,sw:1.8})}</span>:null
   );
 }
@@ -486,374 +530,1357 @@ const QUIZ=[
   {q:"Que désigne le terme « conduite » en régie ?",opts:["La direction d'acteurs par le metteur en scène","Le document listant tous les effets techniques cue par cue","Le trajet des comédiens dans les coulisses","L'ordre de passage des scènes"],sc:[0,3,0,0],section:"knowledge"},
 ];
 
+/* Le texte de travail du premier tour de la méthode — niveaux 1 à 5. */
+const TEXTE_T1={
+  titre:"Seize minutes",
+  auteur:"Texte original — Castigat",
+  corps:"Je ne suis pas là pour ça. J'ai la liste, elle tient sur un post-it : les deux cartons dans l'entrée, la lampe, et le livre que tu ne lis pas. Vingt minutes et je repars.\n\nTu as changé les rideaux. C'est bien, les rideaux.\n\nNon, ne fais pas de café. Si tu fais du café on va s'asseoir, et si on s'assoit on va parler, et je n'avais pas prévu de parler.\n\nJ'ai dit vingt minutes. Il m'en reste seize."
+};
+
+const DOMAINES={
+  v:{nom:"Voix",long:"Le souffle et la voix",teinte:"var(--gold)",icon:"🌬️",dessin:"c/voix",
+     intro:"Le souffle, le son, la portée."},
+  c:{nom:"Corps",long:"Le corps",teinte:"var(--violet)",icon:"💪",dessin:"c/corps",
+     intro:"Le poids, l'appui, les tensions."},
+  t:{nom:"Texte",long:"Le texte",teinte:"var(--emerald)",icon:"📖",dessin:"c/classique",
+     intro:"Comprendre avant d'interpréter."},
+  j:{nom:"Jeu",long:"Le jeu",teinte:"var(--coral)",icon:"🎯",dessin:"c/commedia",
+     intro:"À qui vous parlez, ce que vous voulez."},
+  cu:{nom:"Culture",long:"La culture",teinte:"var(--gold-dim)",icon:"🏛️",dessin:"c/origines",
+     intro:"D'où vient ce qu'on vous demande."}
+};
+/* L'ordre d'un vrai échauffement : le corps réveille, la voix a besoin du
+   corps, puis le texte, le jeu, et la culture pour finir assis. */
+const DOM_ORDRE_SEANCE=[["c","Corps"],["v","Voix"],["t","Texte"],["j","Jeu"],["cu","Culture"]];
+
+/* ── Les séances du Figurant ──────────────────────────────────────────
+   Une séance = une journée = quinze minutes = les cinq domaines.
+   On ne creuse pas une seule chose par jour : on touche tout, tous les
+   jours, comme un musicien fait ses gammes avant de travailler un morceau.
+   Corps d'abord (on réveille), voix ensuite (elle a besoin du corps),
+   puis le texte, puis le jeu, et la culture pour finir assis.
+   Chaque temps tient en trois minutes. C'est court exprès : ce qui compte
+   ici est la régularité, pas la durée. */
+const SEANCES=[
+
+/* ════ JOUR 1 ════════════════════════════════════════════════════ */
+{id:"f1",niv:1,jour:1,title:"Trouver le sol",cat:"Séance",icon:"🌱",dur:"15 min",xp:35,type:"seance",
+ temps:[
+  {dom:"c",titre:"Trouver le milieu",
+   pourquoi:"Avant de savoir bouger, il faut savoir où on est posé.",
+   consigne:"Debout, pieds écartés de la largeur du bassin, yeux fermés. Balancez-vous d'avant en arrière, de plus en plus petit, jusqu'à trouver l'endroit où vous ne poussez ni vers les talons ni vers les orteils. Restez là dix secondes."},
+  {dom:"v",titre:"Où ça bouge",
+   pourquoi:"On respire haut toute la journée. La voix, elle, a besoin du bas.",
+   consigne:"Une main à plat sur le ventre, l'autre sur le haut de la poitrine. Respirez normalement, sans rien corriger. Regardez simplement laquelle des deux mains bouge le plus. Ne changez rien aujourd'hui — constatez."},
+  {dom:"t",titre:"Lire pour de bon",
+   pourquoi:"Beaucoup de comédiens jouent des textes qu'ils n'ont jamais vraiment lus.",
+   consigne:"Lisez le texte à voix haute, une fois, lentement. Ne jouez rien, ne cherchez aucun ton. Vous vérifiez seulement que vous comprenez chaque phrase.",
+   matiere:{type:"texte",contenu:TEXTE_T1.corps,source:TEXTE_T1.titre+" · "+TEXTE_T1.auteur}},
+  {dom:"j",titre:"Quelqu'un qui peut refuser",
+   pourquoi:"Ce n'est pas le sentiment qui change une réplique, c'est à qui on la dit.",
+   consigne:"La personne en face a autorité sur vous et peut dire non. Dites la phrase épinglée. Ne préparez rien, ne décidez pas de votre voix.",
+   matiere:{type:"phrase",contenu:"Je veux partir."}},
+  {dom:"cu",titre:"Un homme sort du chœur",
+   texte:["Le théâtre naît en Grèce, aux Grandes Dionysies, fêtes données en l'honneur de Dionysos. Jusque-là, un chœur chante et danse : tout le monde ensemble, personne en particulier.",
+    "Vers 534 avant notre ère, un certain Thespis se détache du chœur et parle en son nom propre, comme un personnage. C'est l'instant où le dialogue devient possible. On le considère comme le premier acteur de l'histoire."],
+   quiz:[{q:"Qui est considéré comme le premier acteur de l'histoire ?",o:["Sophocle","Thespis","Aristophane","Euripide"],a:1}]}],
+ trace:{type:"video",secs:30,consigne:"Trente secondes debout, yeux fermés, à chercher le milieu. Filmez de loin. Dans deux mois, vous verrez la différence."},
+ mot:"Un acteur qui ne sait pas où est son poids flotte, et ça se voit du dernier rang. Peser quelque part, c'est déjà exister sur un plateau.",
+ tip:"C'est le premier cours de presque toutes les écoles du monde, de Lecoq à Moscou. Avant la voix, avant le texte : le sol."},
+
+/* ════ JOUR 2 ════════════════════════════════════════════════════ */
+{id:"f2",niv:1,jour:2,title:"Déplacer le poids",cat:"Séance",icon:"⚖️",dur:"15 min",xp:35,type:"seance",
+ temps:[
+  {dom:"c",titre:"Le déplacer exprès",
+   pourquoi:"Savoir où est son poids, c'est bien. Le mettre où on veut, c'est le métier.",
+   consigne:"Poussez tout votre poids sur le pied gauche sans lever le droit. Puis sur le droit. Puis en avant sur les orteils, puis en arrière sur les talons. À chaque fois, dites à voix haute où il est."},
+  {dom:"v",titre:"Faire descendre",
+   pourquoi:"Le diaphragme travaille, la gorge ne fait que laisser passer.",
+   consigne:"Inspirez par le nez en cherchant à ne faire bouger que la main du ventre. Celle de la poitrine reste tranquille. Suivez le rythme affiché.",
+   guide:{plan:[{phase:"in",secs:4},{phase:"out",secs:6}],cycles:6}},
+  {dom:"t",titre:"Le résumé",
+   pourquoi:"Si vous n'arrivez pas à le résumer, c'est que quelque chose vous échappe encore.",
+   consigne:"De quoi parle ce texte ? Résumez-le en deux ou trois phrases, comme à quelqu'un qui ne l'a jamais lu.",
+   matiere:{type:"texte",contenu:TEXTE_T1.corps,source:TEXTE_T1.titre+" · "+TEXTE_T1.auteur},
+   question:true,aide:"Commencez par le plus simple : qui parle, à qui, et que vient-il faire là ?"},
+  {dom:"j",titre:"Quelqu'un que vous allez blesser",
+   pourquoi:"La même phrase ne sort pas du même corps selon qui la reçoit.",
+   consigne:"La personne en face vous aime, et cette phrase va lui faire mal. Dites-la. Ne prévenez rien, ne préparez aucun ton.",
+   matiere:{type:"phrase",contenu:"Je veux partir."}},
+  {dom:"cu",titre:"Le chant du bouc",
+   texte:["Les Grandes Dionysies duraient plusieurs jours et prenaient la forme d'un concours : trois auteurs, trois séries de pièces, un jury, un vainqueur. Quinze mille personnes assises à flanc de colline, en plein jour.",
+    "Le mot « tragédie » vient de tragôidía : le chant du bouc, l'animal sacrifié pendant ces fêtes. Le théâtre commence donc comme une cérémonie religieuse — pas comme un divertissement, et pas encore comme un métier."],
+   quiz:[{q:"D'où vient le mot « tragédie » ?",o:["Du nom d'un auteur","Du chant du bouc","Du mot grec pour masque","Du nom du théâtre d'Athènes"],a:1}]}],
+ trace:{type:"audio",secs:20,consigne:"Une inspiration et une expiration guidées, à voix haute sur la fin. On écoutera si le souffle est régulier."},
+ mot:"Vous n'avez pas joué deux émotions : vous avez parlé à deux personnes différentes. C'est l'adresse qui déplace la voix, jamais le sentiment décidé à l'avance.",
+ tip:"Stanislavski faisait toujours commencer le travail par la même question : à qui parlez-vous, et qu'attendez-vous de lui ?"},
+
+/* ════ JOUR 3 ════════════════════════════════════════════════════ */
+{id:"f3",niv:1,jour:3,title:"Défaire ce qui serre",cat:"Séance",icon:"🧘",dur:"15 min",xp:35,type:"seance",
+ temps:[
+  {dom:"c",titre:"La mâchoire",
+   pourquoi:"La tension se loge presque toujours aux mêmes endroits. La mâchoire est le premier.",
+   consigne:"Massez la mâchoire du bout des doigts, juste devant les oreilles, dix secondes. Puis laissez la bouche s'entrouvrir toute seule, sans effort, la langue au fond. Restez quinze secondes — c'est laid, personne ne regarde."},
+  {dom:"v",titre:"Le son vient se poser dessus",
+   pourquoi:"Le son ne doit rien changer au souffle qui le porte.",
+   consigne:"Une main sur le ventre. Sur l'expiration, dites « aaa » à mi-voix. Le ventre continue de redescendre tranquillement, comme s'il n'y avait pas de son.",
+   compteur:5},
+  {dom:"t",titre:"Les mots",
+   pourquoi:"Un seul mot mal compris peut fausser toute une interprétation.",
+   consigne:"Y a-t-il un mot, une expression, une allusion que vous ne comprenez pas tout à fait ? Notez-les. Ne faites jamais semblant de comprendre.",
+   matiere:{type:"texte",contenu:TEXTE_T1.corps,source:TEXTE_T1.titre+" · "+TEXTE_T1.auteur},
+   question:true,aide:"Même les mots simples : « la liste », « les cartons ». Qu'est-ce qu'ils désignent exactement, ici ?"},
+  {dom:"j",titre:"Quelqu'un qui n'écoute pas",
+   pourquoi:"Ce que fait l'autre vous fait jouer autrement, sans que vous l'ayez décidé.",
+   consigne:"La personne en face ne vous écoute plus depuis dix minutes. Dites la phrase épinglée.",
+   matiere:{type:"phrase",contenu:"Je veux partir."}},
+  {dom:"cu",titre:"Deux acteurs, puis trois",
+   texte:["Eschyle ajoute un deuxième acteur au chœur : deux personnages peuvent enfin se répondre, se mentir, se manquer. Sophocle en ajoute un troisième.",
+    "Trois personnes sur un plateau : à partir de là, tout le théâtre occidental peut s'écrire. Presque tout ce que vous jouerez plus tard tient dans cette combinatoire, y compris chez Molière ou Tchekhov."],
+   quiz:[{q:"Quel tragique ajoute un deuxième acteur sur scène ?",o:["Sophocle","Euripide","Eschyle","Aristophane"],a:2}]}],
+ trace:{type:"audio",secs:25,consigne:"Cinq « aaa » posés. Ce qu'on écoutera plus tard, ce n'est pas leur beauté : c'est s'ils se ressemblent."},
+ mot:"Un corps tendu ne peut rien recevoir : il est déjà occupé. C'est pour ça qu'un comédien crispé joue toujours un peu la même chose, quel que soit le rôle.",
+ tip:"Avant chaque représentation, la plupart des troupes font trente minutes d'échauffement collectif. Ce n'est pas une superstition : un corps froid joue faux."},
+
+/* ════ JOUR 4 ════════════════════════════════════════════════════ */
+{id:"f4",niv:1,jour:4,title:"Le contraste",cat:"Séance",icon:"💪",dur:"15 min",xp:35,type:"seance",
+ temps:[
+  {dom:"c",titre:"Les épaules",
+   pourquoi:"C'est le contraste qui détend, pas l'effort.",
+   consigne:"Montez les épaules jusqu'aux oreilles en inspirant, serrez fort trois secondes, puis lâchez d'un coup en soufflant.",
+   compteur:5},
+  {dom:"v",titre:"Le sssss",
+   pourquoi:"Le défaut n'est jamais au début d'un son. C'est à la fin qu'il se voit.",
+   consigne:"Inspirez par le ventre, puis expirez sur un « sssss » continu, comme un pneu qui se dégonfle. Allez au bout. Repérez le moment exact où le son commence à trembler."},
+  {dom:"t",titre:"Le trajet",
+   pourquoi:"Si rien ne change entre le début et la fin, cherchez mieux : il y a toujours un mouvement.",
+   consigne:"Dans quel état est cette personne à la première ligne ? Et à la dernière ? Qu'est-ce qui a bougé entre les deux ?",
+   matiere:{type:"texte",contenu:TEXTE_T1.corps,source:TEXTE_T1.titre+" · "+TEXTE_T1.auteur},
+   question:true,aide:"Regardez ce qui est dit du temps, au début et à la fin. Ce n'est pas un détail."},
+  {dom:"j",titre:"Ce que le corps a fait tout seul",
+   pourquoi:"Votre première observation de comédien sur vous-même.",
+   consigne:"Reprenez la situation d'hier — la personne que vous alliez blesser. Cette fois, remarquez le moment où vous avez baissé les yeux, ou détourné la tête. Vous ne l'aviez pas décidé.",
+   question:true,aide:"Notez-le en une ligne. On ne cherche pas à le refaire exprès : on cherche à le voir."},
+  {dom:"cu",titre:"Cour et jardin",
+   texte:["Sur un plateau, on ne dit jamais « à droite » ou « à gauche » : ça dépendrait de qui parle. On dit côté cour et côté jardin, et c'est toujours vu depuis la salle.",
+    "L'expression vient de la Comédie-Française installée aux Tuileries : d'un côté la cour du palais, de l'autre le jardin. Moyen mnémotechnique classique : Jésus-Christ — Jardin à gauche, Cour à droite, quand on est assis dans le public."],
+   quiz:[{q:"Le côté cour et le côté jardin se repèrent depuis…",o:["La position de l'acteur","La salle, c'est-à-dire le public","Les coulisses","Le régisseur"],a:1}]}],
+ trace:{type:"audio",secs:25,consigne:"Trois « sssss » à la suite. Ce qu'on écoutera, c'est s'ils durent pareil."},
+ mot:"Le public entend toujours la fin d'une phrase — c'est souvent la seule chose qu'il retient. Un souffle qui tient jusqu'au bout, c'est la moitié de l'autorité en scène.",
+ tip:"Dans les conservatoires, on chronomètre rarement les élèves. On les enregistre, et on leur fait écouter les trois dernières secondes."},
+
+/* ════ JOUR 5 ════════════════════════════════════════════════════ */
+{id:"f5",niv:1,jour:5,title:"Tenir",cat:"Séance",icon:"🪶",dur:"15 min",xp:35,type:"seance",
+ temps:[
+  {dom:"c",titre:"Le pantin",
+   pourquoi:"Remonter dans l'ordre, c'est réapprendre au dos qu'il est fait de morceaux.",
+   consigne:"Debout, laissez tomber le haut du corps vers l'avant, bras ballants, tête lourde. Ne cherchez pas à toucher le sol. Balancez dix secondes, puis remontez très lentement, vertèbre après vertèbre, la tête en tout dernier — comptez jusqu'à dix."},
+  {dom:"v",titre:"S'arrêter avant",
+   pourquoi:"Tenir un son, ce n'est pas le faire durer : c'est le finir net.",
+   consigne:"Refaites le « sssss », mais arrêtez-vous deux secondes avant le tremblement que vous aviez repéré. Le son doit finir net, pas mourir."},
+  {dom:"t",titre:"Où vous respirez",
+   pourquoi:"La ponctuation d'un texte n'est pas de la grammaire : c'est une partition de souffle.",
+   consigne:"Relisez le texte à voix haute et marquez d'un trait, mentalement ou sur le papier, chaque endroit où vous avez vraiment repris de l'air. Comparez avec les points et les virgules : ça ne tombe pas toujours ensemble.",
+   matiere:{type:"texte",contenu:TEXTE_T1.corps,source:TEXTE_T1.titre+" · "+TEXTE_T1.auteur}},
+  {dom:"j",titre:"La distance",
+   pourquoi:"On ne parle pas à trois mètres comme à trente centimètres — et ça ne s'imite pas, ça se règle.",
+   consigne:"Dites la phrase épinglée à quelqu'un qui serait à l'autre bout d'une salle. Puis à quelqu'un assis juste à côté de vous, qui dort presque. Puis à quelqu'un qui est dans la pièce d'à côté, sans crier.",
+   matiere:{type:"phrase",contenu:"Il est tard."}},
+  {dom:"cu",titre:"Le plateau et les coulisses",
+   texte:["Le plateau, c'est la surface de jeu. Les coulisses, ce qui est autour et que le public ne voit pas. Le lointain, c'est le fond de scène ; la face, le bord côté salle.",
+    "Le « service » désigne l'ensemble du travail d'un soir : montage, jeu, démontage. Quand un régisseur dit « on est en service à 18h », il ne parle pas du dîner."],
+   quiz:[{q:"Le « lointain », sur un plateau, désigne…",o:["Le fond de scène","La salle","Les coulisses côté cour","Le hall d'entrée"],a:0}]}],
+ trace:{type:"video",secs:30,consigne:"Filmez le pantin et la remontée. Une seule chose sera regardée : est-ce que la tête arrive vraiment en dernier ?"},
+ mot:"Un corps détendu n'est pas un corps mou : c'est un corps qui ne dépense rien avant d'en avoir besoin. C'est ce qui permet de recevoir — un partenaire, une réplique, une indication.",
+ tip:"Les régisseurs ont un vocabulaire précis parce qu'un malentendu, dans le noir, avec des charges au-dessus des têtes, coûte cher."},
+
+/* ════ JOUR 6 ════════════════════════════════════════════════════ */
+{id:"f6",niv:1,jour:6,title:"Trois fois pareil",cat:"Séance",icon:"🎯",dur:"15 min",xp:40,type:"seance",
+ temps:[
+  {dom:"c",titre:"Marcher en le sachant",
+   pourquoi:"Ce n'est pas confortable au début — c'est exactement ce qu'on cherche.",
+   consigne:"Marchez lentement dans la pièce et, à chaque pas, sachez lequel de vos deux pieds porte. Une minute, sans accélérer."},
+  {dom:"v",titre:"Trois fois pareil",
+   pourquoi:"Quinze secondes égales valent mieux que trente secondes qui s'effondrent.",
+   consigne:"Trois « sssss » de suite, en visant la même durée à chaque fois. Peu importe le chiffre : ce qu'on cherche, c'est trois fois identiques.",
+   compteur:3},
+  {dom:"t",titre:"Une phrase, rien ajouté",
+   pourquoi:"Dire sans jouer est plus difficile que jouer. C'est aussi ce qui manque le plus souvent.",
+   consigne:"Choisissez une seule phrase du texte. Dites-la dix fois de suite, en essayant de ne rien y mettre du tout : ni intention, ni couleur, ni tristesse. Juste la phrase. Remarquez à quel moment vous n'y arrivez plus.",
+   matiere:{type:"texte",contenu:TEXTE_T1.corps,source:TEXTE_T1.titre+" · "+TEXTE_T1.auteur}},
+  {dom:"j",titre:"Ce que vous voulez obtenir",
+   pourquoi:"« Jouer la peur » ne donne rien : la peur est un résultat. Un verbe, lui, se joue.",
+   consigne:"Reprenez la phrase épinglée avec trois verbes différents : je veux la rassurer / je veux la faire partir / je veux qu'elle me retienne. Trois fois la même phrase, trois verbes.",
+   matiere:{type:"phrase",contenu:"Il est tard."},
+   question:true,aide:"Celui qui vous est venu le plus facilement est votre pente naturelle. Refaites les deux autres."},
+  {dom:"cu",titre:"Shakespeare et le Globe",
+   texte:["William Shakespeare (1564–1616) écrit trente-sept pièces et cent cinquante-quatre sonnets en vingt-cinq ans. Le Globe, construit en 1599, accueille trois mille spectateurs : le parterre debout paie un penny, les loges sont pour les nobles.",
+    "Pas de décor, ou presque : tout est dans le texte. Quand un personnage dit qu'il fait nuit, il fait nuit — même si on joue en plein après-midi. C'est une leçon qui vaut encore."],
+   quiz:[{q:"En quelle année est construit le Globe Theatre ?",o:["1576","1599","1613","1642"],a:1}]}],
+ trace:{type:"audio",secs:30,consigne:"Les trois versions au verbe différent, à la suite, sans annoncer laquelle est laquelle. Si on les distingue à l'oreille, c'est gagné."},
+ mot:"Vous n'avez pas changé de sentiment : vous avez changé ce que vous vouliez obtenir. C'est ça qui déplace une réplique, et c'est ça qu'un metteur en scène vous demandera.",
+ tip:"Les directeurs d'acteurs ne disent presque jamais « sois plus triste ». Ils disent : « essaie de le faire rester »."},
+
+/* ════ JOUR 7 ════════════════════════════════════════════════════ */
+{id:"f7",niv:1,jour:7,title:"S'arrêter net",cat:"Séance",icon:"🎬",dur:"15 min",xp:40,type:"seance",
+ temps:[
+  {dom:"c",titre:"S'arrêter net",
+   pourquoi:"Un arrêt vrai est plus difficile qu'un mouvement. C'est pourtant ce qu'on voit le plus.",
+   consigne:"Marchez normalement, puis arrêtez-vous d'un coup, au hasard. Sans bouger, répondez : je pèse sur quoi ? Puis repartez.",
+   compteur:5},
+  {dom:"v",titre:"Une phrase sur un souffle",
+   pourquoi:"Si ça gratte, c'est que vous avez repris par le haut.",
+   consigne:"Dites la phrase épinglée en poussant avec le ventre, pas avec la gorge. Redites-la deux fois plus fort, sans serrer.",
+   matiere:{type:"phrase",contenu:"Je suis là."}},
+  {dom:"t",titre:"Le premier et le dernier mot",
+   pourquoi:"Le public entend le début parce qu'il découvre, et la fin parce qu'elle reste.",
+   consigne:"Relisez le texte à voix haute, en soignant uniquement deux choses : le tout premier mot, et le tout dernier. Le reste, laissez-le tranquille.",
+   matiere:{type:"texte",contenu:TEXTE_T1.corps,source:TEXTE_T1.titre+" · "+TEXTE_T1.auteur}},
+  {dom:"j",titre:"Dire non sans dire non",
+   pourquoi:"Presque rien, au théâtre, ne se dit directement. C'est ce qui rend le sous-texte jouable.",
+   consigne:"Quelqu'un vous demande de rester. Vous refusez — mais vous n'avez le droit de dire que la phrase épinglée. Faites-le entendre trois fois de trois façons : en s'excusant, en fermant la porte, en laissant une porte ouverte.",
+   matiere:{type:"phrase",contenu:"Il est tard."}},
+  {dom:"cu",titre:"Ce que Shakespeare a laissé",
+   texte:["On lui attribue plus de mille sept cents mots entrés dans l'anglais courant, et des expressions encore employées aujourd'hui — briser la glace en fait partie.",
+    "Il écrivait pour tout le monde en même temps : le peuple debout et les nobles assis, le rire et les larmes dans la même pièce, souvent dans la même scène. Le théâtre populaire et le théâtre exigeant n'étaient pas encore deux métiers séparés."],
+   quiz:[{q:"Au Globe, le public du parterre…",o:["Était assis dans les loges","Se tenait debout pour un penny","N'était pas admis","Payait le plus cher"],a:1}]}],
+ trace:{type:"video",secs:30,consigne:"Cinq pas, un arrêt net, cinq pas, un arrêt net. Filmez de loin, en entier. On ne regardera pas votre visage — on regardera vos pieds."},
+ mot:"Sept séances, cinq domaines touchés chaque jour. Vous n'avez encore rien joué devant personne, et c'est normal : vous avez posé le sol, le souffle et l'adresse. Tout le reste se construit là-dessus.",
+ tip:"C'est le premier cours de presque toutes les écoles du monde, de Lecoq à Moscou. Avant la voix, avant le texte : le sol."},
+];
+
+const SEANCE_PAR_ID=(()=>{const m={};for(const s of SEANCES)m[s.id]=s;return m})();
+
+/* ═══ LE CARNET — les traces restent sur l'appareil ═══ */
+const CARNET_DB="castigat_carnet";
+function carnetOuvrir(){
+  return new Promise((res,rej)=>{
+    try{
+      const r=indexedDB.open(CARNET_DB,1);
+      r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains("traces"))db.createObjectStore("traces",{keyPath:"id"})};
+      r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
+    }catch(e){rej(e)}
+  });
+}
+async function carnetPoser(t){
+  const db=await carnetOuvrir();
+  return new Promise((res,rej)=>{const tx=db.transaction("traces","readwrite");
+    tx.objectStore("traces").put(t);tx.oncomplete=()=>res(true);tx.onerror=()=>rej(tx.error)});
+}
+async function carnetLire(){
+  const db=await carnetOuvrir();
+  return new Promise((res,rej)=>{const tx=db.transaction("traces","readonly");
+    const q=tx.objectStore("traces").getAll();
+    q.onsuccess=()=>res((q.result||[]).sort((a,b)=>b.date.localeCompare(a.date)));q.onerror=()=>rej(q.error)});
+}
+async function carnetEffacer(id){
+  const db=await carnetOuvrir();
+  return new Promise((res,rej)=>{const tx=db.transaction("traces","readwrite");
+    tx.objectStore("traces").delete(id);tx.oncomplete=()=>res(true);tx.onerror=()=>rej(tx.error)});
+}
+
+/* Le lecteur maison : la barre blanche du navigateur n'a rien à faire ici. */
+function Lecteur({src}){
+  const ref=useRef(null);
+  const[joue,setJoue]=useState(false);
+  const[t,setT]=useState(0);
+  const[total,setTotal]=useState(0);
+  const maj=()=>{const a=ref.current;if(!a)return;setT(a.currentTime);
+    if(isFinite(a.duration)&&a.duration>0)setTotal(a.duration);else setTotal(v=>Math.max(v,a.currentTime))};
+  const bascule=()=>{const a=ref.current;if(!a)return;
+    if(a.paused){a.play().then(()=>setJoue(true)).catch(()=>{})}else{a.pause();setJoue(false)}};
+  const f=total>0?Math.min(1,t/total):0;
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:13,padding:'11px 13px',borderRadius:12,background:'var(--w03)',border:'1px solid var(--line)'}}>
+      <audio ref={ref} src={src} preload="metadata" onTimeUpdate={maj} onLoadedMetadata={maj}
+        onEnded={()=>{setJoue(false);setT(0)}} style={{display:'none'}}/>
+      <button onClick={bascule} aria-label={joue?"Pause":"Écouter"}
+        style={{flexShrink:0,width:38,height:38,borderRadius:'50%',border:'1px solid var(--line-s)',cursor:'pointer',
+          background:'var(--gold-glow)',color:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        {joue
+          ?<svg width="13" height="14" viewBox="0 0 13 14" fill="currentColor"><rect x="0" y="0" width="4" height="14" rx="1"/><rect x="9" y="0" width="4" height="14" rx="1"/></svg>
+          :<svg width="13" height="14" viewBox="0 0 13 14" fill="currentColor" style={{marginLeft:2}}><path d="M0 1.2c0-1 1.1-1.6 1.9-1L12.4 6.2c.8.5.8 1.6 0 2.1L1.9 13.8c-.8.5-1.9 0-1.9-1z"/></svg>}
+      </button>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{height:3,borderRadius:3,background:'var(--w06)',overflow:'hidden'}}>
+          <div style={{height:'100%',width:(f*100)+'%',background:'var(--gold)',transition:'width .18s linear'}}/>
+        </div>
+        <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:6,fontVariantNumeric:'tabular-nums'}}>{fmtDur(t)}{total>0?" / "+fmtDur(total):""}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ═══ L'ENREGISTREUR ═══
+   Le micro et la caméra ne sont pas toujours disponibles (aperçu ouvert
+   depuis un fichier, permission refusée). On retombe alors sur l'appareil
+   photo du téléphone, puis sur une simple confirmation. */
+function Enregistreur({type,secs,onPret,onEfface}){
+  const[phase,setPhase]=useState("pret");/* pret · enregistre · relu · refus */
+  const[reste,setReste]=useState(secs||30);
+  const[url,setUrl]=useState(null);
+  const blobRef=useRef(null),recRef=useRef(null),fluxRef=useRef(null),apercuRef=useRef(null),tickRef=useRef(null);
+  const video=type==="video";
+
+  const stopFlux=()=>{if(fluxRef.current){fluxRef.current.getTracks().forEach(t=>t.stop());fluxRef.current=null}};
+  useEffect(()=>()=>{stopFlux();if(tickRef.current)clearInterval(tickRef.current);if(url)URL.revokeObjectURL(url)},[]);
+
+  const arreter=()=>{try{recRef.current&&recRef.current.state!=="inactive"&&recRef.current.stop()}catch(e){}};
+
+  const demarrer=async()=>{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof MediaRecorder==="undefined"){setPhase("refus");return}
+    try{
+      const flux=await navigator.mediaDevices.getUserMedia(video?{audio:true,video:{facingMode:"user"}}:{audio:true});
+      fluxRef.current=flux;
+      if(video&&apercuRef.current){apercuRef.current.srcObject=flux;apercuRef.current.play().catch(()=>{})}
+      const mr=new MediaRecorder(flux);recRef.current=mr;
+      const morceaux=[];
+      mr.ondataavailable=e=>{if(e.data&&e.data.size)morceaux.push(e.data)};
+      mr.onstop=()=>{
+        clearInterval(tickRef.current);stopFlux();
+        const b=new Blob(morceaux,{type:video?"video/webm":"audio/webm"});
+        blobRef.current=b;setUrl(URL.createObjectURL(b));setPhase("relu");SFX.success&&SFX.success();
+      };
+      mr.start();setPhase("enregistre");setReste(secs||30);SFX.tap&&SFX.tap();
+      tickRef.current=setInterval(()=>setReste(r=>{if(r<=1){arreter();return 0}return r-1}),1000);
+    }catch(e){setPhase("refus")}
+  };
+
+  const fichier=(e)=>{
+    const f=e.target.files&&e.target.files[0];if(!f)return;
+    blobRef.current=f;setUrl(URL.createObjectURL(f));setPhase("relu");
+  };
+
+  const refaire=()=>{if(url)URL.revokeObjectURL(url);setUrl(null);blobRef.current=null;setPhase("pret");onEfface&&onEfface()};
+
+  const anneau=(()=>{const t=secs||30,f=Math.max(0,Math.min(1,reste/t)),R=34,C=2*Math.PI*R;
+    return{R,C,off:C*(1-f)}})();
+
+  return(
+    <div className="card" style={{padding:20,textAlign:'center',borderColor:phase==="enregistre"?'var(--coral)':'var(--line-s)',transition:'border-color .3s'}}>
+      {video&&(phase==="enregistre")&&(
+        <video ref={apercuRef} muted playsInline
+          style={{width:'100%',maxWidth:230,borderRadius:14,marginBottom:14,transform:'scaleX(-1)',background:'#000'}}/>
+      )}
+
+      {phase==="pret"&&(<>
+        <div style={{width:62,height:62,borderRadius:'50%',margin:'0 auto 14px',display:'flex',alignItems:'center',justifyContent:'center',
+          background:'var(--gold-glow)',border:'1px solid var(--line-s)',color:'var(--gold)'}}>
+          {video?I.camera({size:24,sw:1.5}):I.mic({size:24,sw:1.5})}
+        </div>
+        <p style={{fontSize:11,color:'var(--text-3)',marginBottom:14}}>{secs||30} secondes · rien ne quitte votre téléphone</p>
+        <button onClick={demarrer} className="btn-gold" style={{padding:'13px 34px',fontSize:12.5}}>Enregistrer</button>
+      </>)}
+
+      {phase==="enregistre"&&(<>
+        <div style={{position:'relative',width:84,height:84,margin:'0 auto 12px'}}>
+          <svg width="84" height="84" style={{transform:'rotate(-90deg)'}}>
+            <circle cx="42" cy="42" r={anneau.R} fill="none" stroke="var(--w06)" strokeWidth="3"/>
+            <circle cx="42" cy="42" r={anneau.R} fill="none" stroke="var(--coral)" strokeWidth="3"
+              strokeDasharray={anneau.C} strokeDashoffset={anneau.off} strokeLinecap="round" style={{transition:'stroke-dashoffset 1s linear'}}/>
+          </svg>
+          <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <span className="heading" style={{fontSize:22,color:'var(--coral)'}}>{reste}</span>
+          </div>
+        </div>
+        <p className="eb" style={{color:'var(--coral)',marginBottom:14,animation:'pulse-rec 1.3s ease-in-out infinite'}}>Enregistrement</p>
+        <button onClick={arreter} className="btn-outline" style={{padding:'11px 26px',fontSize:11}}>Arrêter maintenant</button>
+      </>)}
+
+      {phase==="relu"&&(<>
+        {video
+          ?<video src={url} controls playsInline style={{width:'100%',maxWidth:230,borderRadius:14,marginBottom:14,background:'#000'}}/>
+          :<div style={{marginBottom:14}}><Lecteur src={url}/></div>}
+        <div style={{display:'flex',gap:9,justifyContent:'center'}}>
+          <button onClick={refaire} className="btn-outline" style={{padding:'10px 20px',fontSize:11}}>Refaire</button>
+          <button onClick={()=>onPret&&onPret(blobRef.current)} className="pill" style={{padding:'10px 24px'}}>Garder dans le carnet</button>
+        </div>
+      </>)}
+
+      {phase==="refus"&&(<>
+        <p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6,marginBottom:14}}>
+          Le {video?"caméra":"micro"} n'est pas accessible ici. Enregistrez avec votre téléphone, puis reprenez le fichier — ou passez, la séance compte quand même.
+        </p>
+        <label style={{display:'block',cursor:'pointer',marginBottom:10}}>
+          <input type="file" accept={video?"video/*":"audio/*"} capture="user" style={{display:'none'}} onChange={fichier}/>
+          <span className="pill" style={{display:'inline-block',padding:'11px 24px'}}>Choisir un enregistrement</span>
+        </label>
+        <button onClick={()=>onPret&&onPret(null)} style={{fontSize:11,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:700,padding:'6px 0'}}>Je l'ai fait sans enregistrer</button>
+      </>)}
+    </div>
+  );
+}
+
+/* Les cinq temps d'une séance sont désormais portés par les données
+   elles-mêmes (S.temps), un par domaine : plus de liste figée ici. */
+
+/* Pendant l'écran de fin d'une séance, rien ne doit s'empiler par-dessus :
+   le badge attend en coulisse et entre quand la scène est libre. */
+const ECRAN={fin:false,liberer:null};
+
+/* ═══ CE QUI EST FAIT AUJOURD'HUI ═══
+   Les anciennes catégories se rangent dans les cinq domaines : l'écran du
+   jour dit la même chose que le parcours, quel que soit le niveau. */
+const DOM_DE_CAT={Voix:"v",Respiration:"v",Diction:"v",Corps:"c",
+  Texte:"t",Monologue:"t","Scène":"t",Jeu:"j",Intentions:"j",Improvisation:"j",Pro:"j",Culture:"cu"};
+const DOM_ORDRE=[["v","Voix"],["c","Corps"],["t","Texte"],["j","Jeu"],["cu","Culture"]];
+
+function domainesDuJour(st){
+  const jour=new Date().toISOString().slice(0,10);
+  const faits=new Set();
+  const m=st.catLastPracticed||{};
+  for(const cat in m){
+    const d=DOM_DE_CAT[cat];
+    if(d&&String(m[cat]).slice(0,10)===jour)faits.add(d);
+  }
+  return faits;
+}
+
+function DomainesDuJour({st}){
+  const faits=domainesDuJour(st);
+  return(
+    <div style={{marginBottom:22}}>
+      <div className="sep">
+        <b>Fait aujourd'hui</b>
+        <b style={{color:faits.size?'var(--gold)':'var(--text-3)',letterSpacing:'.06em'}}>{faits.size} / 5</b>
+        <i/>
+      </div>
+      <div style={{display:'flex',gap:7}}>
+        {DOM_ORDRE.map(([id,nom])=>{
+          const ok=faits.has(id);
+          return(
+            <div key={id} style={{flex:1,padding:'12px 3px 10px',borderRadius:13,textAlign:'center',
+              background:ok?'rgba(224,184,78,.10)':'var(--w02)',
+              border:'1px solid '+(ok?'rgba(224,184,78,.30)':'var(--line)'),
+              transition:'background .4s ease,border-color .4s ease'}}>
+              <span style={{height:19,display:'flex',alignItems:'center',justifyContent:'center',
+                color:ok?'var(--gold)':'var(--text-3)'}}>
+                {ok
+                  ?I.check({size:16,sw:2.4})
+                  :<span style={{width:8,height:8,borderRadius:'50%',border:'1.5px solid var(--line-s)',display:'block'}}/>}
+              </span>
+              <span style={{display:'block',fontSize:9,fontWeight:700,marginTop:6,letterSpacing:'.05em',
+                color:ok?'var(--text)':'var(--text-3)'}}>{nom}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SeanceV({mod,st,setSt,back,next,onNext,seance}){
+  const S=SEANCE_PAR_ID[mod.id]||mod;
+  const TS=S.temps||[];
+  const n=TS.length;
+  const[temps,setTemps]=useState(-1);       /* -1 = le carton d'ouverture, n = la fin */
+  const[reponses,setReponses]=useState({});
+  const[quizRep,setQuizRep]=useState({});
+  const[traceFaite,setTraceFaite]=useState(false);
+  const[traceOuverte,setTraceOuverte]=useState(false);
+  const[traceTexte,setTraceTexte]=useState("");
+  const[done,setDone]=useState((st.doneEx||[]).includes(S.id));
+  const[xpPop,setXpPop]=useState(false);
+
+  useEffect(()=>{
+    ECRAN.fin=(temps===n);
+    return()=>{if(ECRAN.fin){ECRAN.fin=false;ECRAN.liberer&&ECRAN.liberer()}};
+  },[temps]);
+
+  /* Chaque temps validé coche sa case de domaine sur l'accueil, tout de
+     suite — on voit les cinq cases se remplir pendant la séance au lieu
+     d'attendre la fin. C'est le seul compteur de l'app qui soit vraiment
+     atteignable en une journée. */
+  const marquerDomaine=(dom)=>{
+    const nom=(DOMAINES[dom]||{}).nom;
+    if(!nom)return;
+    const now=new Date().toISOString();
+    setSt(p=>({...p,catLastPracticed:{...(p.catLastPracticed||{}),[nom]:now}}));
+  };
+
+  const finir=()=>{
+    if(done)return;
+    setDone(true);setXpPop(true);SFX.xp&&SFX.xp();
+    setSt(p=>({...p,xp:p.xp+S.xp,weekXP:(p.weekXP||0)+S.xp,weekEx:(p.weekEx||0)+1,
+      doneEx:[...(p.doneEx||[]),S.id],
+      stars:{...(p.stars||{}),[S.id]:Math.max(3,(p.stars||{})[S.id]||0)}}));
+  };
+
+  /* La trace n'est pas une étape imposée : elle reste offerte à la fin,
+     pour celles et ceux qui veulent s'entendre progresser. */
+  const garderTrace=async(blob)=>{
+    try{
+      await carnetPoser({id:S.id+"-"+Date.now(),seance:S.id,titre:S.title,domaine:"j",
+        type:(S.trace&&S.trace.type)||"audio",blob:blob||null,
+        texte:(S.trace&&S.trace.type==="ecrit")?traceTexte:"",date:new Date().toISOString()});
+    }catch(e){}
+    setTraceFaite(true);setTraceOuverte(false);SFX.success&&SFX.success();
+  };
+
+  const aller=(t)=>{setTemps(t);window.scrollTo(0,0)};
+
+  /* ── Le carton d'ouverture ── */
+  if(temps===-1)return(
+    <div className="safe-b sous-barre" style={{minHeight:'100vh',position:'relative',overflow:'hidden'}}>
+      <div className="back-bar"><button onClick={back}>{I.chL({size:16})} {seance?"Quitter la séance":"Retour"}</button></div>
+      <div style={{position:'absolute',inset:'calc(var(--barre-haut) + 58px) 14px 14px',border:'1px solid rgba(224,184,78,.13)',
+        borderRadius:6,pointerEvents:'none',zIndex:1}}/>
+      <div className="mw" style={{padding:'22px 22px 110px',display:'flex',flexDirection:'column',minHeight:'72vh',position:'relative',zIndex:2}}>
+        <div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'center',textAlign:'center',position:'relative'}}>
+          <p className="eb eb-or" style={{animation:'fadeIn .6s ease both'}}>{S.jour?`Séance ${S.jour}`:"La séance du jour"}</p>
+          <h1 className="heading" style={{fontSize:'clamp(28px,7.8vw,38px)',lineHeight:1.04,margin:'11px 0 0',
+            animation:'fadeUp .8s cubic-bezier(.22,1,.36,1) .12s both'}}>{S.title}</h1>
+          <div style={{width:40,height:1,background:'var(--gold)',opacity:.7,margin:'18px auto 0',animation:'trait-ouvre .7s ease .5s both'}}/>
+
+          <div style={{position:'relative',width:132,height:132,margin:'20px auto 2px',
+            animation:'fadeUp .9s cubic-bezier(.22,1,.36,1) .25s both'}}>
+            <div style={{position:'absolute',inset:0,borderRadius:'50%',
+              background:'radial-gradient(circle at 50% 62%,rgba(224,184,78,.20),rgba(224,184,78,.05) 58%,transparent 72%)'}}/>
+            <div style={{position:'absolute',inset:0,borderRadius:'50%',border:'1px solid rgba(224,184,78,.20)'}}/>
+            <img src={`img/n/${(LEVELS[(S.niv||1)-1]||{}).id}.svg`} alt="" aria-hidden="true" loading="lazy"
+              onError={e=>{e.target.parentNode.style.display='none'}}
+              style={{position:'absolute',inset:'8px',width:'calc(100% - 16px)',height:'calc(100% - 16px)',
+                objectFit:'contain',objectPosition:'bottom'}}/>
+          </div>
+
+          {/* Les cinq domaines de la journée, annoncés d'entrée : on sait
+              exactement ce qu'on va toucher avant de commencer. */}
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginTop:18,
+            animation:'fadeUp .8s cubic-bezier(.22,1,.36,1) .45s both'}}>
+            {TS.map((t,k)=>{
+              const D=DOMAINES[t.dom]||{};
+              return<span key={k} style={{fontSize:9,fontWeight:700,letterSpacing:'.08em',padding:'5px 10px',
+                borderRadius:20,color:D.teinte,background:'var(--w03)',
+                border:'1px solid var(--line)'}}>{(D.nom||"").toUpperCase()}</span>;
+            })}
+          </div>
+          <p style={{fontSize:10.5,color:'var(--text-3)',marginTop:15,display:'flex',gap:9,justifyContent:'center',
+            animation:'fadeIn .8s ease .7s both'}}>
+            <span>{S.dur}</span><span style={{color:'var(--gold)',fontWeight:700}}>+{S.xp} XP</span>
+          </p>
+        </div>
+        <button onClick={()=>aller(0)} className="btn-gold" style={{width:'100%',padding:'15px 0',fontSize:13,letterSpacing:'.05em',
+          animation:'btn-scale-in .7s cubic-bezier(.22,1,.36,1) .85s both'}}>
+          {done?"Refaire la séance":"Commencer"}
+        </button>
+        {done&&<button onClick={back} style={{width:'100%',padding:'12px 0',marginTop:4,fontSize:11.5,fontWeight:700,color:'var(--text-2)',background:'none',border:'none',cursor:'pointer'}}>Retour</button>}
+      </div>
+    </div>
+  );
+
+  /* ── L'écran d'un temps ── */
+  if(temps>=0&&temps<n){
+    const T=TS[temps];
+    const D=DOMAINES[T.dom]||DOMAINES.v;
+    const dernier=temps===n-1;
+    const quizFini=!T.quiz||T.quiz.every((q,i)=>quizRep[temps+"-"+i]!==undefined);
+
+    /* Le rail prend la couleur de chaque domaine : on lit d'un coup d'œil
+       où on en est dans les cinq. */
+    const rail=(
+      <div style={{marginBottom:16}}>
+        <div className="rail">
+          {TS.map((t,k)=>{
+            const DD=DOMAINES[t.dom]||{};
+            return<i key={k} className={k<temps?"ok":k===temps?"on":""}
+              style={k<=temps?{background:DD.teinte,opacity:k===temps?1:.5}:undefined}/>;
+          })}
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:7}}>
+          <p className="eb" style={{color:D.teinte}}>{D.long}</p>
+          <p style={{fontSize:9,color:'var(--text-3)'}}>{temps+1} / {n}</p>
+        </div>
+      </div>
+    );
+
+    const matiere=T.matiere&&(
+      <div className="card" style={{padding:'14px 16px',marginBottom:14,borderColor:'var(--line-s)'}}>
+        <p className="eb eb-or" style={{marginBottom:7}}>{T.matiere.type==="phrase"?"La phrase":"Le texte"}</p>
+        {T.matiere.type==="phrase"
+          ?<p className="vers" style={{fontSize:19,lineHeight:1.45,color:'var(--text)'}}>« {T.matiere.contenu} »</p>
+          :<p className="vers" style={{fontSize:15,lineHeight:1.75,color:'var(--text)',whiteSpace:'pre-line'}}>{T.matiere.contenu}</p>}
+        {T.matiere.source&&<p style={{fontSize:9.5,color:'var(--text-3)',marginTop:9}}>{T.matiere.source}</p>}
+      </div>
+    );
+
+    const suivant=()=>{
+      marquerDomaine(T.dom);
+      if(dernier){finir();aller(n)}
+      else aller(temps+1);
+    };
+
+    return(
+      <div className="sous-barre" style={{minHeight:'100vh'}}>
+        <div className="back-bar"><button onClick={()=>temps===0?aller(-1):back()}>{I.chL({size:16})} {temps===0?"Retour":(seance?"Quitter la séance":"Retour")}</button></div>
+        <div className="mw" style={{padding:'16px 20px 0'}}>
+          {xpPop&&<XPPop n={S.xp} done={()=>setXpPop(false)}/>}
+          {rail}
+          <div key={temps} className="temps">
+            {matiere}
+            <div className="card" style={{padding:20,marginBottom:14}}>
+              <h3 className="heading" style={{fontSize:18,marginBottom:T.pourquoi?6:10}}>{T.titre}</h3>
+              {T.pourquoi&&<p className="vers" style={{fontSize:13,lineHeight:1.55,color:D.teinte,opacity:.92,marginBottom:13}}>{T.pourquoi}</p>}
+
+              {/* Culture : on lit, on ne fait pas. */}
+              {T.texte&&T.texte.map((p,k)=>(
+                <p key={k} className="body" style={{fontSize:13.5,lineHeight:1.8,color:k===0?'var(--text)':'var(--text-2)',
+                  marginBottom:13}}>{p}</p>
+              ))}
+              {T.consigne&&<p className="body" style={{fontSize:13.5,lineHeight:1.75,color:'var(--text)'}}>{T.consigne}</p>}
+
+              {T.guide&&<Guide key={S.id+"-g-"+temps} plan={T.guide.plan} cycles={T.guide.cycles} onComplete={()=>{}}/>}
+              {T.compteur&&<Compteur key={S.id+"-c-"+temps} total={T.compteur} onComplete={()=>{}}/>}
+
+              {T.question&&(<>
+                {T.aide&&<div style={{display:'flex',gap:9,padding:'12px 14px',borderRadius:12,background:'rgba(224,184,78,.05)',border:'1px solid var(--line)',margin:'16px 0 13px'}}>
+                  <span style={{color:'var(--gold)',flexShrink:0,marginTop:1}}>{I.info({size:13,sw:1.5})}</span>
+                  <p className="vers" style={{fontSize:13.5,color:'var(--text-2)',lineHeight:1.55}}>{T.aide}</p>
+                </div>}
+                <textarea rows={4} defaultValue={reponses[temps]||""} onBlur={e=>setReponses(r=>({...r,[temps]:e.target.value}))}
+                  placeholder="Écrivez ici — personne ne le lira, c'est votre carnet."
+                  className="input-field" style={{resize:'vertical',lineHeight:1.6,marginTop:T.aide?0:16}}/>
+              </>)}
+
+              {T.quiz&&<div style={{marginTop:18}}>
+                {T.quiz.map((q,qi)=>{
+                  const cle=temps+"-"+qi,rep=quizRep[cle];
+                  return(
+                    <div key={qi} style={{marginBottom:qi<T.quiz.length-1?20:4}}>
+                      <p style={{fontSize:13,fontWeight:700,lineHeight:1.5,marginBottom:10}}>{q.q}</p>
+                      {q.o.map((o,oi)=>{
+                        const choisi=rep===oi,bon=oi===q.a,montre=rep!==undefined;
+                        return(
+                          <button key={oi} disabled={montre} onClick={()=>{setQuizRep(r=>({...r,[cle]:oi}));oi===q.a?(SFX.success&&SFX.success()):(SFX.tap&&SFX.tap())}}
+                            style={{width:'100%',textAlign:'left',padding:'11px 13px',marginBottom:7,borderRadius:11,cursor:montre?'default':'pointer',
+                              fontSize:12.5,lineHeight:1.4,transition:'all .25s',
+                              background:montre&&bon?'rgba(52,211,153,.10)':montre&&choisi?'rgba(224,120,100,.10)':'var(--w03)',
+                              border:'1.5px solid '+(montre&&bon?'var(--emerald)':montre&&choisi?'var(--coral)':'var(--line)'),
+                              color:montre&&(bon||choisi)?'var(--text)':'var(--text-2)',fontWeight:montre&&bon?700:500}}>
+                            {o}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>}
+            </div>
+          </div>
+        </div>
+        <div style={{height:'calc(11rem + env(safe-area-inset-bottom,0px))'}}/>
+        <div style={{position:'fixed',left:0,right:0,zIndex:49,padding:'22px 20px 12px',
+          bottom:'calc(4.4rem + env(safe-area-inset-bottom,0px))',
+          background:'linear-gradient(180deg,rgba(10,14,28,0),var(--bg) 42%)',pointerEvents:'none'}}>
+          <div className="mw" style={{pointerEvents:'auto',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
+            <button onClick={()=>temps>0?aller(temps-1):aller(-1)} className="btn-outline" style={{padding:'11px 17px',fontSize:10.5}}>← Précédent</button>
+            <button onClick={suivant} className="pill" style={{opacity:quizFini?1:.4,pointerEvents:quizFini?'auto':'none'}}>
+              {dernier?"C'est fait":"Suivant"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Le mot de la fin ── */
+  return(
+    <div className="safe-b" style={{minHeight:'100vh',background:'radial-gradient(ellipse at 50% 22%,rgba(224,184,78,.09),var(--bg) 60%)',
+      display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+      padding:'calc(var(--barre-haut) + 30px) 26px calc(40px + env(safe-area-inset-bottom,0px))',textAlign:'center'}}>
+      {xpPop&&<XPPop n={S.xp} done={()=>setXpPop(false)}/>}
+      <Confetti count={26} duration={2400}/>
+      <p className="eb eb-or" style={{animation:'fadeIn .6s ease both'}}>Séance terminée</p>
+      <h2 className="heading" style={{fontSize:26,margin:'9px 0 0',animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) .1s both'}}>{S.title}</h2>
+      <p className="heading gold-shimmer" style={{fontSize:23,marginTop:11,animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) .2s both'}}>+{S.xp} XP</p>
+
+      {/* Les cinq domaines touchés : la récompense du jour, en une ligne. */}
+      <div style={{display:'flex',gap:6,justifyContent:'center',marginTop:16,flexWrap:'wrap',
+        animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) .3s both'}}>
+        {TS.map((t,k)=>{
+          const D=DOMAINES[t.dom]||{};
+          return<span key={k} style={{fontSize:9,fontWeight:700,letterSpacing:'.06em',padding:'5px 9px',borderRadius:20,
+            color:D.teinte,background:'var(--w03)',border:'1px solid var(--line-s)',display:'flex',alignItems:'center',gap:4}}>
+            {I.check({size:10,sw:2.6})}{(D.nom||"").toUpperCase()}</span>;
+        })}
+      </div>
+
+      <div style={{width:38,height:1,background:'var(--gold)',opacity:.65,margin:'22px 0',animation:'trait-ouvre .7s ease .4s both'}}/>
+      <div className="card" style={{padding:'17px 19px',maxWidth:340,textAlign:'left',borderColor:'var(--line-s)',
+        background:'linear-gradient(120deg,rgba(224,184,78,.06),var(--bg-card) 72%)',animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) .5s both'}}>
+        <p className="eb eb-or" style={{marginBottom:7}}>Le mot de la fin</p>
+        <p className="body" style={{fontSize:12.5,lineHeight:1.7,color:'var(--text-2)'}}>{S.mot}</p>
+      </div>
+      {S.tip&&<div style={{maxWidth:340,marginTop:11,padding:'14px 17px',borderRadius:12,background:'rgba(200,164,78,.03)',
+        border:'1px solid rgba(200,164,78,.08)',textAlign:'left',animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) .62s both'}}>
+        <p className="label-gold" style={{marginBottom:4}}>LE SAVIEZ-VOUS</p>
+        <p className="body" style={{fontSize:10.5,lineHeight:1.6}}>{S.tip}</p>
+      </div>}
+
+      {traceFaite
+        ?<p style={{fontSize:10.5,color:'var(--emerald)',marginTop:16,display:'flex',alignItems:'center',gap:6,
+            animation:'fadeIn .5s ease both'}}>{I.check({size:12,sw:2})} Rangé dans votre carnet</p>
+        :S.trace&&(traceOuverte
+          ?<div style={{width:'100%',maxWidth:340,marginTop:16,textAlign:'left',animation:'fadeUp .5s cubic-bezier(.22,1,.36,1) both'}}>
+             <p style={{fontSize:11.5,color:'var(--text-2)',lineHeight:1.6,marginBottom:11}}>{S.trace.consigne}</p>
+             {S.trace.type==="ecrit"
+               ?<>
+                  <textarea rows={4} value={traceTexte} onChange={e=>setTraceTexte(e.target.value)}
+                    placeholder="Trois lignes suffisent." className="input-field"
+                    style={{resize:'vertical',lineHeight:1.6,marginBottom:10}}/>
+                  <button onClick={()=>garderTrace(null)} className="pill"
+                    style={{width:'100%',padding:'11px 0',opacity:traceTexte.trim().length>3?1:.4,
+                      pointerEvents:traceTexte.trim().length>3?'auto':'none'}}>Garder</button>
+                </>
+               :<Enregistreur type={S.trace.type} secs={S.trace.secs} onPret={garderTrace}/>}
+             <button onClick={()=>setTraceOuverte(false)} style={{width:'100%',padding:'10px 0',marginTop:5,fontSize:10.5,
+               fontWeight:700,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer'}}>Non merci</button>
+           </div>
+          :<button onClick={()=>setTraceOuverte(true)}
+             style={{marginTop:17,fontSize:11,fontWeight:700,color:'var(--text-3)',background:'none',border:'none',
+               cursor:'pointer',padding:'8px 0',textDecoration:'underline',textUnderlineOffset:3,
+               animation:'fadeIn .6s ease .9s both'}}>
+             Garder une trace de cette séance — facultatif
+           </button>)}
+
+      <div style={{width:'100%',maxWidth:340,marginTop:26,animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) .78s both'}}>
+        {next
+          ?<>
+            <button onClick={()=>{onNext&&onNext()}} className="rang"
+              style={{cursor:'pointer',borderColor:'var(--line-s)',background:'linear-gradient(120deg,rgba(224,184,78,.10),var(--bg-card) 70%)',textAlign:'left'}}>
+              <div className="rang-ic" style={{background:'rgba(224,184,78,.16)',color:'var(--gold)'}}><EI e={next.icon} s={17}/></div>
+              <div style={{flex:1,minWidth:0}}>
+                <span className="eb eb-or" style={{marginBottom:3}}>{seance?`Étape ${seance.i+1} sur ${seance.n}`:"La séance suivante"}</span>
+                <p className="rang-t" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{next.title}</p>
+                <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:2}}>{next.cat} · {next.dur}</p>
+              </div>
+              <span className="rang-x" style={{color:'var(--gold)'}}>+{next.xp}</span>
+            </button>
+            <button onClick={back} style={{width:'100%',padding:'12px 0',marginTop:4,fontSize:11.5,fontWeight:700,color:'var(--text-2)',background:'none',border:'none',cursor:'pointer'}}>
+              J'arrête ici pour aujourd'hui
+            </button>
+          </>
+          :<button onClick={back} className="btn-gold" style={{width:'100%',padding:'14px 0',fontSize:13}}>Continuer</button>}
+      </div>
+    </div>
+  );
+}
+
+/* ═══ LE CARNET, dans le profil ═══ */
+function Carnet({onClose}){
+  const[traces,setTraces]=useState(null);
+  const[urls,setUrls]=useState({});
+  useEffect(()=>{let vivant=true;
+    carnetLire().then(t=>{if(!vivant)return;setTraces(t);
+      const u={};t.forEach(x=>{if(x.blob)u[x.id]=URL.createObjectURL(x.blob)});setUrls(u)})
+      .catch(()=>setTraces([]));
+    return()=>{vivant=false}},[]);
+  const effacer=async(id)=>{await carnetEffacer(id);setTraces(t=>t.filter(x=>x.id!==id))};
+  const jour=d=>new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long'});
+
+  return(
+    <div className="safe-b fade-up sous-barre" style={{minHeight:'100vh'}}>
+      <div className="back-bar"><button onClick={onClose}>{I.chL({size:16})} Retour</button></div>
+      <div className="mw" style={{padding:'16px 20px 110px'}}>
+        <h1 className="heading" style={{fontSize:26,marginBottom:5}}>Votre carnet</h1>
+        <p className="body" style={{fontSize:12,marginBottom:22}}>Ce que vous avez enregistré séance après séance. Tout reste sur cet appareil.</p>
+        {traces===null&&<p style={{fontSize:12,color:'var(--text-3)'}}>Ouverture du carnet…</p>}
+        {traces&&traces.length===0&&(
+          <div className="card" style={{padding:24,textAlign:'center'}}>
+            <p className="body" style={{fontSize:12.5,lineHeight:1.7,color:'var(--text-2)'}}>
+              Le carnet est encore vide. À la fin de chaque séance, on vous demande une trace — trente secondes de voix, une vidéo, trois lignes écrites.
+              C'est là qu'on voit le chemin parcouru, et nulle part ailleurs.
+            </p>
+          </div>
+        )}
+        {traces&&traces.map(t=>(
+          <div key={t.id} className="card" style={{padding:'15px 16px',marginBottom:11}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:9}}>
+              <div style={{minWidth:0}}>
+                <p className="eb eb-or">{(DOMAINES[t.domaine]||{}).nom||"Séance"}</p>
+                <p className="rang-t" style={{marginTop:3}}>{t.titre}</p>
+              </div>
+              <p style={{fontSize:9.5,color:'var(--text-3)',flexShrink:0}}>{jour(t.date)}</p>
+            </div>
+            {t.type==="audio"&&urls[t.id]&&<Lecteur src={urls[t.id]}/>}
+            {t.type==="video"&&urls[t.id]&&<video src={urls[t.id]} controls playsInline style={{width:'100%',maxWidth:220,borderRadius:12,background:'#000'}}/>}
+            {t.type==="ecrit"&&<p className="vers" style={{fontSize:14,lineHeight:1.7,color:'var(--text-2)',whiteSpace:'pre-line'}}>{t.texte}</p>}
+            {!urls[t.id]&&t.type!=="ecrit"&&<p style={{fontSize:11,color:'var(--text-3)'}}>Fait, sans enregistrement.</p>}
+            <button onClick={()=>effacer(t.id)} style={{marginTop:10,fontSize:10,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:700}}>Supprimer</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 const PR={
-figurant:[
-  {id:"f_r1",title:"Respiration abdominale",cat:"Respiration",icon:"🌬️",dur:"10 min",xp:30,type:"ex",
-    steps:["Allongez-vous confortablement, dos droit.","Posez une main sur le ventre, l'autre sur la poitrine.","Inspirez par le nez (4s) — seul le ventre se gonfle.","Expirez par la bouche (6s) — le ventre redescend.","Répétez 10 fois. Sentez le calme s'installer."],
-    tip:"La respiration abdominale est la base de toute projection vocale."},
-  {id:"f_d1",title:"Virelangues débutant",cat:"Diction",icon:"🗣️",dur:"8 min",xp:25,type:"ex",
-    steps:["Échauffez la mâchoire : ouvrez grand 5 fois.","« Les chaussettes de l'archiduchesse » — lentement.","Accélérez en gardant chaque syllabe claire.","« Un chasseur sachant chasser sait chasser sans son chien. »","« Panier piano » en boucle, de plus en plus vite."],
-    tip:"Sarah Bernhardt pratiquait ses virelangues chaque matin."},
-  {id:"f_c1",title:"Ancrage au sol",cat:"Corps",icon:"🏋",dur:"12 min",xp:35,type:"ex",
-    steps:["Debout, pieds largeur du bassin.","Fermez les yeux. Sentez le poids sur le sol.","Imaginez des racines vers le centre de la terre.","Balancez-vous d'avant en arrière, trouvez le centre.","Marchez en gardant cette sensation d'ancrage."],
-    tip:"L'ancrage est le secret de la présence scénique."},
-  {id:"f_i1",title:"Les émotions de base",cat:"Intentions",icon:"🎭",dur:"15 min",xp:40,type:"ex",
-    steps:["Phrase : « Il fait beau aujourd'hui. »","JOIE — souriez, yeux pétillants.","TRISTESSE — voix basse, regard au sol.","COLÈRE — mâchoire serrée, ton ferme.","SURPRISE — yeux grands, bouche en O.","Observez comment votre corps change."],
-    tip:"Une même phrase peut avoir mille sens — la base du sous-texte."},
-  {id:"f_r2",title:"Le souffle continu",cat:"Respiration",icon:"🌬️",dur:"8 min",xp:25,type:"ex",
-    steps:["Inspirez sur 4 temps.","Expirez en émettant un « sssss » continu.","Chronométrez-vous : visez 15 secondes.","Recommencez en visant 20, puis 25 secondes.","Terminez par un « ahhh » libérateur."],
-    tip:"Le contrôle du souffle est ce qui distingue un amateur d'un professionnel."},
-  {id:"f_c2",title:"Détente corporelle",cat:"Corps",icon:"🏋",dur:"10 min",xp:30,type:"ex",
-    steps:["Secouez tout le corps : mains, bras, jambes.","Montez les épaules haut en inspirant, relâchez d'un coup.","Roulez la tête lentement, 3 fois chaque sens.","Pantin désarticulé : laissez tomber le haut du corps.","Remontez vertèbre par vertèbre, tête en dernier."],
-    tip:"Un corps détendu est un corps disponible."},
-  {id:"f_m1",title:"Mon tout premier texte",cat:"Monologue",icon:"🎬",dur:"15 min",xp:60,type:"video",
-    text:"« Être ou ne pas être, telle est la question. Est-il plus noble pour l'âme de souffrir les coups de la fortune, ou de prendre les armes contre une mer de tourments ? »",
-    author:"Shakespeare — Hamlet",
-    instructions:["Lisez à voix haute 3 fois.","Identifiez l'intention : Hamlet hésite.","Travaillez la respiration et les pauses.","Filmez en plan moyen."],premium:false},
-  {id:"f_d2",title:"Articulation et précision",cat:"Diction",icon:"🗣️",dur:"10 min",xp:30,type:"ex",
-    steps:["Devant un miroir, prononcez les voyelles : a, e, i, o, u — bouche grande ouverte.","Maintenant les consonnes clés : d, t, p, b — voyez votre articulation.","Phrase : « Dis-moi dimanche pendant le repas. »","Lisez lentement, chaque syllabe marquée.","Accélérez progressivement sans perdre la clarté."],
-    tip:"La précision vocale change tout d'un mauvais acteur à un acteur crédible."},
-  {id:"f_i2",title:"De la parole à l'émotion",cat:"Intentions",icon:"🎭",dur:"15 min",xp:35,type:"ex",
-    steps:["Phrase simple : « Je veux partir. »","Dites-la comme quelqu'un qui est soulagé.","Dites-la comme quelqu'un qui supplie.","Dites-la comme menace calme.","Observez : le corps change avant la voix."],
-    tip:"L'intention précède toujours les mots — c'est l'ordre naturel du jeu."},
-],
+figurant:SEANCES,
 apprenti:[
-  {id:"a_r1",title:"Respiration costale",cat:"Respiration",icon:"🌬️",dur:"10 min",xp:30,type:"ex",
-    steps:["Mains sur vos côtes latérales.","Inspirez en sentant les côtes s'ouvrir.","Expirez en « sssss » le plus longtemps possible.","Visez 15 secondes d'expiration.","Combinez avec un texte court sur une expiration."],
-    tip:"La respiration costale allonge les phrases sans couper le rythme."},
-  {id:"a_d1",title:"Virelangues niveau 2",cat:"Diction",icon:"🗣️",dur:"10 min",xp:30,type:"ex",
-    steps:["« Trois gros rats gris dans trois gros trous ronds. »","« Didon dîna, dit-on, du dos d'un dodu dindon. »","« Je veux et j'exige d'exquises excuses. »","Enchaînez les trois sans pause.","Augmentez la vitesse progressivement."],
-    tip:"L'articulation est le premier cadeau de l'acteur au public."},
+  {id:"a_r1",title:"Respiration costale",cat:"Respiration",icon:"🌬️",dur:"10 min",xp:30,type:"ex",extrait:"Je veux qu'on soit sincère, et qu'en homme d'honneur\nOn ne lâche aucun mot qui ne parte du cœur.",source:"Molière — Le Misanthrope, I, 1",
+    steps:["Mains à plat sur vos côtes, sur les côtés.",
+      "Inspirez en sentant les côtes s'écarter sous vos mains — les épaules ne bougent pas.",
+      "Expirez en « sssss » régulier, le plus longtemps possible.",
+      "Refaites-le trois fois : le son doit rester égal jusqu'au bout, sans faiblir à la fin.",
+      "Dites maintenant les deux vers épinglés sur une seule expiration, sans reprendre d'air."],note:"La respiration costale n'ajoute pas d'air : elle vous en fait garder plus longtemps. C'est ce qui permet de tenir une phrase entière sans la couper au mauvais endroit.",tip:"La respiration costale allonge les phrases sans couper le rythme."},
+  {id:"a_d1",title:"Virelangues niveau 2",cat:"Diction",icon:"🗣️",dur:"10 min",xp:30,type:"ex",refrain:"Trois gros rats gris dans trois gros trous ronds.",
+    steps:["« Trois gros rats gris dans trois gros trous ronds. »",
+      "« Didon dîna, dit-on, du dos d'un dodu dindon. »",
+      "« Je veux et j'exige d'exquises excuses. »",
+      "Enchaînez les trois sans pause.",
+      "Augmentez la vitesse progressivement."],note:"Trois virelangues valent mieux que dix. Ce sont les mêmes obstacles qui reviennent : les groupes de consonnes et les changements de point d'appui dans la bouche.",tip:"L'articulation est le premier cadeau de l'acteur au public."},
   {id:"a_c1",title:"Marche neutre",cat:"Corps",icon:"🏋",dur:"12 min",xp:35,type:"ex",
-    steps:["Marchez dans la pièce à rythme normal.","Concentrez-vous sur vos pieds : talon, plante, orteils.","Ralentissez jusqu'au ralenti extrême.","Accélérez jusqu'à la marche pressée.","Trouvez VOTRE rythme naturel, neutre, centré."],
-    tip:"La marche neutre de Lecoq est le point zéro du jeu."},
-  {id:"a_i1",title:"Le miroir émotionnel",cat:"Intentions",icon:"🪞",dur:"12 min",xp:35,type:"ex",
-    steps:["Face au miroir ou en vous filmant.","Exprimez la peur sans parler.","Passez à la joie — observez vos yeux.","La colère. Le dégoût. La tendresse.","Enchaînez les 5 de plus en plus vite."],
-    tip:"Les micro-expressions racontent plus que mille mots."},
+    steps:["Marchez dans la pièce à rythme normal.",
+      "Concentrez-vous sur vos pieds : talon, plante, orteils.",
+      "Ralentissez jusqu'au ralenti extrême.",
+      "Accélérez jusqu'à la marche pressée.",
+      "Trouvez VOTRE rythme naturel, neutre, centré."],note:"La marche neutre n'existe pas naturellement — c'est un point zéro qu'on construit. Il sert de base : sans lui, tous vos personnages marchent comme vous.",tip:"La marche neutre de Lecoq est le point zéro du jeu."},
+  {id:"a_i1",title:"Le verbe, pas l'humeur",cat:"Intentions",icon:"🪞",dur:"12 min",xp:35,type:"ex",refrain:"Tu peux répéter ?",
+    steps:["Un personnage n'exprime pas, il agit. Avant de dire une réplique, on choisit un verbe : ce qu'on essaie d'obtenir de l'autre.",
+      "Dites la phrase en essayant de le PIÉGER. Vous voulez qu'il se contredise.",
+      "Dites-la en essayant de le RASSURER. Vous voulez qu'il continue de parler.",
+      "Dites-la en essayant de GAGNER DU TEMPS. Vous n'avez pas écouté et il ne doit pas s'en apercevoir.",
+      "Trois fois la même phrase, trois verbes. Celui qui vous est venu le plus facilement est votre pente naturelle — refaites les deux autres."],note:"« Jouer la peur » ne donne rien : la peur est un résultat. Un verbe, lui, se joue. Le reste, c'est au public de le nommer.",tip:"Les directeurs d'acteurs ne disent presque jamais « sois plus triste ». Ils disent : « essaie de le faire rester »."},
   {id:"a_r2",title:"Le souffle et le son",cat:"Respiration",icon:"🌬️",dur:"10 min",xp:30,type:"ex",
-    steps:["Inspirez 4 temps. Bloquez 4. Expirez 8.","Ajoutez un « mmm » continu sur l'expiration.","Variez : grave, médium, aigu.","Connectez à une émotion : mmm joyeux, triste.","Terminez par un « ahhh » du grave à l'aigu."],
-    tip:"Le son part du ventre et vibre dans les résonateurs."},
+    steps:["Inspirez 4 temps. Bloquez 4. Expirez 8.",
+      "Ajoutez un « mmm » continu sur l'expiration.",
+      "Variez : grave, médium, aigu.",
+      "Connectez à une émotion : mmm joyeux, triste.",
+      "Terminez par un « ahhh » du grave à l'aigu."],note:"Le son vibre là où il y a de la place : poitrine pour le grave, masque pour le clair, crâne pour l'aigu. Vous venez de sentir les trois.",tip:"Le son part du ventre et vibre dans les résonateurs."},
   {id:"a_d2",title:"Les voyelles ouvertes",cat:"Diction",icon:"🗣️",dur:"8 min",xp:25,type:"ex",
-    steps:["Prononcez A-E-I-O-U en exagérant l'ouverture.","Chaque voyelle dure 5 secondes.","Ajoutez des consonnes : BA-BE-BI-BO-BU.","MA-ME-MI-MO-MU. PA-PE-PI-PO-PU.","Enchaînez de plus en plus vite, bouche grande ouverte."],
-    tip:"Les voyelles portent l'émotion, les consonnes portent le sens."},
+    steps:["Prononcez A-E-I-O-U en exagérant l'ouverture de la bouche, sans forcer la gorge.",
+      "Tenez chaque voyelle le temps d'une expiration confortable — le son ne doit pas trembler.",
+      "Ajoutez la consonne : BA-BE-BI-BO-BU, puis MA-ME-MI-MO-MU, puis PA-PE-PI-PO-PU.",
+      "Enchaînez les trois séries sans pause, de plus en plus vite, bouche toujours grande ouverte.",
+      "Refaites la première série en gardant cette ouverture, mais à volume de conversation."],note:"Les voyelles portent le son et l'émotion, les consonnes portent le sens. Une bouche fermée perd les deux.",tip:"Les voyelles portent l'émotion, les consonnes portent le sens."},
   {id:"a_c2",title:"Le poids du corps",cat:"Corps",icon:"🏋",dur:"12 min",xp:35,type:"ex",
-    steps:["Marchez comme si vous pesiez 200 kg.","Sentez chaque pas s'enfoncer dans le sol.","Progressivement, devenez léger — 50 kg, 30 kg, 10 kg.","Flottez presque au-dessus du sol.","Trouvez le poids de VOTRE personnage."],
-    tip:"Le poids dit tout d'un personnage avant qu'il ouvre la bouche."},
-  {id:"a_m1",title:"Monologue — Se présenter",cat:"Monologue",icon:"🎬",dur:"15 min",xp:60,type:"video",
-    text:"Inventez un personnage. Donnez-lui un nom, une histoire, un secret. Parlez EN TANT QUE ce personnage face caméra — il se confie au public comme à un ami.",
-    author:"Exercice d'improvisation — Castigat",
-    instructions:["Inventez un personnage en 2 minutes.","Parlez en tant que lui/elle face caméra.","Laissez venir les émotions.","2 minutes minimum, une seule prise."],premium:false},
+    steps:["Marchez comme si vous pesiez deux cents kilos. Chaque pas s'enfonce.",
+      "Allégez-vous progressivement : cent kilos, cinquante, trente, dix.",
+      "Flottez presque — les talons touchent à peine.",
+      "Revenez brutalement à deux cents kilos, en pleine marche. Notez ce qui change en premier : le bassin, ou la nuque ?",
+      "Choisissez un poids entre les deux et tenez-le une minute entière sans y penser."],note:"Le poids est la première décision qu'on prend pour un personnage — avant la voix, avant le costume. Le public le lit en trois secondes.",tip:"Le poids dit tout d'un personnage avant qu'il ouvre la bouche."},
+  {id:"a_m1",title:"Monologue — Se présenter",cat:"Monologue",icon:"🎬",dur:"15 min",xp:60,type:"video",premium:false,author:"Exercice d'improvisation — Castigat",text:"Inventez un personnage. Donnez-lui un nom, une histoire, un secret. Parlez EN TANT QUE ce personnage face caméra — il se confie au public comme à un ami.",
+    instructions:["Inventez un personnage en 2 minutes.",
+      "Parlez en tant que lui/elle face caméra.",
+      "Laissez venir les émotions.",
+      "2 minutes minimum, une seule prise."]},
   {id:"a_i2",title:"Les motifs cachés",cat:"Intentions",icon:"🎭",dur:"15 min",xp:45,type:"ex",
-    steps:["Scène : deux amis se saluent.","Mais l'un en veut à l'autre — sans le montrer.","Jouez : le sourire cache la rancœur.","Jouez la même scène : l'un cherche une faveur.","Le texte est identique, seule l'intention change tout."],
-    tip:"Les plus belles scènes jouent sur le contraste entre dit et ressenti."},
+    steps:["Scène : deux amis se saluent.",
+      "Mais l'un en veut à l'autre — sans le montrer.",
+      "Jouez : le sourire cache la rancœur.",
+      "Jouez la même scène : l'un cherche une faveur."],note:"Le texte est identique, seule l'intention change — et pourtant on voit deux scènes différentes. C'est là que commence le jeu.",tip:"Les plus belles scènes jouent sur le contraste entre dit et ressenti."},
 ],
 dimanche:[
   {id:"di_r1",title:"Projection de base",cat:"Respiration",icon:"🌬️",dur:"12 min",xp:40,type:"ex",
-    steps:["Inspirez profondément.","Lancez un « HAAAA » vers le mur opposé.","Variez les distances : 1m, 5m, 15m.","La gorge reste ouverte — le son vient du ventre.","Essayez : « Je suis ici et je prends ma place ! »"],
-    tip:"Les acteurs du Théâtre du Soleil projettent sans micro."},
-  {id:"di_d1",title:"Le texte mâché",cat:"Diction",icon:"🗣️",dur:"10 min",xp:35,type:"ex",
-    steps:["Prenez un texte de 4 lignes.","Lisez-le avec un stylo entre les dents.","Articulez chaque syllabe malgré l'obstacle.","Retirez le stylo et relisez normalement.","Constatez la clarté nouvelle de votre diction."],
-    tip:"Le stylo entre les dents est l'outil n°1 des écoles de théâtre."},
+    steps:["Inspirez profondément.",
+      "Lancez un « HAAAA » vers le mur opposé.",
+      "Variez les distances : 1m, 5m, 15m.",
+      "La gorge reste ouverte — le son vient du ventre.",
+      "Essayez : « Je suis ici et je prends ma place ! »"],note:"Projeter n'est pas crier. Le cri ferme la gorge et abîme la voix ; la projection ouvre et laisse le diaphragme pousser.",tip:"Les acteurs du Théâtre du Soleil projettent sans micro."},
+  {id:"di_d1",title:"Le texte mâché",cat:"Diction",icon:"🗣️",dur:"10 min",xp:35,type:"ex",extrait:"Au voleur ! au voleur ! à l'assassin ! au meurtrier ! Justice, juste ciel ! Je suis perdu, je suis assassiné, on m'a coupé la gorge, on m'a dérobé mon argent.",source:"Molière — L'Avare, IV, 7",
+    steps:["Lisez le texte épinglé à voix haute, normalement. Retenez-en la sensation.",
+      "Relisez-le avec un stylo (ou un crayon) coincé entre les dents.",
+      "Articulez chaque syllabe malgré l'obstacle — allez lentement, ne trichez pas.",
+      "Retirez le stylo et relisez immédiatement, sans rien changer d'autre."],note:"L'obstacle force les muscles de la bouche à travailler deux fois plus. Quand il disparaît, la précision reste quelques minutes — c'est pour ça qu'on le fait juste avant d'entrer en scène.",tip:"Le stylo entre les dents est l'outil n°1 des écoles de théâtre."},
   {id:"di_c1",title:"La marche en personnage",cat:"Corps",icon:"🏋",dur:"15 min",xp:45,type:"ex",
-    steps:["Choisissez un personnage : un roi, un voleur, un enfant.","Trouvez sa démarche : rapide ou lente ? Haute ou basse ?","Marchez dans la pièce COMME ce personnage.","Changez de personnage toutes les 2 minutes.","Observez comment la démarche change votre état intérieur."],
-    tip:"Michael Chekhov disait que le corps crée l'émotion, pas l'inverse."},
-  {id:"di_i1",title:"La phrase à 5 intentions",cat:"Intentions",icon:"🎭",dur:"12 min",xp:40,type:"ex",
-    steps:["Phrase : « Tu es là. »","Dites-la avec : soulagement.","Reproche.","Surprise.","Menace.","Tendresse. Le corps change AVANT les mots."],
-    tip:"Le public lit l'intention dans votre corps avant vos mots."},
+    steps:["Choisissez un personnage : un roi, un voleur, un enfant.",
+      "Trouvez sa démarche : rapide ou lente ? Haute ou basse ?",
+      "Marchez dans la pièce COMME ce personnage.",
+      "Changez de personnage toutes les 2 minutes.",
+      "Observez comment la démarche change votre état intérieur."],note:"Michael Chekhov disait que le corps crée l'émotion, pas l'inverse. Changez la démarche, et l'état intérieur suit sans qu'on l'ait demandé.",tip:"Michael Chekhov disait que le corps crée l'émotion, pas l'inverse."},
+  {id:"di_i1",title:"Ce qui vous empêche",cat:"Intentions",icon:"🎭",dur:"12 min",xp:40,type:"ex",refrain:"Tu es là.",
+    steps:["On ne change pas l'intention : on ajoute un obstacle. C'est l'obstacle qui rend une réplique intéressante.",
+      "Dites la phrase. Obstacle : quelqu'un dort dans la pièce d'à côté et ne doit pas se réveiller.",
+      "Même phrase. Obstacle : vous venez de courir, vous n'avez plus de souffle.",
+      "Même phrase. Obstacle : vous êtes en colère et vous avez décidé de ne rien montrer.",
+      "Même phrase, sans aucun obstacle. Elle sonne plate — et c'est normal."],note:"Un acteur ne cherche pas la bonne émotion, il cherche ce qui l'empêche. Le combat se voit ; l'émotion seule, non.",tip:"Au cinéma comme au théâtre, les scènes les plus tenues sont celles où le personnage lutte contre quelque chose pendant qu'il parle."},
   {id:"di_r2",title:"Tenue de note vocale",cat:"Respiration",icon:"🌬️",dur:"10 min",xp:35,type:"ex",
-    steps:["Choisissez une note confortable, tenez-la sur « aaa ».","Chronométrez : visez 10 secondes, puis 15, puis 20.","Variez : montez d'un ton, puis descendez.","Faites des sirènes : du grave à l'aigu en continu.","Terminez par votre note la plus confortable, la plus longue."],
-    tip:"La voix est un muscle qui se travaille comme n'importe quel autre."},
-  {id:"di_i2",title:"Le sous-texte",cat:"Intentions",icon:"🎭",dur:"15 min",xp:45,type:"ex",
-    steps:["Phrase : « Je vais bien, ne t'inquiète pas. »","Sous-texte réel : je vais mal mais je le cache.","Jouez — le public doit sentir le mensonge.","Nouvelle phrase : « Ça m'est égal. » Sous-texte : ça me dévore.","Le sous-texte se voit dans les yeux et les mains."],
-    tip:"Stanislavski : le sous-texte est la vie secrète du personnage."},
+    steps:["Choisissez une note confortable, tenez-la sur « aaa ».",
+      "Chronométrez : visez 10 secondes, puis 15, puis 20.",
+      "Variez : montez d'un ton, puis descendez.",
+      "Faites des sirènes : du grave à l'aigu en continu.",
+      "Terminez par votre note la plus confortable, la plus longue."],note:"La voix est un muscle. Ce qu'on gagne en tenue de note, on le retrouve directement en fin de phrase, là où tout le monde faiblit.",tip:"La voix est un muscle qui se travaille comme n'importe quel autre."},
+  {id:"di_i2",title:"Le sous-texte",cat:"Intentions",icon:"🎭",dur:"15 min",xp:45,type:"ex",refrain:"Je vais bien, ne t'inquiète pas.",
+    steps:["Phrase : « Je vais bien, ne t'inquiète pas. »",
+      "Sous-texte réel : je vais mal mais je le cache.",
+      "Jouez — le public doit sentir le mensonge.",
+      "Nouvelle phrase : « Ça m'est égal. » Sous-texte : ça me dévore."],note:"Le sous-texte ne se joue pas avec le visage. Il se voit dans ce que le corps fait pendant que la bouche dit autre chose.",tip:"Stanislavski : le sous-texte est la vie secrète du personnage."},
   {id:"di_c2",title:"L'occupation de l'espace",cat:"Corps",icon:"🏋",dur:"12 min",xp:40,type:"ex",
-    steps:["Définissez une scène de 3m x 3m.","Entrez avec une intention précise.","Avant-scène = confidence. Milieu = action. Fond = réflexion.","Changez de position à chaque changement d'intention.","Votre sortie est aussi importante que votre entrée."],
-    tip:"L'espace parle autant que les mots."},
-  {id:"di_m1",title:"Monologue — La lettre",cat:"Monologue",icon:"🎬",dur:"20 min",xp:80,type:"video",
-    text:"« Je t'écris cette lettre que tu ne liras jamais. Il y a des mots qu'on ne peut dire en face — ils brûlent trop. Alors je les pose ici, sur ce papier, comme on pose une valise trop lourde. Tu m'as appris que le silence aussi est un langage. »",
-    author:"Texte original — Castigat",
-    instructions:["Imaginez à qui cette lettre est adressée.","Lisez comme si vous la lisiez pour la première fois.","Trouvez les moments de retenue et de lâcher-prise.","Filmez en plan rapproché."],premium:false},
-  {id:"di_d2",title:"La diction porteuse",cat:"Diction",icon:"🗣️",dur:"12 min",xp:40,type:"ex",
-    steps:["Lisez un texte de 4 lignes normalement.","Maintenant, projetez — chaque mot doit porter jusqu'au fond.","Pas de cri : clarté absolue avec puissance.","Demandez à quelqu'un à 5 mètres si tout est audible.","La diction et la projection travaillent ensemble."],
-    tip:"Une diction claire sans projection échoue en grand théâtre — toujours les deux."},
+    steps:["Définissez une scène de 3m x 3m.",
+      "Entrez avec une intention précise.",
+      "Avant-scène = confidence. Milieu = action. Fond = réflexion.",
+      "Changez de position à chaque changement d'intention."],note:"L'espace parle avant vous. Avant-scène, on confie ; au fond, on réfléchit ; au milieu, on agit. Votre sortie compte autant que votre entrée.",tip:"L'espace parle autant que les mots."},
+  {id:"di_m1",title:"Monologue — La lettre",cat:"Monologue",icon:"🎬",dur:"20 min",xp:80,type:"video",premium:false,author:"Texte original — Castigat",text:"« Je t'écris cette lettre que tu ne liras jamais. Il y a des mots qu'on ne peut dire en face — ils brûlent trop. Alors je les pose ici, sur ce papier, comme on pose une valise trop lourde. Tu m'as appris que le silence aussi est un langage. »",
+    instructions:["Imaginez à qui cette lettre est adressée.",
+      "Lisez comme si vous la lisiez pour la première fois.",
+      "Trouvez les moments de retenue et de lâcher-prise.",
+      "Filmez en plan rapproché."]},
+  {id:"di_d2",title:"La diction porteuse",cat:"Diction",icon:"🗣️",dur:"12 min",xp:40,type:"ex",extrait:"Percé jusques au fond du cœur\nD'une atteinte imprévue aussi bien que mortelle,\nMisérable vengeur d'une juste querelle,\nEt malheureux objet d'une injuste rigueur,\nJe demeure immobile, et mon âme abattue\nCède au coup qui me tue.",source:"Corneille — Le Cid, stances de Rodrigue",
+    steps:["Lisez le texte épinglé normalement, comme en conversation.",
+      "Relisez-le en visant le mur le plus éloigné : chaque mot doit y arriver entier.",
+      "Ne criez pas — cherchez la clarté avant la puissance. La gorge reste ouverte.",
+      "Posez votre téléphone à cinq mètres, enregistrez, et réécoutez : qu'est-ce qui se perd ?",
+      "Reprenez le passage où ça se perdait, uniquement celui-là."],note:"Une diction claire sans projection se perd dans une grande salle ; une projection sans diction devient du bruit. Il faut toujours les deux.",tip:"Une diction claire sans projection échoue en grand théâtre — toujours les deux."},
 ],
 amateur:[
   {id:"am_r1",title:"Projection avancée",cat:"Respiration",icon:"🌬️",dur:"12 min",xp:45,type:"ex",
-    steps:["Lancez « HAAAA » en visant 30 mètres imaginaires.","Ajoutez un texte : « Ô rage ! Ô désespoir ! » vers le fond.","La gorge reste ouverte, le diaphragme travaille.","Variez : murmure projeté vs cri maîtrisé.","La puissance n'est pas le volume — c'est l'intention."],
-    tip:"Louis Jouvet projetait sa voix sans jamais forcer."},
-  {id:"am_d1",title:"Diction & musicalité",cat:"Diction",icon:"🗣️",dur:"12 min",xp:40,type:"ex",
-    steps:["Prenez un texte de 4 lignes.","Récitez en exagérant chaque consonne.","En chuchotant mais limpide.","En chantant comme un opéra.","Trouvez VOTRE musicalité naturelle."],
-    tip:"La diction n'est pas mécanique — c'est votre musique."},
+    steps:["Lancez « HAAAA » en visant 30 mètres imaginaires.",
+      "Ajoutez un texte : « Ô rage ! Ô désespoir ! » vers le fond.",
+      "La gorge reste ouverte, le diaphragme travaille.",
+      "Variez : murmure projeté vs cri maîtrisé."],note:"La puissance n'est pas le volume : c'est l'intention derrière le son. Un murmure porté par le diaphragme s'entend plus loin qu'un cri de gorge.",tip:"Louis Jouvet projetait sa voix sans jamais forcer."},
+  {id:"am_d1",title:"Ce qui porte au fond de la salle",cat:"Diction",icon:"🗣️",dur:"12 min",xp:40,type:"ex",extrait:"Je le vis, je rougis, je pâlis à sa vue ;\nUn trouble s'éleva dans mon âme éperdue ;\nMes yeux ne voyaient plus, je ne pouvais parler ;\nJe sentis tout mon corps et transir et brûler.",source:"Racine — Phèdre, I, 3",
+    steps:["Dites le texte épinglé normalement, à voix de conversation.",
+      "Redites-le en ne prononçant que les voyelles, consonnes muettes. Ce n'est plus du sens, c'est du son.",
+      "Redites-le en n'appuyant que les consonnes, voyelles réduites au minimum. Ce n'est plus du son, c'est du sens.",
+      "Redites-le normalement : vous entendez maintenant les deux couches séparément.",
+      "Une dernière fois en appuyant les consonnes de fin de mot — celles qu'on avale toujours."],note:"Les voyelles portent l'émotion et la puissance, les consonnes portent le sens. La plupart des acteurs travaillent les premières et oublient les secondes.",tip:"Dans une salle de six cents places, ce qui se perd en premier n'est jamais le volume : ce sont les consonnes finales."},
   {id:"am_c1",title:"Qualités de mouvement",cat:"Corps",icon:"🏋",dur:"15 min",xp:50,type:"ex",
-    steps:["Marchez normalement.","FLUIDE — sous l'eau.","SACCADÉ — robot, marionnette.","LOURD — chaque pas pèse une tonne.","LÉGER — vous flottez.","Créez un personnage pour chaque qualité."],
-    tip:"Lecoq bâtit sa pédagogie sur les qualités de mouvement."},
-  {id:"am_i1",title:"Les intentions cachées",cat:"Intentions",icon:"🎭",dur:"15 min",xp:50,type:"ex",
-    steps:["« Je t'attends depuis une heure. »","Sous-texte : inquiétude. Jouez.","Sous-texte : fureur froide. Jouez.","Sous-texte : soulagement amoureux. Jouez.","Le texte est identique — tout change."],
-    tip:"Les grandes scènes vivent dans l'écart entre dit et ressenti."},
+    steps:["Marchez normalement.",
+      "FLUIDE — sous l'eau.",
+      "SACCADÉ — robot, marionnette.",
+      "LOURD — chaque pas pèse une tonne.",
+      "LÉGER — vous flottez.",
+      "Créez un personnage pour chaque qualité."],note:"Lecoq a bâti toute sa pédagogie sur ces qualités de mouvement. Elles donnent des personnages sans jamais passer par la psychologie.",tip:"Lecoq bâtit sa pédagogie sur les qualités de mouvement."},
+  {id:"am_i1",title:"Les intentions cachées",cat:"Intentions",icon:"🎭",dur:"15 min",xp:50,type:"ex",refrain:"Je t'attends depuis une heure.",
+    steps:["« Je t'attends depuis une heure. »",
+      "Sous-texte : inquiétude. Jouez.",
+      "Sous-texte : fureur froide. Jouez.",
+      "Sous-texte : soulagement amoureux. Jouez."],note:"Le texte est identique — et pourtant trois scènes différentes. C'est l'écart entre ce qui est dit et ce qui est voulu qui fait la scène.",tip:"Les grandes scènes vivent dans l'écart entre dit et ressenti."},
   {id:"am_r2",title:"Résonateurs & placement",cat:"Respiration",icon:"🌬️",dur:"12 min",xp:45,type:"ex",
-    steps:["« Mmm » en plaçant dans la poitrine — grave, chaud.","Montez dans le masque — son clair, projeté.","Envoyez dans le crâne — haut, léger.","Alternez sur une même phrase.","Trouvez le placement qui porte le plus."],
-    tip:"Les grands acteurs maîtrisent le placement vocal."},
+    steps:["« Mmm » en plaçant dans la poitrine — grave, chaud.",
+      "Montez dans le masque — son clair, projeté.",
+      "Envoyez dans le crâne — haut, léger.",
+      "Alternez sur une même phrase.",
+      "Trouvez le placement qui porte le plus."],note:"Le placement n'est pas une couleur de voix : c'est un endroit du corps. Poitrine, masque, crâne — on y va, on n'y pense pas.",tip:"Les grands acteurs maîtrisent le placement vocal."},
   {id:"am_c2",title:"Le masque neutre",cat:"Corps",icon:"🏋",dur:"15 min",xp:50,type:"ex",
-    steps:["Imaginez porter un masque sans expression.","Votre visage ne montre rien — tout passe par le corps.","Marchez avec joie — sans aucune expression faciale.","Marchez avec tristesse — uniquement le corps.","Quand le visage se tait, le corps crie."],
-    tip:"Le masque neutre est l'exercice fondamental de Lecoq."},
-  {id:"am_i2",title:"Le conflit intérieur",cat:"Intentions",icon:"🎭",dur:"15 min",xp:50,type:"ex",
-    steps:["« Oui, je viendrai. » Mais vous ne voulez PAS venir.","Laissez le conflit transparaître.","« Non, ça ne me dérange pas. » Ça vous dévore.","« Je suis très heureux pour toi. » Jalousie profonde.","Le public adore les personnages en guerre intérieure."],
-    tip:"Le conflit intérieur est le moteur du jeu dramatique."},
-  {id:"am_m1",title:"Monologue classique",cat:"Monologue",icon:"🎬",dur:"25 min",xp:100,type:"video",
-    text:"« Je ne suis pas ce que je suis ! Que ces mots résonnent. Car le théâtre est l'art de devenir autre, de se perdre pour mieux se retrouver. Chaque personnage que j'incarne me révèle une vérité que j'ignorais. »",
-    author:"Exercice — Castigat",
-    instructions:["Apprenez le texte par cœur.","Trouvez 3 intentions différentes.","Travaillez ruptures de rythme et silences.","Filmez 2 versions avec des choix différents."],premium:true},
-  {id:"am_d2",title:"La diction du doute",cat:"Diction",icon:"🗣️",dur:"12 min",xp:45,type:"ex",
-    steps:["Phrase : « Je ne sais pas si c'est une bonne idée. »","Dites-la avec certitude absolue.","Dites-la en hésitant vraiment — la diction balance.","Dites-la avec colère — consonnes dures.","La diction traduit l'état interne, jamais le texte seul."],
-    tip:"La meilleure diction est celle qu'on ne remarque pas — elle ne sert que l'intention."},
+    steps:["Imaginez porter un masque sans expression.",
+      "Votre visage ne montre rien — tout passe par le corps.",
+      "Marchez avec joie — sans aucune expression faciale.",
+      "Marchez avec tristesse — uniquement le corps."],note:"Quand le visage se tait, le corps parle. C'est l'exercice fondamental du masque neutre : il enlève le mensonge le plus facile, celui de la grimace.",tip:"Le masque neutre est l'exercice fondamental de Lecoq."},
+  {id:"am_i2",title:"Le conflit intérieur",cat:"Intentions",icon:"🎭",dur:"15 min",xp:50,type:"ex",refrain:"Oui, je viendrai.",
+    steps:["« Oui, je viendrai. » Mais vous ne voulez PAS venir.",
+      "Laissez le conflit transparaître.",
+      "« Non, ça ne me dérange pas. » Ça vous dévore.",
+      "« Je suis très heureux pour toi. » Jalousie profonde."],note:"Un personnage en guerre avec lui-même est toujours plus intéressant qu'un personnage qui sait ce qu'il veut.",tip:"Le conflit intérieur est le moteur du jeu dramatique."},
+  {id:"am_m1",title:"Monologue classique",cat:"Monologue",icon:"🎬",dur:"25 min",xp:100,type:"video",premium:true,author:"Exercice — Castigat",text:"« Je ne suis pas ce que je suis ! Que ces mots résonnent. Car le théâtre est l'art de devenir autre, de se perdre pour mieux se retrouver. Chaque personnage que j'incarne me révèle une vérité que j'ignorais. »",
+    instructions:["Apprenez le texte par cœur.",
+      "Trouvez 3 intentions différentes.",
+      "Travaillez ruptures de rythme et silences.",
+      "Filmez 2 versions avec des choix différents."]},
+  {id:"am_d2",title:"La diction du doute",cat:"Diction",icon:"🗣️",dur:"12 min",xp:45,type:"ex",refrain:"Je ne sais pas si c'est une bonne idée.",
+    steps:["Phrase : « Je ne sais pas si c'est une bonne idée. »",
+      "Dites-la avec certitude absolue.",
+      "Dites-la en hésitant vraiment — la diction balance.",
+      "Dites-la avec colère — consonnes dures."],note:"La diction traduit un état, elle ne l'illustre pas. En colère, les consonnes durcissent toutes seules — inutile de le décider.",tip:"La meilleure diction est celle qu'on ne remarque pas — elle ne sert que l'intention."},
 ],
 pensionnaire:[
-  {id:"pe_r1",title:"Le souffle du texte",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:50,type:"ex",
-    steps:["Prenez un monologue de 10 lignes.","Ne respirez qu'aux points et virgules.","Supprimez les respirations aux virgules — tenez.","Ajoutez des pauses VOLONTAIRES hors ponctuation.","La respiration devient un outil dramatique."],
-    tip:"Le silence entre les mots est aussi important que les mots."},
-  {id:"pe_d1",title:"Les alexandrins",cat:"Diction",icon:"🗣️",dur:"15 min",xp:50,type:"ex",
-    steps:["« Je suis maître de moi comme de l'univers » — Corneille.","Comptez les 12 syllabes. Trouvez la césure à 6.","Respectez le rythme 6+6 en marquant la césure.","Maintenant, cassez-le : faites vivre le texte au-delà du rythme.","L'alexandrin est un cadre — le jeu le transcende."],
-    tip:"Les acteurs de la Comédie-Française travaillent l'alexandrin quotidiennement."},
-  {id:"pe_c1",title:"Le corps du personnage",cat:"Corps",icon:"🏋",dur:"20 min",xp:60,type:"ex",
-    steps:["Choisissez un personnage.","Trouvez sa démarche : pieds, rythme, amplitude.","Sa posture : épaules, menton, dos.","Un geste récurrent qui le caractérise.","Improvisez une situation quotidienne EN ÉTANT ce personnage."],
-    tip:"Chekhov : le geste psychologique concentre l'essence d'un personnage."},
-  {id:"pe_i1",title:"La palette d'intentions",cat:"Intentions",icon:"🎭",dur:"20 min",xp:60,type:"ex",
-    steps:["Réplique : « Tu es là. »","Jouez 10 intentions : soulagement, reproche, surprise, tendresse, menace, indifférence, joie, déception, ironie, désespoir.","Le corps et la voix changent AVANT les mots.","Chaque intention est un choix de mise en scène.","Enchaînez sans pause — une seconde par intention."],
-    tip:"Un grand acteur a une palette infinie d'intentions."},
+  {id:"pe_r1",title:"Le souffle du texte",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:50,type:"ex",extrait:"Percé jusques au fond du cœur\nD'une atteinte imprévue aussi bien que mortelle,\nMisérable vengeur d'une juste querelle,\nEt malheureux objet d'une injuste rigueur,\nJe demeure immobile, et mon âme abattue\nCède au coup qui me tue.",source:"Corneille — Le Cid, stances de Rodrigue",
+    steps:["Dites le texte épinglé en ne respirant qu'aux points.",
+      "Refaites-le en ne respirant qu'à la fin des vers pairs — deux vers par souffle.",
+      "Refaites-le en ajoutant une pause volontaire là où il n'y a aucune ponctuation. Choisissez l'endroit le plus gênant.",
+      "Comparez les trois versions : laquelle raconte le mieux l'hésitation de Rodrigue ?"],note:"Le silence entre les mots dit autant que les mots. Où vous respirez, c'est déjà une mise en scène.",tip:"Le silence entre les mots est aussi important que les mots."},
+  {id:"pe_d1",title:"Les alexandrins",cat:"Diction",icon:"🗣️",dur:"15 min",xp:50,type:"ex",refrain:"Je suis maître de moi comme de l'univers",extrait:"Je suis maître de moi comme de l'univers ;\nJe le suis, je veux l'être.",source:"Corneille — Cinna, V, 3",
+    steps:["Comptez les douze syllabes du premier vers. Trouvez la césure : elle tombe après la sixième.",
+      "Dites le vers en marquant nettement le 6 + 6, presque mécaniquement.",
+      "Redites-le en gardant la césure mais sans la marquer — une suspension, pas un arrêt.",
+      "Redites-le comme une phrase ordinaire, sans aucun vers. Écoutez ce qui se perd.",
+      "Une dernière fois : le vers doit s'entendre sans qu'on l'entende."],note:"L'alexandrin est un cadre, pas une prison. On l'apprend d'abord mécaniquement, précisément pour pouvoir l'oublier ensuite.",tip:"Les acteurs de la Comédie-Française travaillent l'alexandrin quotidiennement."},
+  {id:"pe_c1",title:"Le geste qui contient tout",cat:"Corps",icon:"🏋",dur:"20 min",xp:60,type:"ex",
+    steps:["Prenez un personnage que vous travaillez, ou inventez-en un en une phrase : ce qu'il veut, ce qu'il cache.",
+      "Trouvez un seul geste, large, fait de tout le corps, qui contienne ce qu'il veut : tirer vers soi, repousser, envelopper, écraser, s'ouvrir.",
+      "Faites ce geste en grand, dix fois, jusqu'à ce qu'il change votre respiration.",
+      "Refaites-le en le réduisant de moitié à chaque fois, jusqu'à ce qu'il ne se voie plus — mais continuez à le faire à l'intérieur.",
+      "Dites trois phrases quelconques en gardant ce geste invisible."],note:"Le geste ne se voit plus, et pourtant tout a changé — la respiration, l'appui, la hauteur du regard. C'est ça, un personnage dans le corps.",tip:"Michael Chekhov appelait cela le geste psychologique : une action large qu'on rétrécit jusqu'à l'invisible, et qui continue de travailler."},
+  {id:"pe_i1",title:"Ce que ça coûte",cat:"Intentions",icon:"🎭",dur:"20 min",xp:60,type:"ex",refrain:"Il faut qu'on parle.",
+    steps:["La phrase ne change pas. Ce qui change, c'est ce que vous perdez si ça se passe mal.",
+      "Vous risquez une soirée gâchée. Dites la phrase.",
+      "Vous risquez votre travail. Dites-la.",
+      "Vous risquez la seule personne qui vous reste. Dites-la.",
+      "Rejouez la première. Elle vous paraît minuscule maintenant — c'est exactement ce que ressent un public quand l'enjeu n'est pas posé."],note:"Avant de chercher comment dire une réplique, cherchez ce que le personnage perd s'il la rate. Tout le reste suit.",tip:"Une scène ne s'intensifie pas en montant le volume : elle s'intensifie en augmentant ce que le personnage a à perdre."},
   {id:"pe_c2",title:"L'énergie en scène",cat:"Corps",icon:"🏋",dur:"15 min",xp:50,type:"ex",
-    steps:["Marchez à énergie 1 (ralenti, presque immobile).","Montez progressivement à 5 (normal), puis 7, puis 10.","10 = course folle, maximum absolu.","Redescendez à 3. Puis remontez à 8.","Un acteur doit pouvoir calibrer son énergie comme un curseur."],
-    tip:"Mnouchkine travaille beaucoup avec les niveaux d'énergie."},
+    steps:["Marchez à énergie 1 (ralenti, presque immobile).",
+      "Montez progressivement à 5 (normal), puis 7, puis 10.",
+      "10 = course folle, maximum absolu.",
+      "Redescendez à 3. Puis remontez à 8."],note:"Un acteur doit pouvoir régler son énergie comme un curseur, et la tenir. Le piège est de ne jouer qu'entre 4 et 6 toute sa vie.",tip:"Mnouchkine travaille beaucoup avec les niveaux d'énergie."},
   {id:"pe_s1",title:"Le duo — première scène",cat:"Scène",icon:"🎭",dur:"25 min",xp:80,type:"ex",
-    steps:["Choisissez une scène à deux.","Travaillez votre personnage seul.","Enregistrez les répliques du partenaire.","Jouez en écoutant VRAIMENT.","La scène vit dans les silences."],
-    tip:"Mnouchkine : le théâtre c'est l'art de l'écoute."},
-  {id:"pe_m1",title:"Monologue — la colère juste",cat:"Monologue",icon:"🎬",dur:"20 min",xp:90,type:"video",
-    text:"« Vous ne comprenez pas ? On nous demande de sourire, de nous taire, d'accepter. Mais moi, je refuse. Je refuse de jouer ce rôle qu'on m'a assigné sans me demander mon avis. »",
-    author:"Texte contemporain — Castigat",
-    instructions:["La colère n'est pas crier — trouvez la colère froide.","Contre qui est-elle dirigée ?","Montée : calme → tension → explosion contrôlée.","Le spectateur doit ressentir sans que vous criiez."],premium:false},
-  {id:"pe_d2",title:"Diction et émotion",cat:"Diction",icon:"🗣️",dur:"15 min",xp:50,type:"ex",
-    steps:["Phrase : « Il n'y a plus rien à faire ici. »","Dites-la 10 fois, chaque fois avec une émotion différente.","Observez comment votre articulation change naturellement.","En colère : consonnes dures. Triste : voyelles allongées.","La diction au service de l'émotion — jamais l'inverse."],
-    tip:"Michel Bouquet disait chaque mot comme s'il le découvrait pour la première fois."},
+    steps:["Choisissez une scène à deux.",
+      "Travaillez votre personnage seul.",
+      "Enregistrez les répliques du partenaire.",
+      "Jouez en écoutant VRAIMENT."],note:"Une scène ne vit pas dans les répliques mais dans ce qui se passe entre elles. Enregistrez le partenaire, et jouez vraiment les silences.",tip:"Mnouchkine : le théâtre c'est l'art de l'écoute."},
+  {id:"pe_m1",title:"Monologue — la colère juste",cat:"Monologue",icon:"🎬",dur:"20 min",xp:90,type:"video",premium:false,author:"Texte contemporain — Castigat",text:"« Vous ne comprenez pas ? On nous demande de sourire, de nous taire, d'accepter. Mais moi, je refuse. Je refuse de jouer ce rôle qu'on m'a assigné sans me demander mon avis. »",
+    instructions:["La colère n'est pas crier — trouvez la colère froide.",
+      "Contre qui est-elle dirigée ?",
+      "Montée : calme → tension → explosion contrôlée.",
+      "Le spectateur doit ressentir sans que vous criiez."]},
+  {id:"pe_d2",title:"Quand l'articulation lâche",cat:"Diction",icon:"🗣️",dur:"15 min",xp:50,type:"ex",refrain:"Il n'y a plus rien à faire ici.",
+    steps:["Dites la phrase avec une articulation impeccable et neutre, sans aucune intention. C'est votre étalon.",
+      "Redites-la comme quelqu'un qui l'a répétée cent fois dans sa tête avant de la dire. Les consonnes sont nettes, presque trop.",
+      "Redites-la comme quelqu'un qui la découvre en la disant. Les mots viennent mal, les fins se perdent.",
+      "Redites-la à quelqu'un qui est déjà dans le couloir. Vous montez, et l'articulation durcit toute seule.",
+      "Enregistrez les trois et réécoutez : dans aucune vous n'avez décidé de votre diction."],note:"Une diction « expressive » sonne faux. Une diction juste est une conséquence : on l'entend, on ne la remarque pas.",tip:"Michel Bouquet disait chaque mot comme s'il le découvrait — c'est exactement la troisième version de cet exercice."},
   {id:"pe_im1",title:"Le personnage spontané",cat:"Improvisation",icon:"🎭",dur:"15 min",xp:50,type:"ex",
-    steps:["Fermez les yeux. Adoptez une posture au hasard.","Ouvrez les yeux : qui êtes-vous ? Quel âge, quel métier ?","Parlez pendant 2 minutes en tant que ce personnage.","Changez de posture → nouveau personnage.","3 personnages en 10 minutes, tous nés de votre corps."],
-    tip:"L'improvisation physique est la porte d'entrée vers des personnages inattendus."},
+    steps:["Fermez les yeux. Adoptez une posture au hasard.",
+      "Ouvrez les yeux : qui êtes-vous ? Quel âge, quel métier ?",
+      "Parlez pendant 2 minutes en tant que ce personnage.",
+      "Changez de posture → nouveau personnage."],note:"Un personnage trouvé par le corps vous surprend ; un personnage trouvé par la tête vous ressemble.",tip:"L'improvisation physique est la porte d'entrée vers des personnages inattendus."},
 ],
 societaire:[
-  {id:"so_r1",title:"Le chœur vocal",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:55,type:"ex",
-    steps:["Enregistrez-vous disant un texte à voix basse.","Réécoutez et dites-le au-dessus, en décalé.","Créez un effet de chœur avec votre propre voix.","Variez : une voix grave, une aiguë, une murmurée.","Le chœur est l'ancêtre du théâtre — une voix collective."],
-    tip:"Le chœur antique est la mémoire vivante du théâtre grec."},
-  {id:"so_d1",title:"Vers et prose mêlés",cat:"Diction",icon:"🗣️",dur:"15 min",xp:50,type:"ex",
-    steps:["Prenez un extrait de Cyrano (vers).","Enchaînez avec un extrait de Koltès (prose).","Sentez la différence de rythme dans votre corps.","Le vers a un battement — la prose coule librement.","Revenez au vers : votre diction s'est enrichie."],
-    tip:"Alterner vers et prose développe la virtuosité de l'acteur."},
+  {id:"so_r1",title:"Ne jamais finir à sec",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:55,type:"ex",extrait:"Je le vis, je rougis, je pâlis à sa vue ;\nUn trouble s'éleva dans mon âme éperdue ;\nMes yeux ne voyaient plus, je ne pouvais parler ;\nJe sentis tout mon corps et transir et brûler.",source:"Racine — Phèdre, I, 3",
+    steps:["Dites le texte épinglé en allant au bout de votre souffle, jusqu'à ce que la voix se serre. Notez le mot exact où ça arrive.",
+      "Refaites-le en vous arrêtant deux mots avant ce point-là, et respirez.",
+      "Refaites-le en gardant volontairement un tiers d'air en réserve à chaque fin de vers.",
+      "Refaites-le en respirant deux fois moins souvent, mais en gardant la réserve.",
+      "Dernière prise, une main sur le ventre : la réserve se sent, elle ne s'entend pas."],note:"Le public entend toujours quand un acteur finit à sec. Gardez un tiers d'air : c'est ce tiers-là qu'on entend comme de l'autorité.",tip:"C'est le défaut le plus courant chez les acteurs qui débutent en grande salle : la fin de chaque phrase monte et se serre, parce qu'il n'y a plus d'air."},
+  {id:"so_d1",title:"Vers et prose mêlés",cat:"Diction",icon:"🗣️",dur:"15 min",xp:50,type:"ex",extrait:"C'est un roc !… c'est un pic !… c'est un cap !\nQue dis-je, c'est un cap ?… C'est une péninsule !\n\n— — —\n\nAu voleur ! au voleur ! à l'assassin ! au meurtrier ! Justice, juste ciel ! Je suis perdu, je suis assassiné, on m'a coupé la gorge, on m'a dérobé mon argent.",source:"Rostand — Cyrano (vers) · Molière — L'Avare (prose)",
+    steps:["Dites d'abord les vers de Cyrano. Sentez le battement régulier sous les mots.",
+      "Enchaînez immédiatement avec la prose d'Harpagon, sans pause. Le battement disparaît.",
+      "Refaites-le en marchant : le vers vous donne un pas régulier, la prose vous déséquilibre.",
+      "Revenez aux vers. Ils vous paraissent plus tenus qu'au premier passage."],note:"Le vers a un battement, la prose a une respiration. Passer de l'un à l'autre dans la même séance, c'est ce qui fabrique une oreille.",tip:"Alterner vers et prose développe la virtuosité de l'acteur."},
   {id:"so_c1",title:"Improvisation guidée",cat:"Improvisation",icon:"🎭",dur:"20 min",xp:65,type:"ex",
-    steps:["Situation : un entretien d'embauche.","Improvisez 3 min sans jamais vous arrêter.","Règle : « oui, et… » — jamais « non ».","Recommencez avec un objectif secret différent.","Le personnage ne dit jamais ce qu'il veut vraiment."],
-    tip:"Keith Johnstone a fait de l'impro une discipline."},
-  {id:"so_i1",title:"L'adresse directe",cat:"Intentions",icon:"🎭",dur:"15 min",xp:55,type:"ex",
-    steps:["Choisissez un texte de 5 lignes.","Dites-le à un objet (chaise, mur).","Maintenant à la caméra — comme à un ami intime.","À la caméra — comme à un ennemi.","L'adresse change tout : le même texte devient 3 scènes."],
-    tip:"L'adresse est le choix fondamental de l'acteur."},
-  {id:"so_s1",title:"L'écoute active",cat:"Scène",icon:"🎭",dur:"20 min",xp:65,type:"ex",
-    steps:["Enregistrez toutes les répliques de votre partenaire.","Jouez vos répliques en temps réel.","Ne commencez JAMAIS avant d'avoir vraiment écouté.","Laissez la réplique vous affecter physiquement.","Le silence de l'écoute avant chaque réponse."],
-    tip:"L'écoute sépare un acteur qui récite d'un acteur qui vit."},
+    steps:["Situation : un entretien d'embauche.",
+      "Improvisez 3 min sans jamais vous arrêter.",
+      "Règle : « oui, et… » — jamais « non ».",
+      "Recommencez avec un objectif secret différent."],note:"« Oui, et… » n'est pas une règle de politesse : c'est ce qui empêche une improvisation de mourir à la troisième réplique.",tip:"Keith Johnstone a fait de l'impro une discipline."},
+  {id:"so_i1",title:"L'adresse directe",cat:"Intentions",icon:"🎭",dur:"15 min",xp:55,type:"ex",extrait:"Je veux qu'on soit sincère, et qu'en homme d'honneur\nOn ne lâche aucun mot qui ne parte du cœur.",source:"Molière — Le Misanthrope, I, 1",
+    steps:["Dites le texte épinglé à un objet : une chaise, un mur. L'objet ne répond pas, ne juge pas.",
+      "Redites-le à la caméra comme à un ami intime, à cinquante centimètres.",
+      "Redites-le à la caméra comme à quelqu'un qui vous a trahi.",
+      "Redites-le au public d'une salle de six cents places, que vous imaginez derrière la caméra.",
+      "Regardez les quatre prises : le texte est le même, vous avez fait quatre scènes."],note:"L'adresse est le premier choix de l'acteur, avant l'intention et avant l'émotion. Décidez toujours à qui vous parlez — et à quelle distance.",tip:"L'adresse est le choix fondamental de l'acteur."},
+  {id:"so_s1",title:"Réagir avant de répondre",cat:"Scène",icon:"🎭",dur:"20 min",xp:65,type:"ex",
+    steps:["Enregistrez les répliques du partenaire en laissant trois secondes de silence après chacune.",
+      "Jouez la scène. Dans chaque silence, faites une seule chose : laissez la réplique vous atteindre. Ne préparez pas la vôtre.",
+      "Rejouez en supprimant les silences de l'enregistrement — tenez quand même le temps de réaction, quitte à chevaucher.",
+      "Rejouez du tac au tac, sans aucun temps.",
+      "Filmez les trois versions et regardez-les : dans laquelle a-t-on l'impression que vous entendez ce qu'on vous dit ?"],note:"Le public ne juge pas la façon dont vous dites votre réplique. Il juge l'instant d'avant.",tip:"Mnouchkine fait travailler ses acteurs sur la réception avant l'émission : c'est ce qui distingue une troupe d'une addition de solistes."},
   {id:"so_c2",title:"Le status game",cat:"Improvisation",icon:"🎭",dur:"15 min",xp:55,type:"ex",
-    steps:["Jouez une scène où vous avez le STATUS HAUT : roi, patron.","Posture haute, regard direct, gestes amples.","Même scène en STATUS BAS : soumis, timide.","Posture fermée, regard fuyant, gestes petits.","Jouez le passage d'un status à l'autre en une scène."],
-    tip:"Le status est le cœur du travail de Keith Johnstone."},
-  {id:"so_m1",title:"Monologue — l'aveu",cat:"Monologue",icon:"🎬",dur:"25 min",xp:100,type:"video",
-    text:"« Il faut que je te dise quelque chose. Ça fait longtemps que je porte ça, et si je ne le dis pas maintenant, je ne le dirai jamais. Ce n'est pas un secret — c'est une vérité que j'ai eu peur de regarder en face. »",
-    author:"Texte original — Castigat",
-    instructions:["À qui parlez-vous ? Décidez avant de commencer.","L'aveu doit coûter quelque chose — on voit la difficulté.","Trouvez le moment exact où le personnage décide de parler.","Filmez en plan serré, regard caméra."],premium:true},
+    steps:["Jouez une scène où vous avez le STATUS HAUT : roi, patron.",
+      "Posture haute, regard direct, gestes amples.",
+      "Même scène en STATUS BAS : soumis, timide.",
+      "Posture fermée, regard fuyant, gestes petits.",
+      "Jouez le passage d'un status à l'autre en une scène."],note:"Le status n'est pas le pouvoir : c'est ce que votre corps annonce avant que vous parliez. Toute la comédie naît de son renversement.",tip:"Le status est le cœur du travail de Keith Johnstone."},
+  {id:"so_m1",title:"Monologue — l'aveu",cat:"Monologue",icon:"🎬",dur:"25 min",xp:100,type:"video",premium:true,author:"Texte original — Castigat",text:"« Il faut que je te dise quelque chose. Ça fait longtemps que je porte ça, et si je ne le dis pas maintenant, je ne le dirai jamais. Ce n'est pas un secret — c'est une vérité que j'ai eu peur de regarder en face. »",
+    instructions:["À qui parlez-vous ? Décidez avant de commencer.",
+      "L'aveu doit coûter quelque chose — on voit la difficulté.",
+      "Trouvez le moment exact où le personnage décide de parler.",
+      "Filmez en plan serré, regard caméra."]},
   {id:"so_r2",title:"La respiration contrôlée en jeu",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:60,type:"ex",
-    steps:["Jouez une scène avec partenaire (ou enregistré).","Marquez à l'avance où vous respirez — avant chaque réplique.","Utilisez votre respiration comme un outil de mise en scène.","Accélérez les respirations en tension, ralentissez en calme.","La respiration visible du comédien enseigne le rythme au public."],
-    tip:"Mnouchkine dit que la respiration d'un acteur crée le rythme du spectacle."},
-  {id:"so_c3",title:"Le personnage via le corps entier",cat:"Corps",icon:"🏋",dur:"20 min",xp:65,type:"ex",
-    steps:["Créez un personnage : âge, profession, secret.","Trouvez son poids : lourd, léger, équilibré ?","Sa démarche : rapide, traînante, saccadée ?","Un tic, une posture : les mains, les épaules, le cou.","Tous ces détails créent une signature corporelle inconfondible."],
-    tip:"Le grand acteur crée une morphologie pour chaque rôle — comme un sculpteur."},
+    steps:["Jouez une scène avec partenaire (ou enregistré).",
+      "Marquez à l'avance où vous respirez — avant chaque réplique.",
+      "Utilisez votre respiration comme un outil de mise en scène.",
+      "Accélérez les respirations en tension, ralentissez en calme."],note:"La respiration d'un acteur donne le tempo à toute la salle. Le public respire avec vous sans le savoir.",tip:"Mnouchkine dit que la respiration d'un acteur crée le rythme du spectacle."},
+  {id:"so_c3",title:"Un seul détail, tenu",cat:"Corps",icon:"🏋",dur:"20 min",xp:65,type:"ex",
+    steps:["Choisissez un personnage et un seul détail : une main qui ne se pose jamais, une épaule plus haute, un regard qui part à droite avant chaque réponse.",
+      "Tenez ce détail pendant deux minutes de vie ordinaire : rangez une pièce, préparez un café, en restant ce personnage.",
+      "Ajoutez la parole : commentez à voix haute ce que vous faites, sans lâcher le détail.",
+      "Lâchez-le volontairement au milieu d'une phrase. Notez ce qui s'effondre.",
+      "Reprenez-le et tenez-le cinq minutes d'affilée."],note:"Un personnage n'est pas une collection de tics. C'est un seul détail assez précis pour qu'on ne puisse plus vous imaginer autrement — et assez petit pour tenir toute la pièce.",tip:"Les acteurs qu'on n'oublie pas ont rarement dix idées par rôle. Ils en ont une, et ils la tiennent trois heures."},
 ],
 interprete:[
-  {id:"in_r1",title:"Voix et émotions liées",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:55,type:"ex",
-    steps:["Dites « aaa » en joie — sentez où vibre le son.","« Aaa » en colère — le placement change.","« Aaa » en tristesse — plus bas, plus intérieur.","Chaque émotion a une signature vocale.","Trouvez celle de votre personnage actuel."],
-    tip:"La voix est le miroir de l'âme — elle ne peut pas mentir."},
-  {id:"in_d1",title:"Texte en langues",cat:"Diction",icon:"🗣️",dur:"12 min",xp:45,type:"ex",
-    steps:["Prenez un texte français de 5 lignes.","Récitez-le avec un accent anglais exagéré.","Avec un accent italien. Russe. Allemand.","Chaque accent modifie la musicalité et l'énergie.","Revenez au français : votre palette s'est élargie."],
-    tip:"Peter Brook faisait travailler ses acteurs en langues inventées."},
+  {id:"in_r1",title:"Où le son se pose",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:55,type:"ex",
+    steps:["Posez une main à plat sur le sternum. Dites un « aaa » long et laissez-le venir. Sentez où ça vibre sous la main.",
+      "Refaites-le en imaginant que vous appelez quelqu'un à l'autre bout d'un champ. Le son monte, il se place devant. La main sent moins.",
+      "Refaites-le en parlant à quelqu'un d'endormi juste à côté de vous. Le son descend, il reste en arrière. La main sent davantage.",
+      "Refaites-le en retenant quelque chose que vous ne voulez pas dire. Le son se serre."],note:"La voix suit la situation avant de suivre le sentiment. Cherchez à qui vous parlez et à quelle distance — le placement viendra seul.",tip:"La voix suit la situation avant de suivre le sentiment. Cherchez à qui vous parlez et à quelle distance — le placement viendra tout seul."},
+  {id:"in_d1",title:"Texte en langues",cat:"Diction",icon:"🗣️",dur:"12 min",xp:45,type:"ex",extrait:"Au voleur ! au voleur ! à l'assassin ! au meurtrier ! Justice, juste ciel ! Je suis perdu, je suis assassiné, on m'a coupé la gorge, on m'a dérobé mon argent.",source:"Molière — L'Avare, IV, 7",
+    steps:["Dites le texte épinglé en français, normalement.",
+      "Redites-le avec un accent anglais très marqué. Notez ce que l'accent fait aux consonnes.",
+      "Redites-le avec un accent italien, puis russe. Notez ce que chacun fait au rythme.",
+      "Revenez au français sans accent, immédiatement après."],note:"Chaque accent déplace les points d'appui dans la bouche. En revenant au français, on entend soudain sa propre langue comme une matière.",tip:"Peter Brook faisait travailler ses acteurs en langues inventées."},
   {id:"in_c1",title:"L'animal intérieur",cat:"Corps",icon:"🏋",dur:"20 min",xp:60,type:"ex",
-    steps:["Choisissez un animal : chat, loup, oiseau, serpent.","Bougez comme lui pendant 5 minutes.","Progressivement, tenez-vous debout en gardant son essence.","Ajoutez un texte — votre voix est colorée par l'animal.","Votre personnage a un animal intérieur — trouvez-le."],
-    tip:"De Niro s'est inspiré d'un crabe pour jouer dans Taxi Driver."},
+    steps:["Choisissez un animal : chat, loup, oiseau, serpent.",
+      "Bougez comme lui pendant 5 minutes.",
+      "Progressivement, tenez-vous debout en gardant son essence.",
+      "Ajoutez un texte — votre voix est colorée par l'animal.",
+      "Votre personnage a un animal intérieur — trouvez-le."],note:"De Niro s'est inspiré d'un crabe pour Taxi Driver. L'animal ne se joue pas : il reste dans le corps quand on l'a rangé.",tip:"De Niro s'est inspiré d'un crabe pour jouer dans Taxi Driver."},
   {id:"in_i1",title:"Le non-dit en scène",cat:"Intentions",icon:"🎭",dur:"20 min",xp:60,type:"ex",
-    steps:["Scène : deux personnes à table, en silence.","Jouez : ils viennent de se disputer.","Ils sont amoureux mais ne l'ont pas dit.","L'un sait que l'autre va partir.","Sans un mot, le public doit comprendre l'histoire."],
-    tip:"Tchekhov : l'essentiel est dans ce qui n'est pas dit."},
+    steps:["Scène : deux personnes à table, en silence.",
+      "Jouez : ils viennent de se disputer.",
+      "Ils sont amoureux mais ne l'ont pas dit.",
+      "L'un sait que l'autre va partir."],note:"Tchekhov écrit des scènes où l'on parle du temps qu'il fait pendant qu'une vie s'effondre. Tout est dans ce qui n'est pas dit.",tip:"Tchekhov : l'essentiel est dans ce qui n'est pas dit."},
   {id:"in_s1",title:"Scène à sous-texte",cat:"Scène",icon:"🎭",dur:"25 min",xp:75,type:"ex",
-    steps:["Scène banale : deux collègues parlent de la météo.","Sous-texte : l'un est amoureux de l'autre.","Jouez les deux rôles (enregistrez le partenaire).","Le texte est anodin — tout passe dans le regard.","Le public doit sentir sans qu'on lui dise."],
-    tip:"Les meilleures scènes ne parlent jamais de ce dont elles parlent."},
+    steps:["Scène banale : deux collègues parlent de la météo.",
+      "Sous-texte : l'un est amoureux de l'autre.",
+      "Jouez les deux rôles (enregistrez le partenaire)."],note:"Les meilleures scènes ne parlent jamais de ce dont elles parlent. Le public comprend par le regard et le rythme, pas par les mots.",tip:"Les meilleures scènes ne parlent jamais de ce dont elles parlent."},
   {id:"in_c2",title:"Composition physique",cat:"Corps",icon:"🏋",dur:"20 min",xp:60,type:"ex",
-    steps:["Créez un personnage de 70 ans.","Trouvez : le dos, les mains, le rythme de marche.","Créez un personnage de 8 ans — le contraste total.","Alternez entre les deux en 10 secondes.","Votre corps doit pouvoir tout jouer."],
-    tip:"Laurence Olivier changeait physiquement pour chaque rôle."},
-  {id:"in_m1",title:"Monologue contemporain",cat:"Monologue",icon:"🎬",dur:"30 min",xp:120,type:"video",
-    text:"« Tu sais ce que c'est, toi, la solitude ? C'est pas être seul dans une pièce. C'est être entouré de gens et sentir que personne ne te voit vraiment. Alors tu joues. Tu joues tellement bien que tu finis par oublier qui tu es sous le masque. »",
-    author:"Texte contemporain — Castigat",
-    instructions:["Réécrivez avec vos mots d'abord.","Trouvez votre connexion personnelle.","La vérité, pas le jeu.","Filmez en plan serré pour les micro-expressions."],premium:true},
-  {id:"in_d2",title:"La diction de l'auteur moderne",cat:"Diction",icon:"🗣️",dur:"15 min",xp:55,type:"ex",
-    steps:["Prenez un texte de Florian Zeller (langage épuré, répétitions).","Trouvez son minimalisme : pas d'ornements vocaux.","Prenez un texte de Marivaux (artifice, préciosité).","Comparez : Zeller dépouille, Marivaux décore.","Adaptez votre diction à la musique de chaque auteur."],
-    tip:"L'interprète moderne doit servir l'économie de langage contemporain."},
+    steps:["Créez un personnage de 70 ans.",
+      "Trouvez : le dos, les mains, le rythme de marche.",
+      "Créez un personnage de 8 ans — le contraste total.",
+      "Alternez entre les deux en 10 secondes."],note:"Un corps peut tout jouer, mais pas d'un coup : ce sont trois ou quatre réglages précis — le dos, les mains, le rythme, la hauteur du regard.",tip:"Laurence Olivier changeait physiquement pour chaque rôle."},
+  {id:"in_m1",title:"Monologue contemporain",cat:"Monologue",icon:"🎬",dur:"30 min",xp:120,type:"video",premium:true,author:"Texte contemporain — Castigat",text:"« Tu sais ce que c'est, toi, la solitude ? C'est pas être seul dans une pièce. C'est être entouré de gens et sentir que personne ne te voit vraiment. Alors tu joues. Tu joues tellement bien que tu finis par oublier qui tu es sous le masque. »",
+    instructions:["Réécrivez avec vos mots d'abord.",
+      "Trouvez votre connexion personnelle.",
+      "La vérité, pas le jeu.",
+      "Filmez en plan serré pour les micro-expressions."]},
+  {id:"in_d2",title:"Deux écritures, deux bouches",cat:"Diction",icon:"🗣️",dur:"15 min",xp:55,type:"ex",extrait:"Je veux qu'on soit sincère, et qu'en homme d'honneur\nOn ne lâche aucun mot qui ne parte du cœur.\n\n— — —\n\nParce que vous êtes un grand seigneur, vous vous croyez un grand génie ! Noblesse, fortune, un rang, des places : tout cela rend si fier ! Qu'avez-vous fait pour tant de biens ? Vous vous êtes donné la peine de naître, et rien de plus.",source:"Molière — Le Misanthrope (vers) · Beaumarchais — Le Mariage de Figaro (prose)",
+    steps:["Dites les deux vers de Molière : la pensée tient dans le vers, elle est déjà taillée.",
+      "Dites la tirade de Figaro : la pensée déborde, se relance, s'emballe. Ne la découpez pas en vers.",
+      "Refaites Molière avec le débit de Figaro. Écoutez comme ça sonne faux.",
+      "Refaites Figaro avec la tenue de Molière. Écoutez comme ça s'éteint.",
+      "Redites chacun à sa place, l'un après l'autre."],note:"Il n'y a pas une bonne diction : il y en a une par auteur. La vôtre doit se plier à l'écriture, jamais l'inverse.",tip:"Chaque auteur écrit pour une bouche particulière. Servir cette bouche-là, c'est la moitié du travail d'interprétation."},
   {id:"in_im1",title:"L'improvisation de caractère",cat:"Improvisation",icon:"🎭",dur:"20 min",xp:60,type:"ex",
-    steps:["Tirez un personnage au hasard : boulanger, avocate, clochard.","Improvisez 3 minutes EN TANT QUE ce personnage.","Parlez de votre métier, votre vie, votre secret.","Pas de texte — juste l'essence du personnage.","L'improvisation teste votre capacité à ÊTRE, pas à réciter."],
-    tip:"Viola Spolin : « L'improvisation, c'est accepter ce qui vient, sans juge intérieur. »"},
+    steps:["Tirez un personnage au hasard : boulanger, avocate, clochard.",
+      "Improvisez 3 minutes EN TANT QUE ce personnage.",
+      "Parlez de votre métier, votre vie, votre secret."],note:"L'improvisation ne teste pas votre imagination, mais votre capacité à rester quelqu'un pendant trois minutes sans rien préparer.",tip:"Viola Spolin : « L'improvisation, c'est accepter ce qui vient, sans juge intérieur. »"},
 ],
 artiste:[
   {id:"ar_r1",title:"Voix et espace",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:60,type:"ex",
-    steps:["Parlez face au mur — sentez le son rebondir.","Tournez-vous vers l'espace ouvert — projetez.","Dans un coin — la voix s'amplifie naturellement.","Au centre de la pièce — elle se disperse.","Apprenez à adapter votre voix à chaque espace."],
-    tip:"Un acteur sent l'acoustique d'un lieu en 30 secondes."},
-  {id:"ar_d1",title:"Le texte musical",cat:"Diction",icon:"🗣️",dur:"15 min",xp:55,type:"ex",
-    steps:["Prenez un monologue que vous connaissez.","Récitez-le comme du rap — trouvez le beat.","Comme une berceuse — douceur, legato.","Comme un discours politique — martèlement.","Trouvez la musique propre à votre personnage."],
-    tip:"Chaque auteur a sa musique. Shakespeare swingue, Racine chante, Koltès percute."},
+    steps:["Parlez face au mur — sentez le son rebondir.",
+      "Tournez-vous vers l'espace ouvert — projetez.",
+      "Dans un coin — la voix s'amplifie naturellement.",
+      "Au centre de la pièce — elle se disperse."],note:"Un acteur sent l'acoustique d'un lieu en trente secondes et règle sa voix dessus. C'est une habitude, pas un don.",tip:"Un acteur sent l'acoustique d'un lieu en 30 secondes."},
+  {id:"ar_d1",title:"Le texte musical",cat:"Diction",icon:"🗣️",dur:"15 min",xp:55,type:"ex",extrait:"Percé jusques au fond du cœur\nD'une atteinte imprévue aussi bien que mortelle,\nMisérable vengeur d'une juste querelle,\nEt malheureux objet d'une injuste rigueur,\nJe demeure immobile, et mon âme abattue\nCède au coup qui me tue.",source:"Corneille — Le Cid, stances de Rodrigue",
+    steps:["Dites le texte épinglé comme du rap : trouvez le beat, appuyez les temps forts.",
+      "Redites-le comme une berceuse : legato, sans aucune arête.",
+      "Redites-le comme un discours politique : martelé, adressé à une foule.",
+      "Redites-le une dernière fois en gardant de chaque version ce qui servait le texte."],note:"Chaque auteur a sa musique — Shakespeare swingue, Racine chante, Corneille frappe. Trouver la musique, c'est déjà interpréter.",tip:"Chaque auteur a sa musique. Shakespeare swingue, Racine chante, Koltès percute."},
   {id:"ar_c1",title:"Le geste essentiel",cat:"Corps",icon:"🏋",dur:"20 min",xp:65,type:"ex",
-    steps:["Jouez une scène avec plein de gestes.","Recommencez en enlevant la moitié des gestes.","Encore : ne gardez que 3 gestes dans toute la scène.","Chaque geste restant a 10 fois plus de puissance.","Le geste essentiel — un seul mouvement qui dit tout."],
-    tip:"Grotowski : « L'acteur doit se dépouiller, pas accumuler. »"},
+    steps:["Jouez une scène avec plein de gestes.",
+      "Recommencez en enlevant la moitié des gestes.",
+      "Encore : ne gardez que 3 gestes dans toute la scène."],note:"Grotowski voulait qu'un acteur se dépouille au lieu d'accumuler. Trois gestes tenus valent mieux que trente gestes commentés.",tip:"Grotowski : « L'acteur doit se dépouiller, pas accumuler. »"},
   {id:"ar_i1",title:"La rupture",cat:"Intentions",icon:"🎭",dur:"20 min",xp:65,type:"ex",
-    steps:["Jouez un texte en colère constante.","À un moment précis, basculez en tendresse.","La rupture doit être instantanée et totale.","Variez : joie → désespoir. Calme → panique.","La rupture est l'arme secrète des grands acteurs."],
-    tip:"Isabelle Huppert maîtrise la rupture émotionnelle comme personne."},
+    steps:["Prenez un texte que vous connaissez. Choisissez ce que votre personnage veut obtenir au début — un seul verbe : convaincre, faire avouer, retenir, humilier.",
+      "Jouez le début avec cette seule tactique, sans en changer. Tenez-la même quand ça ne marche pas.",
+      "Repérez la ligne exacte où le personnage comprend que sa tactique a échoué. C'est là qu'est la rupture — pas ailleurs.",
+      "Sur cette ligne, changez de verbe. Il n'obtiendra pas en convainquant : il essaiera de blesser. Ou l'inverse. Rien d'autre ne change.",
+      "Rejouez le passage en entier. Le basculement doit tomber sur ce mot-là, pas deux répliques plus loin.",
+      "Refaites-le avec un autre couple de verbes. Notez lequel rend la scène la plus dangereuse."],note:"Une rupture n'est pas un changement d'humeur : c'est le moment où le personnage change d'arme parce que la première n'a pas marché.",tip:"Une rupture, ce n'est pas passer d'une émotion à une autre : c'est le moment où le personnage change d'arme parce que la première n'a pas marché. Huppert ne change pas d'humeur, elle change de tactique — et on ne voit pas la couture."},
   {id:"ar_s1",title:"La mise en scène instinctive",cat:"Scène",icon:"🎭",dur:"30 min",xp:90,type:"ex",
-    steps:["Choisissez une scène courte.","Lisez-la une seule fois.","Jouez-la immédiatement — premier instinct.","Ne corrigez rien. Filmez.","Regardez : votre instinct a souvent raison."],
-    tip:"Peter Brook : « Le premier instinct est souvent le bon. »"},
-  {id:"ar_m1",title:"Monologue — adresse au public",cat:"Monologue",icon:"🎬",dur:"25 min",xp:110,type:"video",
-    text:"« Regardez-moi. Non, vraiment. Posez vos téléphones, vos pensées. Regardez-moi comme si c'était la première fois. Parce que c'est la première fois. Chaque soir est la première fois. Et ce soir, j'ai quelque chose à vous dire. »",
-    author:"Texte original — Castigat",
-    instructions:["Ce texte casse le 4e mur.","L'adresse doit être sincère.","Vrai contact visuel avec la caméra.","Trouvez l'urgence."],premium:true},
-  {id:"ar_d2",title:"L'alexandrin vivant",cat:"Diction",icon:"🗣️",dur:"15 min",xp:55,type:"ex",
-    steps:["Prenez un alexandrin de Racine ou Corneille.","Récitez-le en respectant la césure à l'hémistiche.","Maintenant cassez-la : rendez-le conversationnel.","Alternez : classique, moderne, classique.","L'art est de respecter le vers tout en le rendant vivant."],
-    tip:"Patrice Chéreau a révolutionné la diction de l'alexandrin en le rendant charnel."},
+    steps:["Choisissez une scène courte.",
+      "Lisez-la une seule fois.",
+      "Jouez-la immédiatement — premier instinct.",
+      "Ne corrigez rien. Filmez."],note:"Le premier instinct est souvent juste — pas toujours bon, mais vivant. On le garde comme matière, puis on travaille.",tip:"Peter Brook : « Le premier instinct est souvent le bon. »"},
+  {id:"ar_m1",title:"Monologue — adresse au public",cat:"Monologue",icon:"🎬",dur:"25 min",xp:110,type:"video",premium:true,author:"Texte original — Castigat",text:"« Regardez-moi. Non, vraiment. Posez vos téléphones, vos pensées. Regardez-moi comme si c'était la première fois. Parce que c'est la première fois. Chaque soir est la première fois. Et ce soir, j'ai quelque chose à vous dire. »",
+    instructions:["Ce texte casse le 4e mur.",
+      "L'adresse doit être sincère.",
+      "Vrai contact visuel avec la caméra.",
+      "Trouvez l'urgence."]},
+  {id:"ar_d2",title:"Quand la phrase déborde le vers",cat:"Diction",icon:"🗣️",dur:"15 min",xp:55,type:"ex",extrait:"Serait-ce déjà lui ? C'est bien à l'escalier\nDérobé.",source:"Hugo — Hernani, I, 1",
+    steps:["Lisez les deux vers en marquant la fin du premier, comme si la phrase s'y arrêtait. Écoutez à quel point c'est absurde.",
+      "Relisez en suivant la phrase et non le vers : « à l'escalier dérobé » d'un seul tenant.",
+      "Cherchez le compromis : la phrase passe, mais on entend encore la fin du vers. Une suspension, pas un arrêt.",
+      "Le mot rejeté au vers suivant reçoit tout le poids. Dites-le comme s'il vous échappait.",
+      "Reprenez le tout à voix de conversation, sans rien perdre du vers."],note:"Le rejet est un outil, pas un accident : le mot qui déborde sur le vers suivant est toujours le mot important.",tip:"Ces deux vers ont fait scandale en 1830 : Hugo y cassait ouvertement le vers classique. La bataille d'Hernani commence sur cet enjambement."},
   {id:"ar_im1",title:"L'improvisation thématique",cat:"Improvisation",icon:"🎭",dur:"20 min",xp:65,type:"ex",
-    steps:["Tirez un thème au hasard : jalousie, liberté, secret.","Improvisez un monologue de 3 minutes sur ce thème.","Pas de préparation. Premier instinct.","Recommencez avec un nouveau thème.","L'improvisation libère l'acteur de sa zone de confort."],
-    tip:"Keith Johnstone : « Ne préparez rien. Soyez changé par ce qui arrive. »"},
-  {id:"ar_r2",title:"Le souffle du comédien",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:55,type:"ex",
-    steps:["Lisez un texte long d'une traite, une seule respiration.","Notez où vous avez craqué.","Travaillez ces passages : respirez aux bonnes virgules.","Relisez : plus fluide, plus maîtrisé.","Le souffle est la ponctuation invisible du comédien."],
-    tip:"Les acteurs du Globe respiraient entre les vers — le texte shakespearien est écrit pour ça."},
+    steps:["Tirez un thème au hasard : jalousie, liberté, secret.",
+      "Improvisez un monologue de 3 minutes sur ce thème.",
+      "Pas de préparation. Premier instinct.",
+      "Recommencez avec un nouveau thème."],note:"On n'improvise pas pour trouver de bonnes idées, mais pour être changé par ce qui arrive. Le reste se retravaille après.",tip:"Keith Johnstone : « Ne préparez rien. Soyez changé par ce qui arrive. »"},
+  {id:"ar_r2",title:"Le souffle du comédien",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:55,type:"ex",extrait:"Parce que vous êtes un grand seigneur, vous vous croyez un grand génie ! Noblesse, fortune, un rang, des places : tout cela rend si fier ! Qu'avez-vous fait pour tant de biens ? Vous vous êtes donné la peine de naître, et rien de plus.",source:"Beaumarchais — Le Mariage de Figaro, V, 3",
+    steps:["Dites la tirade épinglée d'une traite, sur le moins de respirations possible. Notez où vous avez craqué.",
+      "Relisez en plaçant vos respirations avant les craquages, aux endroits qui servent le sens.",
+      "Relisez en supprimant une respiration sur deux — vous devez tenir des groupes plus longs.",
+      "Dernière lecture, à votre rythme : la ponctuation du souffle doit être devenue invisible."],note:"Le souffle est la ponctuation invisible du comédien. Mal placé, il découpe le sens ; bien placé, personne ne l'entend.",tip:"Les acteurs du Globe respiraient entre les vers — le texte shakespearien est écrit pour ça."},
 ],
 metteur:[
-  {id:"me_r1",title:"Diriger la voix des autres",cat:"Respiration",icon:"🌬️",dur:"20 min",xp:70,type:"ex",
-    steps:["Enregistrez un texte dit de manière neutre.","Réécoutez et identifiez : où manque le souffle ?","Où la projection faiblit ? Où le rythme s'essouffle ?","Réenregistrez en corrigeant chaque point.","Vous venez de vous diriger vous-même — un skill de metteur en scène."],
-    tip:"Le metteur en scène est d'abord un oreille."},
+  {id:"me_r1",title:"Diriger la voix des autres",cat:"Respiration",icon:"🌬️",dur:"20 min",xp:70,type:"ex",extrait:"Percé jusques au fond du cœur\nD'une atteinte imprévue aussi bien que mortelle,\nMisérable vengeur d'une juste querelle,\nEt malheureux objet d'une injuste rigueur,\nJe demeure immobile, et mon âme abattue\nCède au coup qui me tue.",source:"Corneille — Le Cid, stances de Rodrigue",
+    steps:["Enregistrez un texte dit de manière neutre.",
+      "Réécoutez et identifiez : où manque le souffle ?",
+      "Où la projection faiblit ? Où le rythme s'essouffle ?",
+      "Réenregistrez en corrigeant chaque point."],note:"Un metteur en scène est d'abord une oreille. Se diriger soi-même à l'enregistrement est le seul entraînement disponible quand on travaille seul.",tip:"Le metteur en scène est d'abord un oreille."},
   {id:"me_s1",title:"Analyse de mise en scène",cat:"Scène",icon:"🎬",dur:"30 min",xp:90,type:"ex",
-    steps:["Choisissez une scène courte (2 pages).","Analysez en metteur en scène : que raconte-t-elle ?","Dessinez un plan : où sont les acteurs ?","Décidez du rythme : accélérer, suspendre.","Filmez votre proposition."],
-    tip:"Comprendre la mise en scène fait un meilleur acteur."},
+    steps:["Choisissez une scène courte (2 pages).",
+      "Analysez en metteur en scène : que raconte-t-elle ?",
+      "Dessinez un plan : où sont les acteurs ?",
+      "Décidez du rythme : accélérer, suspendre.",
+      "Filmez votre proposition."],note:"Analyser une scène en metteur en scène change définitivement la façon de la jouer : on cesse de défendre son personnage pour servir l'histoire.",tip:"Comprendre la mise en scène fait un meilleur acteur."},
   {id:"me_c1",title:"La direction d'acteur",cat:"Scène",icon:"🎬",dur:"25 min",xp:80,type:"ex",
-    steps:["Enregistrez-vous jouant une scène — version neutre.","Donnez-vous une indication : 'plus de colère retenue'.","Rejouez. Puis : 'comme si tu parlais à un enfant'.","Rejouez. Puis : 'la dernière fois que tu dis ces mots'.","Chaque indication transforme radicalement le jeu."],
-    tip:"Une bonne direction se résume souvent en une phrase."},
-  {id:"me_i1",title:"Le rythme d'une scène",cat:"Intentions",icon:"🎭",dur:"20 min",xp:70,type:"ex",
-    steps:["Jouez une scène entièrement en tempo lent.","La même en tempo rapide.","Alternez : début lent, milieu rapide, fin lent.","L'inverse : rapide, lent, rapide.","Le rythme est la respiration d'une mise en scène."],
-    tip:"Bob Wilson compose ses spectacles comme des partitions musicales."},
-  {id:"me_m1",title:"Monologue — le metteur en scène parle",cat:"Monologue",icon:"🎬",dur:"30 min",xp:130,type:"video",
-    text:"« Le théâtre n'est pas un divertissement. C'est une nécessité. Quand les lumières s'éteignent dans la salle et que le silence se fait, quelque chose de sacré commence. Nous ne jouons pas — nous invoquons. Chaque soir, nous recréons le monde. »",
-    author:"Texte original — Castigat",
-    instructions:["Parlez comme quelqu'un qui a consacré sa vie au théâtre.","La conviction doit être absolue.","Trouvez VOTRE rapport au théâtre dans ces mots.","Filmez debout, en mouvement si vous le souhaitez."],premium:true},
-  {id:"me_d1",title:"Diction et intention",cat:"Diction",icon:"🗣️",dur:"15 min",xp:60,type:"ex",
-    steps:["Prenez une phrase : « Je ne savais pas que tu étais là. »","Dites-la avec 5 intentions différentes : surprise, reproche, joie, peur, séduction.","Pour chaque intention, l'articulation change subtilement.","La diction n'est pas mécanique — elle sert le sens.","Un metteur en scène corrige la diction PAR l'intention."],
-    tip:"La diction n'est pas une fin en soi — elle est au service du sens."},
+    steps:["Enregistrez-vous jouant une scène — version neutre.",
+      "Donnez-vous une indication : 'plus de colère retenue'.",
+      "Rejouez. Puis : 'comme si tu parlais à un enfant'.",
+      "Rejouez. Puis : 'la dernière fois que tu dis ces mots'."],note:"Une bonne direction d'acteur tient en une phrase. Si l'indication demande un paragraphe, c'est qu'elle n'est pas encore trouvée.",tip:"Une bonne direction se résume souvent en une phrase."},
+  {id:"me_i1",title:"Où le public regarde",cat:"Intentions",icon:"🎭",dur:"20 min",xp:70,type:"ex",
+    steps:["Prenez une scène courte à deux. Jouez les deux rôles, ou enregistrez le partenaire.",
+      "Jouez-la en décidant que le public regarde celui qui parle. C'est le réflexe : rien à faire.",
+      "Rejouez en décidant qu'il regarde celui qui écoute — c'est donc celui qui se tait qui bouge, respire, réagit.",
+      "Rejouez en ne laissant à celui qui écoute qu'un seul geste dans toute la scène. Placez-le au meilleur endroit.",
+      "Filmez les trois versions et regardez-les sans le son : dans laquelle comprend-on l'histoire ?"],note:"Mettre en scène, c'est choisir où va le regard du public à chaque instant. Le texte, lui, se débrouille tout seul.",tip:"Vitez disait qu'une mise en scène est une suite de décisions sur l'attention du spectateur — pas sur la décoration."},
+  {id:"me_m1",title:"Monologue — le metteur en scène parle",cat:"Monologue",icon:"🎬",dur:"30 min",xp:130,type:"video",premium:true,author:"Texte original — Castigat",text:"« Le théâtre n'est pas un divertissement. C'est une nécessité. Quand les lumières s'éteignent dans la salle et que le silence se fait, quelque chose de sacré commence. Nous ne jouons pas — nous invoquons. Chaque soir, nous recréons le monde. »",
+    instructions:["Parlez comme quelqu'un qui a consacré sa vie au théâtre.",
+      "La conviction doit être absolue.",
+      "Trouvez VOTRE rapport au théâtre dans ces mots.",
+      "Filmez debout, en mouvement si vous le souhaitez."]},
+  {id:"me_d1",title:"L'oreille du metteur en scène",cat:"Diction",icon:"🗣️",dur:"15 min",xp:60,type:"ex",refrain:"Je ne savais pas que tu étais là.",extrait:"Je le vis, je rougis, je pâlis à sa vue ;\nUn trouble s'éleva dans mon âme éperdue ;\nMes yeux ne voyaient plus, je ne pouvais parler ;\nJe sentis tout mon corps et transir et brûler.",source:"Racine — Phèdre, I, 3",
+    steps:["Enregistrez-vous disant le texte épinglé, sans préparation. Ne réécoutez pas encore.",
+      "Première écoute : ne surveillez que les fins de phrases. Tombent-elles, ou se perdent-elles ?",
+      "Deuxième écoute : ne surveillez que les fins de mots. Notez les trois endroits les plus flous.",
+      "Troisième écoute : ne surveillez que le débit. Où accélérez-vous parce que le passage vous gêne ?",
+      "Réenregistrez en ne corrigeant que les trois endroits notés. Ne retouchez rien d'autre."],note:"Vouloir tout entendre d'un coup, c'est n'entendre rien. Un paramètre par écoute, trois corrections maximum.",tip:"Un metteur en scène n'écoute jamais tout à la fois : il choisit un paramètre par filage et laisse le reste passer."},
   {id:"me_c1b",title:"Le corps du metteur en scène",cat:"Corps",icon:"🏋",dur:"20 min",xp:65,type:"ex",
-    steps:["Jouez une scène debout, ancré.","Rejouez assis, immobile.","Rejouez en marchant sans cesse.","Rejouez allongé au sol.","Chaque posture raconte une histoire différente. Laquelle sert le mieux votre scène ?"],
-    tip:"Le placement physique est la première décision de mise en scène."},
+    steps:["Jouez une scène debout, ancré.",
+      "Rejouez assis, immobile.",
+      "Rejouez en marchant sans cesse.",
+      "Rejouez allongé au sol.",
+      "Chaque posture raconte une histoire différente. Laquelle sert le mieux votre scène ?"],note:"Le placement du corps est la première décision de mise en scène — avant le décor, avant la lumière, avant le ton.",tip:"Le placement physique est la première décision de mise en scène."},
   {id:"me_im1",title:"L'improvisation contrainte",cat:"Improvisation",icon:"🎭",dur:"20 min",xp:70,type:"ex",
-    steps:["Improvisez une scène de rupture amoureuse.","Contrainte : vous ne pouvez utiliser que des questions.","Recommencez : uniquement des phrases de 5 mots max.","Recommencez : sans jamais dire 'je'.","Les contraintes libèrent la créativité."],
-    tip:"L'OuLiPo au théâtre : la contrainte comme moteur de création."},
+    steps:["Improvisez une scène de rupture amoureuse.",
+      "Contrainte : vous ne pouvez utiliser que des questions.",
+      "Recommencez : uniquement des phrases de 5 mots max.",
+      "Recommencez : sans jamais dire 'je'."],note:"La contrainte ne bride pas : elle empêche de reprendre ses automatismes. C'est pour ça que l'OuLiPo s'en est fait une méthode.",tip:"L'OuLiPo au théâtre : la contrainte comme moteur de création."},
   {id:"me_r2",title:"Respiration et tempo",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:65,type:"ex",
-    steps:["Jouez une scène en tempo très lent — respiration ample.","Rejouez en tempo rapide — respiration saccadée.","Alternez : début lent (respiration profonde), milieu rapide (souffle court).","Notez comme la respiration crée le tempo involontairement.","Le metteur en scène utilise la respiration pour sculpter le rythme."],
-    tip:"La respiration visible du comédien EST le métronome du spectacle."},
+    steps:["Jouez une scène en tempo très lent — respiration ample.",
+      "Rejouez en tempo rapide — respiration saccadée.",
+      "Alternez : début lent (respiration profonde), milieu rapide (souffle court).",
+      "Notez comme la respiration crée le tempo involontairement."],note:"La respiration visible du comédien est le métronome du spectacle. Changez-la, et le tempo change sans qu'on ait touché au texte.",tip:"La respiration visible du comédien EST le métronome du spectacle."},
 ],
 monstre:[
   {id:"mo_k1",title:"Préparation au casting",cat:"Pro",icon:"🎬",dur:"45 min",xp:150,type:"ex",
-    steps:["Analysez le texte de casting.","Préparez 2 propositions radicalement différentes.","Les 5 premières secondes décident de tout.","Filmez sans montage.","Respirez, ancrez-vous, visualisez."],
-    tip:"Les directeurs de casting cherchent l'authenticité."},
+    steps:["Respirez, ancrez-vous, relisez le texte une fois sans le jouer.",
+      "Analysez : qui parle, à qui, pour obtenir quoi ? Une phrase par question.",
+      "Préparez deux propositions radicalement différentes — deux verbes d'action opposés.",
+      "Filmez la première sans montage, en une prise. Puis la seconde.",
+      "Regardez les cinq premières secondes de chaque prise, uniquement. C'est tout ce qu'un directeur de casting verra."],note:"Les directeurs de casting cherchent une personne, pas une performance. Deux propositions franches valent mieux qu'une prise « correcte ».",tip:"Les directeurs de casting cherchent l'authenticité."},
   {id:"mo_k2",title:"La self-tape pro",cat:"Pro",icon:"📹",dur:"30 min",xp:100,type:"ex",
-    steps:["Cadrage : plan poitrine, fond neutre.","Slate : nom, agent, rôle. Court et confiant.","Première prise instinctive.","Deuxième prise plus risquée.","Envoyez la meilleure. Une seule."],
-    tip:"300 self-tapes par rôle. La vôtre doit accrocher en 3 secondes."},
-  {id:"mo_i1",title:"L'improvisation dirigée",cat:"Improvisation",icon:"🎭",dur:"25 min",xp:80,type:"ex",
-    steps:["Situation : entretien, rupture, retrouvailles.","Improvisez 3 min sans jamais vous arrêter.","« Oui, et… » — jamais « non ».","Recommencez avec un objectif secret.","Le public doit deviner ce que le personnage veut."],
-    tip:"L'impro est l'art de l'écoute de soi et de l'instant."},
+    steps:["Cadrage : plan poitrine, fond neutre.",
+      "Slate : nom, agent, rôle. Court et confiant.",
+      "Première prise instinctive.",
+      "Deuxième prise plus risquée.",
+      "Envoyez la meilleure. Une seule."],note:"Trois cents self-tapes par rôle. La vôtre est jugée sur les trois premières secondes et sur une seule chose : est-ce qu'on vous croit ?",tip:"300 self-tapes par rôle. La vôtre doit accrocher en 3 secondes."},
+  {id:"mo_i1",title:"L'improvisation qui bascule",cat:"Improvisation",icon:"🎭",dur:"25 min",xp:80,type:"ex",
+    steps:["Situation : vous venez annoncer une mauvaise nouvelle à quelqu'un. Jouez les deux rôles, ou enregistrez l'autre.",
+      "Improvisez trois minutes sans jamais dire explicitement la nouvelle. Vous tournez autour.",
+      "Rejouez : cette fois la nouvelle sort dans les vingt premières secondes. Tout le reste est la suite.",
+      "Comparez : laquelle des deux tient trois minutes sans s'affaisser ?",
+      "Refaites celle qui tenait le moins, en lui ajoutant ce qui manquait — un obstacle, un enjeu, ou une raison de rester dans la pièce."],note:"Donnez toujours au personnage quelque chose à obtenir avant de pouvoir partir. C'est ce qui tient la scène debout.",tip:"Une improvisation ne meurt jamais faute d'idées : elle meurt quand plus personne n'a de raison de rester là."},
   {id:"mo_s1",title:"La scène d'audition",cat:"Scène",icon:"🎬",dur:"35 min",xp:120,type:"ex",
-    steps:["Choisissez une scène de film/série récente.","Préparez-la comme pour une vraie audition.","Filmez en conditions réelles, self-tape.","Sans montage, sans triche.","Évaluez-vous honnêtement."],
-    tip:"L'audition est un art en soi — il se travaille."},
-  {id:"mo_m1",title:"Monologue de concours",cat:"Monologue",icon:"🎬",dur:"40 min",xp:200,type:"video",
-    text:"« J'ai marché longtemps pour arriver ici. Des années de doutes, de refus. Chaque 'non' m'a appris quelque chose. Aujourd'hui je suis devant vous non pas parce que je suis prêt, mais parce que je ne le serai jamais — et c'est ça, le courage. »",
-    author:"Texte original — Castigat",
-    instructions:["Réécrivez avec VOTRE parcours.","Les mots doivent être les vôtres.","Vérité absolue : pas de jeu, juste vous.","Filmez en conditions de concours."],premium:true},
-  {id:"mo_d1",title:"La diction sous pression",cat:"Diction",icon:"🗣️",dur:"15 min",xp:70,type:"ex",
-    steps:["Apprenez un texte de 10 lignes.","Récitez-le en marchant rapidement.","Récitez-le en faisant des pompes (ou en gesticulant).","Récitez-le face à un mur, puis en vous retournant brusquement.","Un pro garde une diction parfaite même sous pression physique."],
-    tip:"Les acteurs de théâtre physique (Mnouchkine, Lecoq) articulent en plein effort."},
+    steps:["Choisissez une scène de film ou de série que vous ne connaissez pas par cœur.",
+      "Préparez-la comme pour une audition réelle : à qui parlez-vous, qu'obtenez-vous, que risquez-vous ?",
+      "Filmez en conditions de self-tape : plan poitrine, fond neutre, une seule prise.",
+      "Réécoutez sans l'image : est-ce qu'on entend tout, et est-ce qu'on croit ?",
+      "Reregardez sans le son : est-ce qu'on comprend la situation ? Refaites une prise en corrigeant le point le plus faible des deux."],note:"L'audition est un exercice à part entière : on n'y montre pas ce qu'on sait faire, on y montre une personne dans une situation.",tip:"L'audition est un art en soi — il se travaille."},
+  {id:"mo_m1",title:"Monologue de concours",cat:"Monologue",icon:"🎬",dur:"40 min",xp:200,type:"video",premium:true,author:"Texte original — Castigat",text:"« J'ai marché longtemps pour arriver ici. Des années de doutes, de refus. Chaque 'non' m'a appris quelque chose. Aujourd'hui je suis devant vous non pas parce que je suis prêt, mais parce que je ne le serai jamais — et c'est ça, le courage. »",
+    instructions:["Réécrivez avec VOTRE parcours.",
+      "Les mots doivent être les vôtres.",
+      "Vérité absolue : pas de jeu, juste vous.",
+      "Filmez en conditions de concours."]},
+  {id:"mo_d1",title:"La diction sous pression",cat:"Diction",icon:"🗣️",dur:"15 min",xp:70,type:"ex",extrait:"Au voleur ! au voleur ! à l'assassin ! au meurtrier ! Justice, juste ciel ! Je suis perdu, je suis assassiné, on m'a coupé la gorge, on m'a dérobé mon argent.",source:"Molière — L'Avare, IV, 7",
+    steps:["Dites le texte épinglé debout, immobile. C'est votre référence.",
+      "Redites-le en marchant vite dans la pièce, sans ralentir le débit.",
+      "Redites-le en montant et descendant d'une marche, ou en gesticulant largement.",
+      "Redites-le face à un mur, puis retournez-vous brusquement au milieu d'une phrase.",
+      "Revenez immobile et redites-le : l'articulation doit être plus nette qu'au premier passage."],note:"Chez Mnouchkine ou Lecoq, on articule en plein effort. Une diction qui ne tient que debout et immobile ne tient pas.",tip:"Les acteurs de théâtre physique (Mnouchkine, Lecoq) articulent en plein effort."},
   {id:"mo_r1",title:"Le souffle marathon",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:65,type:"ex",
-    steps:["Inspirez et comptez à voix haute le plus loin possible.","Visez 30, puis 40, puis 50.","Même exercice avec un texte : une phrase = une expiration.","Allongez progressivement les phrases.","Sur scène, le souffle est la liberté du comédien."],
-    tip:"Certains acteurs tiennent un alexandrin entier sur une seule expiration."},
+    steps:["Inspirez et comptez à voix haute le plus loin possible.",
+      "Visez 30, puis 40, puis 50.",
+      "Même exercice avec un texte : une phrase = une expiration.",
+      "Allongez progressivement les phrases."],note:"Sur scène, le souffle est la liberté du comédien : c'est lui qui décide si vous pouvez tenir une réplique entière ou non.",tip:"Certains acteurs tiennent un alexandrin entier sur une seule expiration."},
   {id:"mo_c1",title:"Le combat scénique",cat:"Corps",icon:"🏋",dur:"25 min",xp:80,type:"ex",
-    steps:["Deux 'personnages' face à face (jouez les deux).","Gifle scénique : la main passe à 10 cm, le son vient du pied.","Poussée : le receveur fait le travail, pas le pousseur.","Chute : roulez sur le flanc, jamais sur le dos.","Au ralenti d'abord, puis en vitesse réelle."],
-    tip:"Au théâtre, c'est toujours celui qui reçoit qui fait la violence, pas celui qui donne."},
+    steps:["Deux personnages face à face — vous les jouez tous les deux, très lentement d'abord.",
+      "Gifle scénique : la main passe à dix centimètres, le son vient de votre autre main sur la cuisse.",
+      "Poussée : c'est le receveur qui fait tout le travail, jamais celui qui pousse.",
+      "Chute : on roule sur le flanc, jamais sur le dos, jamais sur les mains.",
+      "Refaites la séquence entière à vitesse réelle, seulement quand les quatre gestes sont propres au ralenti."],note:"Au théâtre, c'est toujours celui qui reçoit qui fabrique la violence, jamais celui qui donne. C'est la règle qui évite les accidents.",tip:"Au théâtre, c'est toujours celui qui reçoit qui fait la violence, pas celui qui donne."},
   {id:"mo_im1",title:"L'improvisation de jeu",cat:"Improvisation",icon:"🎭",dur:"20 min",xp:75,type:"ex",
-    steps:["Tirez deux mots au hasard : 'rage' et 'nostalgie'.","Improvisez un monologue de 2 minutes sur ces deux états.","Alternez entre eux : rage → nostalgie → rage.","Pas de préparation, juste le flux de conscience.","L'impro de jeu teste votre capacité à improviser sous pression."],
-    tip:"Un monstre peut improviser n'importe quoi — c'est ce qui définit le vrai comédien."},
+    steps:["Tirez deux mots au hasard : 'rage' et 'nostalgie'.",
+      "Improvisez un monologue de 2 minutes sur ces deux états.",
+      "Alternez entre eux : rage → nostalgie → rage."],note:"Alterner deux états contraires sans préparation, c'est l'épreuve qui sépare l'improvisateur du comédien qui récite vite.",tip:"Un monstre peut improviser n'importe quoi — c'est ce qui définit le vrai comédien."},
 ],
 affiche:[
   {id:"af_s1",title:"Travail de mise en scène complet",cat:"Scène",icon:"🎬",dur:"45 min",xp:160,type:"ex",
-    steps:["Scène complète de 3-4 pages.","Analyse dramaturgique écrite.","Plan de scène détaillé.","Travail des transitions et du rythme.","Filmez avec votre proposition de mise en scène."],
-    tip:"La mise en scène est un art de composition."},
-  {id:"af_i1",title:"Le one-man-show dramatique",cat:"Improvisation",icon:"🎭",dur:"30 min",xp:110,type:"ex",
-    steps:["Improvisez un spectacle de 10 minutes, seul·e.","3 personnages minimum, transitions visibles.","Un début, un milieu, une fin.","Le public (la caméra) doit rire ET être ému.","C'est l'exercice ultime de versatilité."],
-    tip:"Les plus grands acteurs peuvent tout jouer — seuls."},
+    steps:["Scène complète de 3-4 pages.",
+      "Analyse dramaturgique écrite.",
+      "Plan de scène détaillé.",
+      "Travail des transitions et du rythme.",
+      "Filmez avec votre proposition de mise en scène."],note:"Une mise en scène complète, c'est quatre décisions tenues jusqu'au bout : ce que raconte la scène, où sont les corps, quel est le rythme, et ce qu'on coupe.",tip:"La mise en scène est un art de composition."},
+  {id:"af_i1",title:"Passer d'un personnage à l'autre",cat:"Improvisation",icon:"🎭",dur:"30 min",xp:110,type:"ex",
+    steps:["Choisissez trois personnages très différents. Pour chacun : un âge, un poids, un rythme. Notez-les en une ligne.",
+      "Jouez trente secondes du premier, puis arrêtez-vous net.",
+      "Passez au deuxième sans transition — le changement doit se voir en une seconde, sur un seul appui.",
+      "Enchaînez les trois, puis les trois dans l'ordre inverse, sans jamais repasser par votre corps neutre.",
+      "Filmez la série. Si vous ne distinguez pas les trois à l'image, le changement est dans votre tête et pas dans votre corps."],note:"Un changement se voit sur un appui, une hauteur de regard, une vitesse. Une voix différente ne suffit jamais.",tip:"Dans un solo, le public ne suit pas les personnages : il suit les changements. Ce sont eux qui doivent être nets."},
   {id:"af_k1",title:"La bande démo",cat:"Pro",icon:"📹",dur:"40 min",xp:140,type:"ex",
-    steps:["Sélectionnez 3 scènes montrant votre range.","Une comique, une dramatique, une contemporaine.","Filmez chacune en conditions pro.","Montez un best-of de 3 minutes.","C'est votre carte de visite professionnelle."],
-    tip:"Une bande démo doit montrer votre versatilité en 3 minutes."},
-  {id:"af_m1",title:"Monologue — création originale",cat:"Monologue",icon:"🎬",dur:"35 min",xp:180,type:"video",
-    text:"Écrivez votre propre monologue de 2 minutes. Sujet libre. C'est VOTRE voix, VOTRE histoire. Pas un exercice — une création.",
-    author:"Vous — Votre création",
-    instructions:["Écrivez d'abord. Puis apprenez.","Ce texte doit vous ressembler.","Filmez avec soin : c'est votre signature artistique.","Retour de metteur en scène sous 48h."],premium:true},
-  {id:"af_d1",title:"La diction d'auteur",cat:"Diction",icon:"🗣️",dur:"20 min",xp:80,type:"ex",
-    steps:["Prenez un texte de Koltès.","Trouvez son rythme unique : phrases longues, virgules, relances.","Prenez un texte de Lagarce — les répétitions, les parenthèses.","Comparez : chaque auteur a sa musique de bouche.","Votre diction doit servir l'écriture, pas la démontrer."],
-    tip:"Un grand acteur change sa diction pour chaque auteur."},
+    steps:["Sélectionnez 3 scènes montrant votre range.",
+      "Une comique, une dramatique, une contemporaine.",
+      "Filmez chacune en conditions pro.",
+      "Montez un best-of de 3 minutes."],note:"Une bande démo n'est pas un best-of : c'est une démonstration d'étendue. Trois registres, trois minutes, aucune scène de trop.",tip:"Une bande démo doit montrer votre versatilité en 3 minutes."},
+  {id:"af_m1",title:"Monologue — création originale",cat:"Monologue",icon:"🎬",dur:"35 min",xp:180,type:"video",premium:true,author:"Vous — Votre création",text:"Écrivez votre propre monologue de 2 minutes. Sujet libre. C'est VOTRE voix, VOTRE histoire. Pas un exercice — une création.",
+    instructions:["Écrivez d'abord. Puis apprenez.",
+      "Ce texte doit vous ressembler.",
+      "Filmez avec soin : c'est votre signature artistique.",
+      "Retour de metteur en scène sous 48h."]},
+  {id:"af_d1",title:"Deux souffles d'écriture",cat:"Diction",icon:"🗣️",dur:"20 min",xp:80,type:"ex",extrait:"Parce que vous êtes un grand seigneur, vous vous croyez un grand génie ! Noblesse, fortune, un rang, des places : tout cela rend si fier ! Qu'avez-vous fait pour tant de biens ? Vous vous êtes donné la peine de naître, et rien de plus.\n\n— — —\n\nAu voleur ! au voleur ! à l'assassin ! au meurtrier ! Justice, juste ciel ! Je suis perdu, je suis assassiné, on m'a coupé la gorge, on m'a dérobé mon argent.",source:"Beaumarchais — Le Mariage de Figaro · Molière — L'Avare",
+    steps:["Dites la tirade de Figaro : phrases qui s'emballent, relances, énumération. Le souffle est long.",
+      "Dites la tirade d'Harpagon : phrases courtes, hachées, répétées. Le souffle est bref et sec.",
+      "Refaites Figaro haché comme Harpagon. Écoutez ce que la pensée y perd.",
+      "Refaites Harpagon lié comme Figaro. Écoutez comme la panique disparaît.",
+      "Redites chacun à sa place, l'un après l'autre, sans commentaire."],note:"Votre diction doit servir l'écriture, pas la démontrer. Le souffle de l'auteur est écrit dans la ponctuation — il suffit de le suivre.",tip:"Chez Molière, la panique s'écrit dans la longueur des phrases avant de s'écrire dans les mots."},
   {id:"af_c1",title:"La présence scénique totale",cat:"Corps",icon:"🏋",dur:"25 min",xp:90,type:"ex",
-    steps:["Montez sur votre 'scène' (un espace défini).","Restez immobile 2 minutes. Juste être là.","Occupez l'espace en marchant — sans raison.","Arrêtez-vous. Le public doit sentir que vous occupez TOUT l'espace même immobile.","La présence n'est pas ce que vous faites — c'est ce que vous êtes."],
-    tip:"Louis Jouvet : « Le talent, c'est la présence. Et la présence, ça ne s'explique pas. »"},
-  {id:"af_r1",title:"La respiration et le silence",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:70,type:"ex",
-    steps:["Jouez un texte normalement.","Maintenant, ajoutez 5 secondes de silence avant chaque phrase.","Respirez pendant ces silences — le public respire avec vous.","Les silences sont plus puissants que les mots.","Le théâtre est fait de ce qu'on ne dit pas."],
-    tip:"Pinter a fait du silence un personnage à part entière."},
+    steps:["Montez sur votre 'scène' (un espace défini).",
+      "Restez immobile 2 minutes. Juste être là.",
+      "Occupez l'espace en marchant — sans raison.",
+      "Arrêtez-vous. Le public doit sentir que vous occupez TOUT l'espace même immobile."],note:"La présence n'est pas ce que vous faites, c'est ce que vous ne faites pas. Deux minutes d'immobilité tenue en apprennent plus que dix de mouvement.",tip:"Louis Jouvet : « Le talent, c'est la présence. Et la présence, ça ne s'explique pas. »"},
+  {id:"af_r1",title:"Un silence, bien placé",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:70,type:"ex",extrait:"Je le vis, je rougis, je pâlis à sa vue ;\nUn trouble s'éleva dans mon âme éperdue ;\nMes yeux ne voyaient plus, je ne pouvais parler ;\nJe sentis tout mon corps et transir et brûler.",source:"Racine — Phèdre, I, 3",
+    steps:["Dites le texte épinglé sans aucun silence, d'un trait.",
+      "Redites-le en plaçant un seul silence, à l'endroit qui vous paraît le plus dangereux. Tenez-le jusqu'à être mal à l'aise.",
+      "Redites-le en plaçant ce silence au mauvais endroit, exprès. Écoutez la différence.",
+      "Revenez au bon endroit et respirez pendant le silence, amplement : le public respire avec vous.",
+      "Dernier passage avec deux silences maximum, pas un de plus."],note:"Un silence de trop redevient du vide. Un seul, bien placé et tenu trop longtemps, vaut cinq silences polis.",tip:"Pinter écrivait ses silences dans le texte, au même titre que les répliques : « pause » et « silence » n'y sont pas la même chose."},
   {id:"af_i2",title:"L'improvisation longue",cat:"Improvisation",icon:"🎭",dur:"30 min",xp:100,type:"ex",
-    steps:["Choisissez un lieu : hôpital, école, aéroport.","Improvisez 10 minutes sans jamais vous arrêter.","Faites vivre 3 personnages minimum.","Créez un conflit, une résolution, une surprise.","L'impro longue est le marathon du comédien."],
-    tip:"Les Theatresports de Keith Johnstone ont popularisé l'impro longue."},
+    steps:["Choisissez un lieu : hôpital, école, aéroport.",
+      "Improvisez 10 minutes sans jamais vous arrêter.",
+      "Faites vivre 3 personnages minimum.",
+      "Créez un conflit, une résolution, une surprise."],note:"L'improvisation longue est un exercice d'endurance : ce n'est plus l'idée qui manque au bout de dix minutes, c'est la structure.",tip:"Les Theatresports de Keith Johnstone ont popularisé l'impro longue."},
   {id:"af_s2",title:"La mise en scène du doute",cat:"Scène",icon:"🎬",dur:"30 min",xp:120,type:"ex",
-    steps:["Choisissez une scène ambigüe : deux personnages qui ne se disent pas la vérité.","Mise en scène option 1 : ils s'aiment secrètement.","Mise en scène option 2 : ils se haïssent en feignant l'amitié.","Même texte, deux mises en scène opposées.","Trouvez comment le placement, le rythme et les regards racontent l'histoire."],
-    tip:"La mise en scène révèle le non-dit — c'est son art fondamental."},
+    steps:["Choisissez une scène ambigüe : deux personnages qui ne se disent pas la vérité.",
+      "Mise en scène option 1 : ils s'aiment secrètement.",
+      "Mise en scène option 2 : ils se haïssent en feignant l'amitié.",
+      "Même texte, deux mises en scène opposées.",
+      "Trouvez comment le placement, le rythme et les regards racontent l'histoire."],note:"La mise en scène révèle le non-dit : même texte, deux placements, deux histoires. C'est là qu'elle devient un art à part entière.",tip:"La mise en scène révèle le non-dit — c'est son art fondamental."},
 ],
 etoile:[
   {id:"et_s1",title:"Le spectacle solo",cat:"Scène",icon:"🎬",dur:"60 min",xp:250,type:"ex",
-    steps:["Concevez un spectacle solo de 15 minutes.","Écriture, mise en scène, jeu — tout est de vous.","3 séquences minimum, transitions travaillées.","Un fil rouge émotionnel du début à la fin.","Filmez comme une captation de spectacle."],
-    tip:"Le solo est l'Everest de l'acteur."},
+    steps:["Concevez un spectacle solo de 15 minutes.",
+      "Écriture, mise en scène, jeu — tout est de vous.",
+      "3 séquences minimum, transitions travaillées.",
+      "Un fil rouge émotionnel du début à la fin.",
+      "Filmez comme une captation de spectacle."],note:"Un solo ne pardonne rien : il n'y a personne pour rattraper un temps mort. C'est pour ça qu'il fait progresser plus vite que tout le reste.",tip:"Le solo est l'Everest de l'acteur."},
   {id:"et_i1",title:"Masterclass — transmettre",cat:"Pro",icon:"👑",dur:"30 min",xp:120,type:"ex",
-    steps:["Filmez une mini-masterclass de 5 minutes.","Enseignez UN exercice que vous maîtrisez.","Soyez clair, inspirant, généreux.","Un bon acteur sait transmettre.","Partagez votre passion — c'est contagieux."],
-    tip:"Les plus grands sont aussi les plus généreux."},
+    steps:["Filmez une mini-masterclass de 5 minutes.",
+      "Enseignez UN exercice que vous maîtrisez.",
+      "Soyez clair, inspirant, généreux."],note:"On ne sait vraiment un exercice que le jour où on arrive à le faire faire à quelqu'un d'autre.",tip:"Les plus grands sont aussi les plus généreux."},
   {id:"et_k1",title:"Créer sa compagnie",cat:"Pro",icon:"⭐",dur:"45 min",xp:180,type:"ex",
-    steps:["Rédigez une note d'intention pour un spectacle.","Constituez une équipe imaginaire.","Budget prévisionnel simplifié.","Plan de diffusion : où jouer ?","Vous êtes passé de l'autre côté — vous créez."],
-    tip:"Créer sa compagnie est le geste le plus audacieux."},
-  {id:"et_m1",title:"Le dernier monologue",cat:"Monologue",icon:"🎬",dur:"40 min",xp:300,type:"video",
-    text:"« Si c'était la dernière fois que je monte sur scène, qu'est-ce que je dirais ? Pas des mots appris, pas des phrases jolies. La vérité. Ma vérité. Celle que je n'ai jamais osé dire parce que je me cachais derrière des personnages. Ce soir, pas de masque. Juste moi. »",
-    author:"Texte final — Castigat",
-    instructions:["Ce texte EST vous. Pas un personnage.","Réécrivez-le intégralement avec vos mots.","Filmez une seule prise — pas de seconde chance.","C'est votre testament artistique dans cette app."],premium:true},
-  {id:"et_d1",title:"La musicalité du texte",cat:"Diction",icon:"🗣️",dur:"20 min",xp:90,type:"ex",
-    steps:["Choisissez un texte d'un auteur que vous n'avez jamais lu.","Lisez-le à voix haute sans chercher à comprendre — juste les sons.","Relisez en cherchant le sens.","La première lecture était plus musicale ? C'est normal.","Trouvez l'équilibre entre musique et sens — c'est l'art ultime."],
-    tip:"Artaud rêvait d'un théâtre où le son aurait autant de sens que les mots."},
+    steps:["Rédigez une note d'intention pour un spectacle.",
+      "Constituez une équipe imaginaire.",
+      "Budget prévisionnel simplifié.",
+      "Plan de diffusion : où jouer ?"],note:"Créer sa compagnie, c'est cesser d'attendre qu'on vous choisisse. C'est le geste le plus difficile et le plus libérateur du métier.",tip:"Créer sa compagnie est le geste le plus audacieux."},
+  {id:"et_m1",title:"Le dernier monologue",cat:"Monologue",icon:"🎬",dur:"40 min",xp:300,type:"video",premium:true,author:"Texte final — Castigat",text:"« Si c'était la dernière fois que je monte sur scène, qu'est-ce que je dirais ? Pas des mots appris, pas des phrases jolies. La vérité. Ma vérité. Celle que je n'ai jamais osé dire parce que je me cachais derrière des personnages. Ce soir, pas de masque. Juste moi. »",
+    instructions:["Ce texte EST vous. Pas un personnage.",
+      "Réécrivez-le intégralement avec vos mots.",
+      "Filmez une seule prise — pas de seconde chance.",
+      "C'est votre testament artistique dans cette app."]},
+  {id:"et_d1",title:"La musicalité du texte",cat:"Diction",icon:"🗣️",dur:"20 min",xp:90,type:"ex",extrait:"Parce que vous êtes un grand seigneur, vous vous croyez un grand génie ! Noblesse, fortune, un rang, des places : tout cela rend si fier ! Qu'avez-vous fait pour tant de biens ? Vous vous êtes donné la peine de naître, et rien de plus.",source:"Beaumarchais — Le Mariage de Figaro, V, 3",
+    steps:["Lisez le texte épinglé à voix haute sans chercher à comprendre — uniquement les sons, le rythme, les appuis.",
+      "Relisez-le en ne cherchant que le sens, sans vous occuper de la musique.",
+      "La première lecture était plus musicale, la seconde plus claire. C'est normal, et c'est le problème.",
+      "Troisième lecture : gardez les appuis rythmiques de la première et la clarté de la seconde.",
+      "Enregistrez cette troisième version et réécoutez-la à froid le lendemain."],note:"Artaud rêvait d'un théâtre où le son aurait autant de sens que les mots. L'équilibre entre les deux est le dernier travail de l'acteur.",tip:"Artaud rêvait d'un théâtre où le son aurait autant de sens que les mots."},
   {id:"et_c1",title:"Le corps mémoire",cat:"Corps",icon:"🏋",dur:"25 min",xp:85,type:"ex",
-    steps:["Souvenez-vous d'un moment intense de votre vie.","Laissez votre corps retrouver la posture de ce moment.","Les mains, la respiration, la tension — tout revient.","Utilisez cette mémoire corporelle pour un personnage.","Le corps se souvient de tout — c'est le trésor de l'acteur."],
-    tip:"Stanislavski appelait ça la 'mémoire affective' — le corps comme archive émotionnelle."},
-  {id:"et_im1",title:"Le spectacle solo improvisé",cat:"Improvisation",icon:"🎭",dur:"30 min",xp:120,type:"ex",
-    steps:["Improvisez un spectacle de 15 minutes, sans aucune préparation.","Thème donné par un mot : 'frontière', 'enfance', 'masque'.","5 personnages minimum, des transitions, un arc narratif.","Filmez sans coupure — c'est un exercice d'endurance.","L'impro longue est le test ultime de versatilité."],
-    tip:"Les troupes d'impro pro font des spectacles de 90 minutes sans script."},
-  {id:"et_r1",title:"Diriger sa propre respiration",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:75,type:"ex",
-    steps:["Reprenez un texte que vous maîtrisez.","Cartographiez chaque respiration : où, combien de temps, quelle profondeur.","Jouez en suivant votre partition respiratoire.","La respiration EST la mise en scène invisible.","Vous êtes désormais votre propre chef d'orchestre."],
-    tip:"La respiration consciente est ce qui sépare l'amateur du professionnel."},
+    steps:["Souvenez-vous d'un moment intense de votre vie.",
+      "Laissez votre corps retrouver la posture de ce moment.",
+      "Les mains, la respiration, la tension — tout revient.",
+      "Utilisez cette mémoire corporelle pour un personnage."],note:"Le corps se souvient de tout, et plus fidèlement que la tête. C'est un matériau : on l'utilise, on ne s'y noie pas.",tip:"Stanislavski appelait ça la 'mémoire affective' — le corps comme archive émotionnelle."},
+  {id:"et_im1",title:"De l'improvisation à la partition",cat:"Improvisation",icon:"🎭",dur:"30 min",xp:120,type:"ex",
+    steps:["Improvisez cinq minutes sur un mot : frontière, enfance, masque. Filmez.",
+      "Regardez la vidéo et notez les trois moments qui tiennent — ceux-là seulement.",
+      "Rejouez ces trois moments dans l'ordre, en les reliant. Vous n'improvisez plus : vous montez.",
+      "Refaites cette version une deuxième fois, aussi proche que possible de la première.",
+      "Comparez les deux prises : ce qui a survécu à la répétition est écrit, le reste était de l'énergie."],note:"Improviser est facile ; refaire une improvisation est le métier. C'est ce passage-là qui sépare un bon moment d'une scène.",tip:"C'est la méthode de l'écriture de plateau : on improvise beaucoup, on ne garde presque rien, et ce qui reste devient la partition."},
+  {id:"et_r1",title:"Diriger sa propre respiration",cat:"Respiration",icon:"🌬️",dur:"15 min",xp:75,type:"ex",extrait:"Je le vis, je rougis, je pâlis à sa vue ;\nUn trouble s'éleva dans mon âme éperdue ;\nMes yeux ne voyaient plus, je ne pouvais parler ;\nJe sentis tout mon corps et transir et brûler.",source:"Racine — Phèdre, I, 3",
+    steps:["Reprenez un texte que vous maîtrisez.",
+      "Cartographiez chaque respiration : où, combien de temps, quelle profondeur.",
+      "Jouez en suivant votre partition respiratoire."],note:"Une partition de souffle décidée à l'avance, c'est une mise en scène invisible que vous vous donnez à vous-même.",tip:"La respiration consciente est ce qui sépare l'amateur du professionnel."},
   {id:"et_k2",title:"L'héritage artistique",cat:"Pro",icon:"📹",dur:"30 min",xp:150,type:"ex",
-    steps:["Identifiez 3 maîtres qui vous ont influencé : acteurs, metteurs, artistes.","Pour chacun, analysez : leur approche, leur signature, ce qu'ils vous ont enseigné.","Créez une 'lettre ouverte' vidéo à l'un d'eux — gratitude, apprentissages.","Filmez avec sincérité — c'est votre transmission.","L'étoile se définit par ce qu'elle transmet, pas ce qu'elle reçoit."],
-    tip:"Laurence Olivier, Anne Consigny, Lecoq — tous parlent de ceux qui les ont formés."},
+    steps:["Identifiez 3 maîtres qui vous ont influencé : acteurs, metteurs, artistes.",
+      "Pour chacun, analysez : leur approche, leur signature, ce qu'ils vous ont enseigné.",
+      "Créez une 'lettre ouverte' vidéo à l'un d'eux — gratitude, apprentissages.",
+      "Filmez avec sincérité — c'est votre transmission."],note:"On se définit autant par ce qu'on transmet que par ce qu'on a reçu. C'est le dernier exercice, et ce n'est pas un hasard.",tip:"Laurence Olivier, Anne Consigny, Lecoq — tous parlent de ceux qui les ont formés."},
 ],
 };
 
 const CU={
 figurant:[
-  {id:"h_f1",title:"Naissance du théâtre",cat:"Histoire",icon:"🏛️",dur:"8 min",xp:20,
-    content:["Le théâtre naît en Grèce au VIe siècle av. J.-C., lors des Grandes Dionysies, fêtes religieuses en l'honneur du dieu Dionysos.","Thespis, considéré comme le premier acteur de l'histoire, se détache du chœur vers 534 av. J.-C. pour incarner un personnage seul — c'est la naissance du dialogue dramatique.","Les trois grands tragiques grecs : Eschyle (le père de la tragédie, il ajoute un 2e acteur), Sophocle (il en ajoute un 3e — Œdipe Roi, Antigone), Euripide (il humanise les héros — Médée, Les Troyennes).","La comédie naît avec Aristophane, maître de la satire politique (Les Nuées, Les Oiseaux). Le théâtre grec se joue en plein air, dans des amphithéâtres pouvant accueillir 15 000 spectateurs, avec des masques amplificateurs."],
-    quiz:[{q:"En quelle période naît le théâtre occidental ?",o:["IIe siècle av. J.-C.","VIe siècle av. J.-C.","IIe siècle ap. J.-C.","Moyen Âge"],a:1},{q:"Qui est considéré comme le premier acteur de l'histoire ?",o:["Sophocle","Thespis","Aristophane","Euripide"],a:1},{q:"Quel tragique grec a ajouté un deuxième acteur sur scène ?",o:["Sophocle","Euripide","Eschyle","Aristophane"],a:2}]},
+  /* « Naissance du théâtre » est devenu la séance de culture du Figurant
+     (s1_cu1) : on ne la laisse pas en double dans l onglet Culture. */
   {id:"h_f2",title:"Shakespeare, le génie",cat:"Auteurs",icon:"✒️",dur:"10 min",xp:25,
     content:["William Shakespeare (1564–1616), né à Stratford-upon-Avon, a écrit 37 pièces et 154 sonnets en 25 ans de carrière.","Ses tragédies explorent les abîmes de l'âme : Hamlet (le doute), Macbeth (l'ambition), Othello (la jalousie), Le Roi Lear (la folie), Roméo et Juliette (l'amour impossible).","Le Globe Theatre, construit en 1599, accueillait 3 000 spectateurs. Le parterre debout payait un penny, les loges étaient pour les nobles. Pas de décor — tout est dans le texte.","Shakespeare a inventé plus de 1 700 mots anglais (eyeball, lonely, generous...) et des expressions encore utilisées (break the ice, wild goose chase). Il écrivait pour tous : peuple et rois, rire et larmes dans la même pièce."],
     quiz:[{q:"En quelle année est construit le Globe Theatre ?",o:["1576","1599","1613","1642"],a:1},{q:"Quelle tragédie explore le thème de la jalousie ?",o:["Hamlet","Macbeth","Othello","Le Roi Lear"],a:2},{q:"Combien de sonnets Shakespeare a-t-il écrits ?",o:["100","126","154","200"],a:2}]},
@@ -861,8 +1888,8 @@ figurant:[
     content:["Côté cour (droite du spectateur) et côté jardin (gauche). L'astuce : C et J sont dans l'ordre alphabétique de gauche à droite — Jardin à gauche, Cour à droite. L'origine vient du Palais des Tuileries.","Le lointain (fond de scène) et la face (devant, côté public). L'avant-scène est l'espace entre le rideau et l'orchestre. Le manteau d'Arlequin est le cadre de scène.","Les coulisses : espaces latéraux cachés où les acteurs attendent. Les cintres : espace au-dessus de la scène pour les décors suspendus. Le gril : structure métallique tout en haut.","Le plateau : la scène elle-même. La fosse : espace sous la scène ou devant pour l'orchestre. Les pendrillons : rideaux latéraux qui masquent les coulisses."],
     quiz:[{q:"Côté cour, c'est quel côté pour le spectateur ?",o:["Gauche","Droite","Le fond","Ça dépend du théâtre"],a:1},{q:"Comment s'appelle le cadre de scène ?",o:["L'avant-scène","Le manteau d'Arlequin","Le lointain","Les pendrillons"],a:1}]},
   {id:"h_f4",title:"Les émotions de base",cat:"Techniques",icon:"⭐",dur:"7 min",xp:20,
-    content:["Paul Ekman, psychologue américain, identifie 6 émotions universelles : joie, tristesse, colère, peur, surprise, dégoût. Elles sont reconnues dans toutes les cultures.","Au théâtre, l'émotion est le carburant du jeu. Mais on ne la 'mime' pas — on crée les conditions pour qu'elle émerge. Stanislavski appelle ça la 'reviviscence'.","Chaque émotion a une signature corporelle : la colère fait avancer et serrer les poings, la peur fait reculer et rétrécir, la joie ouvre la poitrine et élève, la tristesse pèse et replie vers le sol.","Le comédien ne ressent pas forcément l'émotion — il la joue avec précision. C'est la différence entre 'être ému' et 'émouvoir le public'. Les deux approches (ressentir vs montrer) divisent les écoles depuis 250 ans."],
-    quiz:[{q:"Combien d'émotions universelles selon Ekman ?",o:["4","6","8","12"],a:1},{q:"Quelle émotion fait physiquement reculer le corps ?",o:["La colère","La joie","La peur","Le dégoût"],a:2}]},
+    content:["Paul Ekman, psychologue américain, a documenté que certaines expressions faciales de base — joie, tristesse, colère, peur, surprise, dégoût — sont reconnues dans presque toutes les cultures. C'est un fait établi par la recherche.","Au théâtre, l'émotion est le carburant du jeu. Mais on ne la 'mime' pas — on crée les conditions pour qu'elle émerge. Stanislavski appelle ça la 'reviviscence'.","Il n'existe pas de geste 'correct' pour chaque émotion : deux mises en scène peuvent jouer la même colère de deux façons opposées, et les deux peuvent être justes. Ce qui compte, c'est la précision du choix — pas sa conformité à une règle. L'art ne se code pas comme une science.","Le comédien ne ressent pas forcément l'émotion — il la joue avec précision. C'est la différence entre 'être ému' et 'émouvoir le public'. Les deux approches (ressentir vs montrer) divisent les écoles depuis 250 ans."],
+    quiz:[{q:"Selon Ekman, qu'est-ce qui est reconnu dans presque toutes les cultures ?",o:["Les gestes de la main","Certaines expressions faciales de base","La posture debout","Le ton de la voix"],a:1},{q:"Que dit l'école de la 'reviviscence' (Stanislavski) ?",o:["Il faut mimer l'émotion de l'extérieur","On crée les conditions pour que l'émotion émerge","L'émotion n'a pas sa place au théâtre","Seule la voix compte, pas le ressenti"],a:1}]},
 ],
 apprenti:[
   {id:"h_a1",title:"Molière, le patron",cat:"Auteurs",icon:"✒️",dur:"10 min",xp:25,
@@ -1168,7 +2195,7 @@ const FEED_MICROCOURS=[
   {id:"mc3",title:"Les rapports de force",content:["Dans chaque scène, un personnage domine et un autre est dominé. Parfois ça bascule.","Le rapport de force n'est pas toujours celui qu'on croit. Un valet peut dominer son maître (Iago/Othello, Figaro/Almaviva).","Pour identifier le rapport de force, demandez : « Qui a l'information ? Qui contrôle le rythme ? Qui fait bouger l'autre ? »","Sur scène, le rapport de force se traduit physiquement : regard, posture, occupation de l'espace, hauteur."],icon:"⚔️"},
   {id:"mc4",title:"L'adresse au public",content:["Au théâtre, on ne joue pas pour la caméra — on joue pour des êtres humains vivants devant soi.","Le quatrième mur est un choix, pas une obligation. Brecht le brise volontairement. Shakespeare aussi.","Même quand vous ne regardez pas le public, vous jouez VERS lui. La voix se projette vers le fond de salle, le corps se place en ouverture.","L'aparté est un outil puissant : le personnage confie quelque chose au public que les autres personnages n'entendent pas. Ça crée une complicité."],icon:"👥"},
   {id:"mc5",title:"Le rythme scénique",content:["Le rythme, c'est la musique invisible de la scène. Accélérations, ralentissements, silences.","Un silence est aussi important qu'une réplique. Il peut valoir plus qu'un monologue entier.","Exercice : prenez une scène et marquez les temps forts (⬆️) et les temps faibles (⬇️). Le rythme naît de cette alternance.","Attention à la « monotonie rythmique » — le piège du débutant qui dit tout sur le même tempo. Variez !"],icon:"🥁"},
-  {id:"mc6",title:"Le corps raconte",content:["Le public voit avant d'entendre. Votre corps dit la vérité même quand votre texte ment.","Michael Chekhov : chaque émotion a un geste psychologique. La colère pousse vers l'avant, la peur recule, la joie s'ouvre, la tristesse se ferme.","Le centre du corps change selon le personnage. Un intellectuel vit dans sa tête. Un séducteur dans son bassin. Un guerrier dans sa poitrine.","Exercice : traversez la scène 5 fois avec 5 centres différents. Observez comment le personnage change."],icon:"🏋"},
+  {id:"mc6",title:"Le corps raconte",content:["Le public voit avant d'entendre. Votre corps dit la vérité même quand votre texte ment.","Michael Chekhov proposait d'associer un geste physique à chaque état intérieur — pas une règle universelle, un outil d'exploration : quel mouvement pourrait porter cette colère, cette peur, cette joie ? Deux acteurs trouveront deux gestes différents, et les deux peuvent être justes.","Le centre du corps peut changer selon le personnage. Un intellectuel peut vivre dans sa tête. Un séducteur dans son bassin. Un guerrier dans sa poitrine — à vous de choisir, pas de suivre une case toute faite.","Exercice : traversez la scène 5 fois avec 5 centres différents. Observez comment le personnage change, et gardez celui qui vous semble le plus juste — pas le plus 'correct'."],icon:"🏋"},
   {id:"mc7",title:"La diction française",content:["Les consonnes portent le sens, les voyelles portent l'émotion. Articuler, c'est respecter les deux.","La liaison est obligatoire en vers classique. « Les‿amants » se lie, « les amants | heureux » se lie aussi.","Le « e muet » se prononce en alexandrin : « Je suis maîtr(e) de moi comm(e) de l'univers ».","Exercice quotidien : lisez un texte classique en exagérant CHAQUE consonne. Puis relâchez progressivement vers le naturel."],icon:"🗣️"},
   {id:"mc8",title:"Jouer l'écoute",content:["90% du jeu, c'est l'écoute. Le personnage qui ne parle pas est tout aussi important que celui qui parle.","Écouter sur scène, ce n'est pas attendre son tour de parler. C'est RÉAGIR en temps réel à ce qu'on entend.","Exercice : dans une scène à deux, jouez votre rôle en vous interdisant de penser à votre prochaine réplique. Écoutez VRAIMENT.","L'écoute se voit dans le regard, la respiration, les micro-mouvements. Le public le sent immédiatement."],icon:"👂"},
 ];
@@ -1927,9 +2954,9 @@ function Logo({size=140}){
       <line x1="16" y1="70" x2="32" y2="70" stroke="var(--gold-dim)" strokeWidth="1" opacity=".5"/>
       <line x1="108" y1="70" x2="124" y2="70" stroke="var(--gold-dim)" strokeWidth="1" opacity=".5"/>
       <text x="70" y="50" textAnchor="middle" fill="rgba(200,164,78,.6)" style={{fontSize:6.5,fontFamily:'Archivo',fontWeight:700,letterSpacing:'0.35em'}}>COMPAGNIE</text>
-      <text x="70" y="68" textAnchor="middle" fill="var(--text)" style={{fontSize:18,fontFamily:'Cormorant Garamond,serif',fontWeight:600,letterSpacing:'0.1em'}}>CASTIGAT</text>
-      <text x="70" y="85" textAnchor="middle" fill="rgba(200,164,78,.6)" style={{fontSize:7.5,fontFamily:'Cormorant Garamond,serif',fontWeight:500,letterSpacing:'0.3em',fontStyle:'italic'}}>Academy</text>
-      <text x="70" y="100" textAnchor="middle" fill="rgba(200,164,78,.35)" style={{fontSize:5.5,fontFamily:'Archivo',fontWeight:600,letterSpacing:'0.4em'}}>THÉÂTRE</text>
+      <text x="70" y="68" textAnchor="middle" fill="var(--text)" style={{fontSize:18,fontFamily:'Cormorant Garamond,serif',fontWeight:700,letterSpacing:'0.1em'}}>CASTIGAT</text>
+      <text x="70" y="85" textAnchor="middle" fill="rgba(200,164,78,.6)" style={{fontSize:7.5,fontFamily:'Cormorant Garamond,serif',fontWeight:400,letterSpacing:'0.3em'}}>Academy</text>
+      <text x="70" y="100" textAnchor="middle" fill="rgba(200,164,78,.35)" style={{fontSize:5.5,fontFamily:'Archivo',fontWeight:700,letterSpacing:'0.4em'}}>THÉÂTRE</text>
     </svg>
   );
 }
@@ -2006,7 +3033,7 @@ function ExamView({levelId,st,setSt,onPass,onBack}){
               const isC=i===exam.questions[qi].a,isS=sel===i;
               let bg='var(--bg-raised)',bc='var(--line)';
               if(sel!==null){if(isC){bg='rgba(74,222,128,.08)';bc='var(--emerald)'}else if(isS){bg='rgba(239,68,68,.08)';bc='var(--red)'}}
-              return(<button key={i} onClick={()=>sel===null&&answer(i)} style={{padding:'10px 12px',borderRadius:8,border:'1.5px solid',borderColor:bc,background:bg,textAlign:'left',fontSize:11,fontWeight:500,display:'flex',alignItems:'center',gap:7}}>
+              return(<button key={i} onClick={()=>sel===null&&answer(i)} style={{padding:'10px 12px',borderRadius:8,border:'1.5px solid',borderColor:bc,background:bg,textAlign:'left',fontSize:11,fontWeight:400,display:'flex',alignItems:'center',gap:7}}>
                 <span style={{fontSize:9,fontWeight:700,color:'var(--gold)'}}>{String.fromCharCode(65+i)}</span><span style={{flex:1}}>{o}</span>
                 {sel!==null&&isC&&<span style={{color:'var(--emerald)',fontSize:10}}>✓</span>}
                 {sel!==null&&isS&&!isC&&<span style={{color:'var(--red)',fontSize:10}}>✗</span>}
@@ -2056,12 +3083,12 @@ function ExamView({levelId,st,setSt,onPass,onBack}){
         {selectedMono&&(
           <div style={{marginBottom:18}}>
             <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
-              {!monoRecording?<button onClick={startMonoRecording} className="btn-outline" style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5}}>🎤 Enregistrer</button>:<button onClick={stopMonoRecording} style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5,background:'rgba(232,116,90,.15)',border:'1.5px solid var(--coral)',borderRadius:12,color:'var(--coral)',fontWeight:600,cursor:'pointer'}}>⏹️ Arrêter</button>}
+              {!monoRecording?<button onClick={startMonoRecording} className="btn-outline" style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5}}>🎤 Enregistrer</button>:<button onClick={stopMonoRecording} style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5,background:'rgba(232,116,90,.15)',border:'1.5px solid var(--coral)',borderRadius:12,color:'var(--coral)',fontWeight:700,cursor:'pointer'}}>⏹️ Arrêter</button>}
               {monoAudio&&<><button onClick={playMonoRecording} className="btn-outline" style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5}}>▶️ Écouter</button><video ref={monoAudioRef} src={monoAudio} style={{display:'none'}}/><audio ref={monoAudioRef} src={monoAudio} style={{display:'none'}}/></>}
             </div>
             {monoAudio&&(
               <div style={{padding:12,borderRadius:10,background:'rgba(74,222,128,.08)',border:'1px solid rgba(74,222,128,.2)'}}>
-                <p style={{fontSize:11,fontWeight:600,color:'var(--emerald)',marginBottom:2}}>✓ Enregistrement sauvegardé</p>
+                <p style={{fontSize:11,fontWeight:700,color:'var(--emerald)',marginBottom:2}}>✓ Enregistrement sauvegardé</p>
                 <p style={{fontSize:9,color:'var(--text-2)'}}>Prêt à être envoyé{st.plan==="premium"?" au coach":""}</p>
               </div>
             )}
@@ -2112,7 +3139,7 @@ function ExamView({levelId,st,setSt,onPass,onBack}){
       {(st.plan==="free"||!st.plan)&&(
         <div style={{padding:'16px 18px',borderRadius:16,background:'linear-gradient(158deg,rgba(224,184,78,.10),var(--bg-card) 62%)',border:'1px solid var(--line-s)',marginBottom:20,maxWidth:320}}>
           <p className="eb eb-or" style={{marginBottom:6}}>Pour aller plus loin</p>
-          <p style={{fontSize:13,fontWeight:800,marginBottom:5}}>4 jours gratuits</p>
+          <p style={{fontSize:13,fontWeight:700,marginBottom:5}}>4 jours gratuits</p>
           <p style={{fontSize:10.5,color:'var(--text-2)',lineHeight:1.5,marginBottom:12}}>Les douze niveaux, tous les exercices, le bilan personnalisé et les outils du comédien.</p>
           <button onClick={()=>{_track('plan_clicked',{plan:'standard',price:9.90,source:'exam_pass'});window.location.href=STRIPE_STANDARD}}
             className="btn-gold" style={{width:'100%',padding:'12px 0',fontSize:12}}>Essayer gratuitement</button>
@@ -2165,9 +3192,10 @@ const PAYWALL_COPY={
   analysis:{t:"CETTE ANALYSE DE SCÈNE",d:"Les analyses complètes de scène sont réservées aux abonnées."},
   bilan:{t:"LE BILAN PERSONNALISÉ",d:"Votre diagnostic sur mesure, vos forces et vos axes de travail."},
   monologue:{t:"CE MONOLOGUE",d:"Les monologues du répertoire et leurs conseils d'interprétation sont réservés aux abonnées."},
+  daily:{t:"SÉANCES ILLIMITÉES",d:"Une séance par jour suffit pour progresser sérieusement. Pour vous entraîner plus souvent, l'abonnement débloque autant de séances que vous voulez, chaque jour."},
   default:{t:"TOUT LE PARCOURS",d:"Les 12 niveaux, les outils du comédien et le bilan personnalisé."}
 };
-const PAYWALL_FEATURES=["Tout le parcours — 12 niveaux","Les 4 outils du comédien","Toutes les analyses de scène","Les monologues du répertoire","Votre bilan personnalisé"];
+const PAYWALL_FEATURES=["Séances illimitées chaque jour","Tout le parcours — 12 niveaux","Les 4 outils du comédien","Toutes les analyses de scène","Les monologues du répertoire","Votre bilan personnalisé"];
 
 function Paywall({source,plan,onClose}){
   const copy=PAYWALL_COPY[source]||PAYWALL_COPY.default;
@@ -2186,7 +3214,7 @@ function Paywall({source,plan,onClose}){
           {I.crown({size:22,style:{color:'var(--ink)'}})}
         </div>
 
-        <p style={{fontSize:9,fontWeight:800,letterSpacing:'.16em',color:'var(--gold)',marginBottom:10}}>{copy.t}</p>
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'.16em',color:'var(--gold)',marginBottom:10}}>{copy.t}</p>
 
         {/* L'essai est le titre : c'est l'argument, pas une mention */}
         <h3 className="heading" style={{fontSize:28,lineHeight:1.15,marginBottom:8}}>4 jours gratuits</h3>
@@ -2201,7 +3229,7 @@ function Paywall({source,plan,onClose}){
           ))}
         </div>
 
-        <button onClick={goStandard} className="btn-gold btn-pulse" style={{width:'100%',padding:'15px 0',fontSize:13,fontWeight:800,marginBottom:8}}>Commencer mes 4 jours gratuits</button>
+        <button onClick={goStandard} className="btn-gold btn-pulse" style={{width:'100%',padding:'15px 0',fontSize:13,fontWeight:700,marginBottom:8}}>Commencer mes 4 jours gratuits</button>
         <p style={{fontSize:10,color:'var(--text-3)',marginBottom:16,lineHeight:1.5}}>Puis 9,90 €/mois. Sans engagement, résiliable à tout moment.</p>
 
         <button onClick={goPremium} style={{width:'100%',padding:'13px 0',fontSize:11.5,fontWeight:700,color:'var(--purple)',borderRadius:10,background:'rgba(171,71,188,.08)',border:'1px solid rgba(171,71,188,.2)',cursor:'pointer',marginBottom:10}}>
@@ -2226,7 +3254,7 @@ function Nav({tab,go,plan}){
           return(
             <button key={t.id} onClick={()=>go(t.id)} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:isCenterTab?4:3,padding:isCenterTab?'8px 16px':'4px 12px',color:a?'var(--gold)':'var(--text-3)',transition:'color .2s,transform .2s',transform:isCenterTab?'scale(1.1)':'scale(1)'}}>
               {t.ic({size:isCenterTab?24:20,sw:a?2:1.4})}
-              <span style={{fontSize:isCenterTab?9:8,fontWeight:a?700:500,letterSpacing:'.04em'}}>{t.l}</span>
+              <span style={{fontSize:isCenterTab?9:8,fontWeight:a?700:400,letterSpacing:'.04em'}}>{t.l}</span>
               {a&&<div style={{width:3,height:3,borderRadius:3,background:'var(--gold)'}}/>}
             </button>
           );
@@ -2243,13 +3271,19 @@ function Top({xp,streak,passedExams}){
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <EI e={lv.icon} s={20}/>
           <div>
-            <p className="label-gold" style={{marginBottom:3}}>{lv.name}</p>
-            <div style={{width:64}}><Bar val={Math.min(inL,forN)} max={forN} h={2.5}/></div>
+            <p className="label-gold" style={{marginBottom:4}}>{lv.name}</p>
+            {/* Une barre, pas un trait : on doit voir ce qui reste à parcourir. */}
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <div style={{width:76}}><Bar val={Math.min(inL,forN)} max={forN} h={4}/></div>
+              <span style={{fontSize:8.5,color:'var(--text-3)',fontWeight:700,fontVariantNumeric:'tabular-nums'}}>
+                {Math.min(inL,forN)}/{forN}
+              </span>
+            </div>
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:14}}>
-          <div style={{display:'flex',alignItems:'center',gap:4,color:streak>=30?'var(--gold)':streak>=14?'var(--purple)':streak>=7?'var(--blue)':'var(--coral)',animation:streak>=3?'breatheCircle 2s ease-in-out infinite':'none'}}>{I.flame({size:15,sw:1.8})}<span style={{fontSize:12,fontWeight:800}}>{streak}</span>{streak>=7&&<span style={{fontSize:8,marginLeft:1}}>🔥</span>}</div>
-          <div style={{display:'flex',alignItems:'center',gap:4,color:'var(--gold)'}}>{I.zap({size:15,sw:1.8})}<span style={{fontSize:12,fontWeight:800}}>{xp}</span></div>
+          <div style={{display:'flex',alignItems:'center',gap:4,color:streak>=30?'var(--gold)':streak>=14?'var(--purple)':streak>=7?'var(--blue)':'var(--coral)',animation:streak>=3?'breatheCircle 2s ease-in-out infinite':'none'}}>{I.flame({size:15,sw:1.8})}<span style={{fontSize:12,fontWeight:700}}>{streak}</span>{streak>=7&&<span style={{fontSize:8,marginLeft:1}}>🔥</span>}</div>
+          <div style={{display:'flex',alignItems:'center',gap:4,color:'var(--gold)'}}>{I.zap({size:15,sw:1.8})}<span style={{fontSize:12,fontWeight:700}}>{xp}</span></div>
         </div>
       </div>
     </div>
@@ -2367,10 +3401,10 @@ function Onboard({done:onDone,startStep=0}){
         <div style={{display:'flex',flexDirection:'column',gap:16}}>
           <div><label className="input-label">Adresse email</label><input className="input-field" type="email" placeholder="votre@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
           <div><label className="input-label">Mot de passe</label><input className="input-field" type="password" placeholder="Votre mot de passe" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} onKeyDown={e=>{if(e.key==='Enter')loginUser()}}/></div>
-          <p style={{textAlign:'right',marginTop:-8}}><span onClick={async()=>{if(!form.email.trim()||!form.email.includes('@')){setFormErr("Entrez votre email ci-dessus, puis cliquez ici.");return}setFormErr('');setFormLoading(true);try{const{error}=await _supabase.auth.resetPasswordForEmail(form.email.trim(),{redirectTo:window.location.origin+'/castigat-academy.html'});setFormLoading(false);if(error){setFormErr(error.message)}else{setFormErr('');alert('Un email de réinitialisation a été envoyé à '+form.email.trim()+'. Vérifiez votre boîte mail (et vos spams).')}}catch(e){setFormLoading(false);setFormErr("Erreur, réessayez.")}}} style={{fontSize:11,color:'var(--gold)',cursor:'pointer',fontWeight:500}}>Mot de passe oublié ?</span></p>
+          <p style={{textAlign:'right',marginTop:-8}}><span onClick={async()=>{if(!form.email.trim()||!form.email.includes('@')){setFormErr("Entrez votre email ci-dessus, puis cliquez ici.");return}setFormErr('');setFormLoading(true);try{const{error}=await _supabase.auth.resetPasswordForEmail(form.email.trim(),{redirectTo:window.location.origin+'/castigat-academy.html'});setFormLoading(false);if(error){setFormErr(error.message)}else{setFormErr('');alert('Un email de réinitialisation a été envoyé à '+form.email.trim()+'. Vérifiez votre boîte mail (et vos spams).')}}catch(e){setFormLoading(false);setFormErr("Erreur, réessayez.")}}} style={{fontSize:11,color:'var(--gold)',cursor:'pointer',fontWeight:400}}>Mot de passe oublié ?</span></p>
           {formErr&&<div style={{padding:'10px 14px',borderRadius:8,background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)'}}><p style={{fontSize:11,color:'var(--red)'}}>{formErr}</p></div>}
           <button className="btn-gold" onClick={loginUser} disabled={formLoading} style={{width:'100%',padding:'15px 0',fontSize:13,letterSpacing:'.08em',marginTop:4,opacity:formLoading?.6:1}}>{formLoading?'Connexion...':'SE CONNECTER'}</button>
-          <p style={{textAlign:'center',fontSize:12,color:'var(--text-3)',marginTop:8}}>Pas encore de compte ? <span onClick={()=>{setLoginMode(false);setFormErr('')}} style={{color:'var(--gold)',cursor:'pointer',fontWeight:600}}>S'inscrire</span></p>
+          <p style={{textAlign:'center',fontSize:12,color:'var(--text-3)',marginTop:8}}>Pas encore de compte ? <span onClick={()=>{setLoginMode(false);setFormErr('')}} style={{color:'var(--gold)',cursor:'pointer',fontWeight:700}}>S'inscrire</span></p>
         </div>
       </div>
     </div>
@@ -2397,11 +3431,11 @@ function Onboard({done:onDone,startStep=0}){
         <div style={{width:44,height:1,background:'var(--gold)',opacity:.7,margin:'18px auto 0',
           animation:'fadeIn .8s ease .5s both'}}/>
 
-        <p style={{fontFamily:'Archivo,sans-serif',fontWeight:800,fontSize:'clamp(16px,4.6vw,19px)',letterSpacing:'.01em',
+        <p style={{fontFamily:'Archivo,sans-serif',fontWeight:700,fontSize:'clamp(16px,4.6vw,19px)',letterSpacing:'.01em',
           lineHeight:1.25,margin:'18px 0 0',textTransform:'uppercase',animation:'fadeUp .8s cubic-bezier(.22,1,.36,1) .55s both'}}>
           L'école de <span style={{color:'var(--gold)'}}>théâtre</span><br/>dans votre poche
         </p>
-        <p style={{fontSize:11,color:'rgba(242,240,234,.45)',marginTop:11,fontWeight:500,
+        <p style={{fontSize:11,color:'rgba(242,240,234,.45)',marginTop:11,fontWeight:400,
           animation:'fadeIn .8s ease .8s both'}}>Créé par des professionnels du théâtre</p>
       </div>
 
@@ -2437,7 +3471,7 @@ function Onboard({done:onDone,startStep=0}){
 
         <div style={{display:'flex',justifyContent:'center',gap:15,marginTop:12,animation:'fadeIn .7s ease 1.7s both'}}>
           {[{t:"À votre rythme",ic:I.clock},{t:"Où vous voulez",ic:I.compass},{t:"Vrai coaching",ic:I.users}].map((x,i)=>(
-            <span key={i} style={{display:'flex',alignItems:'center',gap:5,fontSize:9.5,fontWeight:600,color:'rgba(242,240,234,.42)'}}>
+            <span key={i} style={{display:'flex',alignItems:'center',gap:5,fontSize:9.5,fontWeight:700,color:'rgba(242,240,234,.42)'}}>
               {x.ic({size:12,sw:1.7})}{x.t}
             </span>
           ))}
@@ -2468,10 +3502,10 @@ function Onboard({done:onDone,startStep=0}){
           <div style={{background:'var(--bg-card)',border:'1px solid var(--line)',borderRadius:14,padding:18,marginBottom:24,textAlign:'left'}}>
             <p className="label-gold" style={{marginBottom:10}}>MARCHE À SUIVRE</p>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:800,fontSize:13,flexShrink:0}}>1.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Copiez ce lien : <code style={{color:'var(--gold)',fontSize:11}}>academy.compagnie-castigat.com</code></p></div>
-              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:800,fontSize:13,flexShrink:0}}>2.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Ouvrez l'application <strong style={{color:'var(--text)'}}>Safari</strong> (la boussole bleue 🧭)</p></div>
-              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:800,fontSize:13,flexShrink:0}}>3.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Collez le lien dans la barre d'adresse et appuyez sur <strong style={{color:'var(--text)'}}>Entrée</strong></p></div>
-              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:800,fontSize:13,flexShrink:0}}>4.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Le tuto d'installation apparaîtra automatiquement</p></div>
+              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:700,fontSize:13,flexShrink:0}}>1.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Copiez ce lien : <code style={{color:'var(--gold)',fontSize:11}}>academy.compagnie-castigat.com</code></p></div>
+              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:700,fontSize:13,flexShrink:0}}>2.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Ouvrez l'application <strong style={{color:'var(--text)'}}>Safari</strong> (la boussole bleue 🧭)</p></div>
+              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:700,fontSize:13,flexShrink:0}}>3.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Collez le lien dans la barre d'adresse et appuyez sur <strong style={{color:'var(--text)'}}>Entrée</strong></p></div>
+              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{color:'var(--gold)',fontWeight:700,fontSize:13,flexShrink:0}}>4.</span><p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6}}>Le tuto d'installation apparaîtra automatiquement</p></div>
             </div>
           </div>
           <button onClick={()=>{try{navigator.clipboard.writeText('https://academy.compagnie-castigat.com');SFX.success()}catch(e){}}} className="btn-gold" style={{width:'100%',padding:'14px 0',fontSize:13,fontWeight:700,marginBottom:10}}>Copier le lien</button>
@@ -2490,12 +3524,12 @@ function Onboard({done:onDone,startStep=0}){
           <h1 className="heading" style={{fontSize:26,marginBottom:6}}>Installez l'application</h1>
           <p style={{fontSize:12,color:'var(--text-3)',marginBottom:4}}>Pour avoir Castigat Academy directement sur votre téléphone</p>
           <p style={{fontSize:11,color:'var(--violet)',marginBottom:28}}>Je vous guide pas à pas ✨</p>
-          <p style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:18}}>Quel appareil utilisez-vous ?</p>
+          <p style={{fontSize:13,fontWeight:700,color:'var(--text)',marginBottom:18}}>Quel appareil utilisez-vous ?</p>
           <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:24}}>
             <button onClick={()=>{setInstallDevice('apple');setInstallSubStep(1)}} style={{padding:'20px 20px',borderRadius:16,background:'var(--bg-card)',border:'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',alignItems:'center',gap:16,textAlign:'left'}}>
               <span style={{fontSize:32,filter:'grayscale(1) brightness(10)',flexShrink:0}}>🍎</span>
               <div style={{flex:1}}>
-                <p style={{fontSize:15,fontWeight:800,color:'var(--text)',marginBottom:2}}>iPhone ou iPad</p>
+                <p style={{fontSize:15,fontWeight:700,color:'var(--text)',marginBottom:2}}>iPhone ou iPad</p>
                 <p style={{fontSize:10,color:'var(--text-3)'}}>Avec le navigateur Safari</p>
               </div>
               <span style={{fontSize:20,color:'var(--text-3)'}}>›</span>
@@ -2503,7 +3537,7 @@ function Onboard({done:onDone,startStep=0}){
             <button onClick={()=>{setInstallDevice('android');setInstallSubStep(1)}} style={{padding:'20px 20px',borderRadius:16,background:'var(--bg-card)',border:'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',alignItems:'center',gap:16,textAlign:'left'}}>
               <span style={{fontSize:32,filter:'grayscale(1) brightness(10)',flexShrink:0}}>🤖</span>
               <div style={{flex:1}}>
-                <p style={{fontSize:15,fontWeight:800,color:'var(--text)',marginBottom:2}}>Android ou ordinateur</p>
+                <p style={{fontSize:15,fontWeight:700,color:'var(--text)',marginBottom:2}}>Android ou ordinateur</p>
                 <p style={{fontSize:10,color:'var(--text-3)'}}>Avec Chrome, Edge ou Firefox</p>
               </div>
               <span style={{fontSize:20,color:'var(--text-3)'}}>›</span>
@@ -2520,7 +3554,7 @@ function Onboard({done:onDone,startStep=0}){
     if(installDevice==='apple'){
       const totalSteps=3;
       const nextBtn=(label,onClick)=>(
-        <button onClick={()=>{SFX.click();onClick()}} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:800,letterSpacing:'.03em',marginTop:16}}>{label}</button>
+        <button onClick={()=>{SFX.click();onClick()}} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:700,letterSpacing:'.03em',marginTop:16}}>{label}</button>
       );
       const backBtn=(
         <button onClick={()=>installSubStep>1?setInstallSubStep(installSubStep-1):resetFlow()} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:11,cursor:'pointer',marginTop:6}}>← Étape précédente</button>
@@ -2553,7 +3587,7 @@ function Onboard({done:onDone,startStep=0}){
                 <p style={{fontSize:11,color:'var(--text-2)',lineHeight:1.6}}>Elle fonctionne <strong style={{color:'var(--text)'}}>même hors-ligne</strong></p>
               </div>
             </div>
-            <button onClick={finishFlow} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:800,letterSpacing:'.03em'}}>CONTINUER L'INSCRIPTION →</button>
+            <button onClick={finishFlow} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:700,letterSpacing:'.03em'}}>CONTINUER L'INSCRIPTION →</button>
             <button onClick={()=>setInstallSubStep(0)} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer',marginTop:6}}>Je n'ai pas réussi, revoir les étapes</button>
           </div>
         </div>
@@ -2561,7 +3595,7 @@ function Onboard({done:onDone,startStep=0}){
 
       /* Animation en boucle : 3 gestes iOS (⋯ → Partager → Sur l'écran d'accueil) */
       const tapDot=s=>({position:'absolute',zIndex:20,width:20,height:20,borderRadius:'50%',background:'radial-gradient(circle,rgba(255,255,255,.35),var(--w08))',border:'2px solid rgba(255,255,255,.25)',boxShadow:'0 0 20px var(--w15)',opacity:0,animation:`instTap${s} 9s infinite`});
-      const hlStyle={background:'rgba(200,164,78,.1)',borderLeft:'3px solid var(--gold)',margin:'2px 6px',borderRadius:8,padding:'9px 10px',color:'var(--gold)',fontWeight:600,animation:'instPulseGold 1.8s infinite'};
+      const hlStyle={background:'rgba(200,164,78,.1)',borderLeft:'3px solid var(--gold)',margin:'2px 6px',borderRadius:8,padding:'9px 10px',color:'var(--gold)',fontWeight:700,animation:'instPulseGold 1.8s infinite'};
       const dimItem={display:'flex',alignItems:'center',gap:8,padding:'8px 10px',fontSize:10,color:'rgba(255,255,255,.35)'};
       const menuIcon=(d,hl)=>(<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={hl?'var(--gold)':'rgba(255,255,255,.35)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>{d}</svg>);
 
@@ -2699,7 +3733,7 @@ function Onboard({done:onDone,startStep=0}){
               </div>
             </div>
 
-            <button onClick={()=>{SFX.click();setInstallSubStep(4)}} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:800,letterSpacing:'.03em'}}>J'AI INSTALLÉ L'APP →</button>
+            <button onClick={()=>{SFX.click();setInstallSubStep(4)}} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:700,letterSpacing:'.03em'}}>J'AI INSTALLÉ L'APP →</button>
             <button onClick={resetFlow} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:11,cursor:'pointer',marginTop:6}}>← Choisir un autre appareil</button>
           </div>
         </div>
@@ -2723,7 +3757,7 @@ function Onboard({done:onDone,startStep=0}){
                 const r=await deferredPrompt.userChoice;
                 if(r.outcome==='accepted'){window.deferredPrompt=null;setInstallSubStep(4)}
               }catch(e){setInstallSubStep(1)}
-            }} className="btn-gold btn-pulse" style={{width:'100%',padding:'20px 0',fontSize:15,fontWeight:800,letterSpacing:'.04em',marginBottom:14,boxShadow:'0 8px 32px rgba(200,164,78,.35)'}}>
+            }} className="btn-gold btn-pulse" style={{width:'100%',padding:'20px 0',fontSize:15,fontWeight:700,letterSpacing:'.04em',marginBottom:14,boxShadow:'0 8px 32px rgba(200,164,78,.35)'}}>
               📲 INSTALLER MAINTENANT
             </button>
             <button onClick={()=>setInstallSubStep(1)} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:12,cursor:'pointer',marginBottom:4}}>
@@ -2736,7 +3770,7 @@ function Onboard({done:onDone,startStep=0}){
 
       /* Animation en boucle : 3 gestes Chrome (⋮ → Installer l'app → Confirmer) */
       const tapDotA=s=>({position:'absolute',zIndex:20,width:20,height:20,borderRadius:'50%',background:'radial-gradient(circle,rgba(255,255,255,.35),var(--w08))',border:'2px solid rgba(255,255,255,.25)',boxShadow:'0 0 20px var(--w15)',opacity:0,animation:`instTap${s} 9s infinite`});
-      const hlA={background:'rgba(200,164,78,.1)',borderLeft:'3px solid var(--gold)',margin:'2px 6px',borderRadius:8,padding:'9px 10px',color:'var(--gold)',fontWeight:600,animation:'instPulseGold 1.8s infinite'};
+      const hlA={background:'rgba(200,164,78,.1)',borderLeft:'3px solid var(--gold)',margin:'2px 6px',borderRadius:8,padding:'9px 10px',color:'var(--gold)',fontWeight:700,animation:'instPulseGold 1.8s infinite'};
       const dimA={display:'flex',alignItems:'center',gap:8,padding:'8px 10px',fontSize:10,color:'rgba(255,255,255,.35)'};
       const mIconA=(d,hl)=>(<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={hl?'var(--gold)':'rgba(255,255,255,.35)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>{d}</svg>);
 
@@ -2822,7 +3856,7 @@ function Onboard({done:onDone,startStep=0}){
                       <span style={{fontSize:22,filter:'grayscale(1) brightness(10)'}}>🎭</span>
                     </div>
                     <div style={{flex:1,textAlign:'left'}}>
-                      <p style={{fontSize:12,fontWeight:800,color:'var(--text)',marginBottom:2}}>Installer l'application ?</p>
+                      <p style={{fontSize:12,fontWeight:700,color:'var(--text)',marginBottom:2}}>Installer l'application ?</p>
                       <p style={{fontSize:8,color:'rgba(255,255,255,.3)'}}>academy.compagnie-castigat.com</p>
                     </div>
                   </div>
@@ -2831,7 +3865,7 @@ function Onboard({done:onDone,startStep=0}){
                       <span style={{fontSize:10,color:'rgba(255,255,255,.35)'}}>Annuler</span>
                     </div>
                     <div style={{padding:'8px 18px',borderRadius:8,background:'var(--gold)',animation:'instPulseGold 1.8s infinite'}}>
-                      <span style={{fontSize:10,fontWeight:800,color:'var(--ink)'}}>Installer</span>
+                      <span style={{fontSize:10,fontWeight:700,color:'var(--ink)'}}>Installer</span>
                     </div>
                   </div>
                 </div>
@@ -2839,7 +3873,7 @@ function Onboard({done:onDone,startStep=0}){
               </div>
             </div>
 
-            <button onClick={()=>{SFX.click();setInstallSubStep(4)}} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:800,letterSpacing:'.03em'}}>J'AI INSTALLÉ L'APP →</button>
+            <button onClick={()=>{SFX.click();setInstallSubStep(4)}} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:700,letterSpacing:'.03em'}}>J'AI INSTALLÉ L'APP →</button>
             <button onClick={resetFlow} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--violet)',fontSize:11,cursor:'pointer',marginTop:6}}>← Choisir un autre appareil</button>
             </>}
 
@@ -2865,7 +3899,7 @@ function Onboard({done:onDone,startStep=0}){
                     <p style={{fontSize:11,color:'var(--text-2)',lineHeight:1.6}}>Elle fonctionne <strong style={{color:'var(--text)'}}>même hors-ligne</strong></p>
                   </div>
                 </div>
-                <button onClick={finishFlow} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:800,letterSpacing:'.03em'}}>CONTINUER L'INSCRIPTION →</button>
+                <button onClick={finishFlow} className="btn-gold" style={{width:'100%',padding:'16px 0',fontSize:14,fontWeight:700,letterSpacing:'.03em'}}>CONTINUER L'INSCRIPTION →</button>
                 <button onClick={()=>setInstallSubStep(1)} style={{width:'100%',padding:'10px 0',background:'transparent',border:'none',color:'var(--text-3)',fontSize:11,cursor:'pointer',marginTop:6}}>Je n'ai pas réussi, recommencer le tuto</button>
               </div>
             )}
@@ -2902,7 +3936,7 @@ function Onboard({done:onDone,startStep=0}){
           </div>
           {formErr&&<div style={{padding:'10px 14px',borderRadius:8,background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)'}}><p style={{fontSize:11,color:'var(--red)'}}>{formErr}</p></div>}
           <button className="btn-gold" onClick={submitForm} disabled={formLoading} style={{width:'100%',padding:'15px 0',fontSize:13,letterSpacing:'.08em',marginTop:4,opacity:formLoading?.6:1}}>{formLoading?'Inscription...':'CONTINUER'}</button>
-          <p style={{textAlign:'center',fontSize:12,color:'var(--text-3)',marginTop:12}}>Déjà un compte ? <span onClick={()=>{setLoginMode(true);setFormErr('')}} style={{color:'var(--gold)',cursor:'pointer',fontWeight:600}}>Se connecter</span></p>
+          <p style={{textAlign:'center',fontSize:12,color:'var(--text-3)',marginTop:12}}>Déjà un compte ? <span onClick={()=>{setLoginMode(true);setFormErr('')}} style={{color:'var(--gold)',cursor:'pointer',fontWeight:700}}>Se connecter</span></p>
         </div>
       </div>
     </div>
@@ -2962,7 +3996,7 @@ function Onboard({done:onDone,startStep=0}){
       <p style={{fontSize:11,color:'var(--text-3)',maxWidth:280,lineHeight:1.6,marginBottom:36}}>Ça ne prend que 2 minutes, et vous pourrez le faire plus tard si vous préférez commencer tout de suite.</p>
       <button className="btn-gold" onClick={()=>setStep(5)} style={{padding:'14px 48px',fontSize:13,letterSpacing:'.06em'}}>C'EST PARTI</button>
       <button onClick={()=>onDone(0,{prenom:form.prenom.trim(),nom:form.nom.trim(),birth:form.birth,email:form.email.trim(),avatar,pseudo:form.pseudo.trim()||'Comédien'},{skippedQuiz:true})}
-        style={{marginTop:18,padding:'10px 16px',background:'none',border:'none',color:'var(--text-3)',fontSize:11.5,fontWeight:600,cursor:'pointer',textDecoration:'underline'}}>
+        style={{marginTop:18,padding:'10px 16px',background:'none',border:'none',color:'var(--text-3)',fontSize:11.5,fontWeight:700,cursor:'pointer',textDecoration:'underline'}}>
         Plus tard — commencer directement
       </button>
     </div>
@@ -2972,42 +4006,83 @@ function Onboard({done:onDone,startStep=0}){
   const qStep=step-5;
   if(qStep>=0&&qStep<QUIZ.length){
     const q=QUIZ[qStep];
-    const sectionColors={experience:{bg:'rgba(52,211,153,.08)',color:'var(--emerald)',label:'MON EXPÉRIENCE'},feeling:{bg:'rgba(232,116,90,.08)',color:'var(--coral)',label:'MON RESSENTI'},knowledge:{bg:'rgba(167,139,250,.1)',color:'var(--violet)',label:'MES CONNAISSANCES'}};
+    const sectionColors={
+      experience:{bg:'rgba(52,211,153,.08)',color:'var(--emerald)',label:'MON EXPÉRIENCE',dessin:'c/metier'},
+      feeling:{bg:'rgba(232,116,90,.08)',color:'var(--coral)',label:'MON RESSENTI',dessin:'c/romantisme'},
+      knowledge:{bg:'rgba(167,139,250,.1)',color:'var(--violet)',label:'MES CONNAISSANCES',dessin:'c/classique'}};
     const sc=sectionColors[q.section]||sectionColors.knowledge;
+    /* On compte à l'intérieur de la section : « 3 sur 12 » se traverse mieux
+       que « 10 sur 19 », et on voit la fin de ce qu'on est en train de faire. */
+    const secQs=QUIZ.filter(x=>x.section===q.section);
+    const secIdx=QUIZ.slice(0,qStep).filter(x=>x.section===q.section).length;
+    const compte=q.section==="knowledge";
     /* Section intro screen — show when entering a new section */
     if(q.sectionTitle&&showSectionIntro!==qStep){
       return(
-        <div className="fade-up" key={"sec-"+step} style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 32px',textAlign:'center'}}>
-          <div style={{width:56,height:56,borderRadius:16,background:sc.bg,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:20,fontSize:24}}>
-            <EI e={q.section==="experience"?"🎪":q.section==="feeling"?"💭":q.section==="knowledge"?"🎓":"🎭"} s={20}/>
+        <div className="fade-up" key={"sec-"+step} style={{minHeight:'100vh',background:'var(--bg)',position:'relative',overflow:'hidden',
+          display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0 32px',textAlign:'center'}}>
+          <div style={{position:'absolute',inset:0,pointerEvents:'none',
+            background:'radial-gradient(120% 58% at 50% 108%,rgba(224,184,78,.16),transparent 70%)',
+            animation:'lumiere-monte 1.4s cubic-bezier(.22,1,.36,1) both'}}/>
+          {/* Le dessin de la section, en médaillon */}
+          <div style={{position:'relative',width:124,height:124,marginBottom:24,
+            animation:'rit-pose .8s cubic-bezier(.22,1,.36,1) both'}}>
+            <div style={{position:'absolute',inset:0,borderRadius:'50%',
+              background:'radial-gradient(circle at 50% 60%,rgba(224,184,78,.20),transparent 70%)'}}/>
+            <div style={{position:'absolute',inset:0,borderRadius:'50%',border:'1px solid rgba(224,184,78,.20)'}}/>
+            <img src={`img/${sc.dessin}.svg`} alt="" aria-hidden="true" decoding="async"
+              onError={e=>{e.target.style.display='none'}}
+              style={{position:'absolute',inset:'10px',width:'calc(100% - 20px)',height:'calc(100% - 20px)',objectFit:'contain'}}/>
           </div>
-          <h2 className="heading" style={{fontSize:26,marginBottom:10,color:'var(--text)'}}>{q.sectionTitle}</h2>
-          <p className="body" style={{fontSize:13,maxWidth:300,marginBottom:36,lineHeight:1.6}}>{q.sectionSub}</p>
-          <button className="btn-gold" onClick={()=>setShowSectionIntro(qStep)} style={{padding:'14px 48px',fontSize:13,letterSpacing:'.06em'}}>C'EST PARTI</button>
+          <p className="eb" style={{color:sc.color,marginBottom:9,animation:'fadeIn .6s ease .25s both'}}>
+            {compte?"Ce qui situe votre niveau":"Pour mieux vous connaître"}
+          </p>
+          <h2 className="heading" style={{fontSize:26,marginBottom:10,color:'var(--text)',
+            animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) .35s both'}}>{q.sectionTitle}</h2>
+          <p className="body" style={{fontSize:13,maxWidth:300,marginBottom:14,lineHeight:1.6,
+            animation:'fadeUp .7s ease .45s both'}}>{q.sectionSub}</p>
+          <p style={{fontSize:10.5,color:'var(--text-3)',marginBottom:34,animation:'fadeIn .7s ease .6s both'}}>
+            {secQs.length} question{secQs.length>1?"s":""}{compte?"":" · sans incidence sur votre niveau"}
+          </p>
+          <button className="btn-gold" onClick={()=>setShowSectionIntro(qStep)}
+            style={{padding:'14px 48px',fontSize:13,letterSpacing:'.06em',animation:'btn-scale-in .6s cubic-bezier(.22,1,.36,1) .7s both'}}>C'EST PARTI</button>
         </div>
       );
     }
     return(
       <div className="fade-up" key={step} style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column',padding:'44px 24px'}}>
-        <div style={{marginBottom:36}}>
+        <div style={{marginBottom:30}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:10}}>
-            <p className="label">QUESTION {qStep+1} / {QUIZ.length}</p>
-            <p style={{fontSize:11,fontWeight:700,color:'var(--gold-dim)'}}>{Math.round((qStep+1)/QUIZ.length*100)}%</p>
+            <p className="label">QUESTION {secIdx+1} / {secQs.length}</p>
+            <p style={{fontSize:11,fontWeight:700,color:sc.color}}>{sc.label}</p>
           </div>
-          <Bar val={qStep+1} max={QUIZ.length} h={3}/>
+          <Bar val={secIdx+1} max={secQs.length} h={3}/>
+          {/* Dire ce que « passer » veut dire : sans ça, on ne sait pas ce
+              qu'on accepte en appuyant. */}
           <button onClick={()=>onDone(0,{prenom:form.prenom.trim(),nom:form.nom.trim(),birth:form.birth,email:form.email.trim(),avatar,pseudo:form.pseudo.trim()||'Comédien'},{skippedQuiz:true})}
-            style={{marginTop:10,padding:0,background:'none',border:'none',color:'var(--text-3)',fontSize:10.5,fontWeight:600,cursor:'pointer'}}>
-            Passer le test et commencer →
+            style={{marginTop:11,padding:0,background:'none',border:'none',color:'var(--text-3)',fontSize:10.5,fontWeight:700,cursor:'pointer',textAlign:'left'}}>
+            Passer le test et commencer au Figurant →
           </button>
         </div>
-        <span style={{display:'inline-block',padding:'3px 10px',borderRadius:20,background:sc.bg,color:sc.color,fontSize:9,fontWeight:700,letterSpacing:'.08em',marginBottom:12}}>{sc.label}</span>
+        {/* Le petit dessin de la section, discret, à côté de la question */}
+        <div style={{display:'flex',alignItems:'center',gap:11,marginBottom:14}}>
+          <div style={{position:'relative',width:40,height:40,flexShrink:0}}>
+            <div style={{position:'absolute',inset:0,borderRadius:'50%',background:sc.bg,border:`1px solid ${sc.color}22`}}/>
+            <img src={`img/${sc.dessin}.svg`} alt="" aria-hidden="true" decoding="async"
+              onError={e=>{e.target.style.display='none'}}
+              style={{position:'absolute',inset:'6px',width:'calc(100% - 12px)',height:'calc(100% - 12px)',objectFit:'contain'}}/>
+          </div>
+          <span style={{fontSize:9,fontWeight:700,letterSpacing:'.08em',color:sc.color}}>
+            {compte?"COMPTE POUR VOTRE NIVEAU":"NE COMPTE PAS"}
+          </span>
+        </div>
         <h2 className="heading" style={{fontSize:24,color:'var(--text)',marginBottom:32}}>{q.q}</h2>
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {q.opts.map((o,i)=>(
             <button key={i} onClick={()=>{setAns([...ans,q.sc[i]]);setAnsIdx([...ansIdx,i]);setStep(step+1)}}
               className="card" style={{padding:'14px 16px',textAlign:'left',display:'flex',alignItems:'center',gap:14}}>
               <span style={{width:26,height:26,borderRadius:7,background:'var(--bg-raised)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'var(--gold)',flexShrink:0}}>{String.fromCharCode(65+i)}</span>
-              <span style={{fontSize:13,fontWeight:500}}>{o}</span>
+              <span style={{fontSize:13,fontWeight:400}}>{o}</span>
             </button>
           ))}
         </div>
@@ -3027,14 +4102,28 @@ function Onboard({done:onDone,startStep=0}){
   return(
     <div className="slide-up" style={{minHeight:'100vh',background:'radial-gradient(ellipse at 50% 40%,var(--gold-glow),var(--bg) 55%)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'40px 28px',textAlign:'center',gap:0}}>
       <Confetti count={35}/>
-      <div style={{marginBottom:16,animation:'float 4s ease-in-out infinite',flexShrink:0}}><AvatarSVG id={avatar} size={80}/></div>
+      {/* Le dessin du niveau obtenu, pas l'avatar : c'est le résultat qu'on
+          vient chercher sur cet écran. */}
+      <div style={{position:'relative',width:132,height:132,marginBottom:18,flexShrink:0,
+        animation:'rit-pose .85s cubic-bezier(.22,1,.36,1) both'}}>
+        <div style={{position:'absolute',inset:0,borderRadius:'50%',
+          background:'radial-gradient(circle at 50% 62%,rgba(224,184,78,.24),transparent 70%)',
+          animation:'rit-halo 3.4s ease-in-out .8s infinite'}}/>
+        <div style={{position:'absolute',inset:0,borderRadius:'50%',border:'1px solid rgba(224,184,78,.22)'}}/>
+        <img src={`img/n/${lv.id}.svg`} alt="" aria-hidden="true" decoding="async"
+          onError={e=>{e.target.style.display='none'}}
+          style={{position:'absolute',inset:'9px',width:'calc(100% - 18px)',height:'calc(100% - 18px)',
+            objectFit:'contain',objectPosition:'bottom'}}/>
+      </div>
       <p className="label" style={{marginBottom:8,flexShrink:0}}>VOTRE NIVEAU ESTIMÉ</p>
       <h2 className="heading gold-shimmer" style={{fontSize:36,marginBottom:12,flexShrink:0}}>{lv.name}</h2>
       <p className="body" style={{fontSize:12,marginBottom:16,flexShrink:0}}>{lv.desc}</p>
       <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'8px 18px',borderRadius:12,background:'rgba(167,139,250,.08)',border:'1px solid rgba(167,139,250,.15)',marginBottom:16,flexShrink:0}}>
         <span style={{fontSize:11,color:'var(--violet)',fontWeight:700}}>Connaissances : {correctCount}/{knowledgeQs.length} bonnes réponses</span>
       </div>
-      <p className="body" style={{fontSize:12,maxWidth:280,marginBottom:32,flexShrink:0}}>Bienvenue {userInfo.prenom} ! Vous progresserez à votre rythme.</p>
+      <p className="body" style={{fontSize:12,maxWidth:280,marginBottom:32,flexShrink:0}}>
+        Bienvenue{userInfo.prenom?" "+userInfo.prenom:""} ! Vous progresserez à votre rythme.
+      </p>
       <button className="btn-gold" onClick={()=>{
         onDone(Math.min(idx,9),{...userInfo,quizProfile:{answerIndices:ansIdx,knowledgeScore:correctCount,knowledgeTotal:knowledgeQs.length}})
       }} style={{padding:'15px 52px',fontSize:14,letterSpacing:'.04em'}}>C'est parti</button>
@@ -3055,7 +4144,7 @@ function TierBanner({tierId,unlocked}){
   return(
     <div style={{display:'flex',alignItems:'center',gap:12,padding:'6px 0'}}>
       <div style={{flex:1,height:1,background:unlocked?'linear-gradient(90deg,transparent,'+c.accent+'55)':'linear-gradient(90deg,transparent,var(--w08))'}}/>
-      <p style={{fontSize:9,fontWeight:800,letterSpacing:'.18em',color:col,whiteSpace:'nowrap',opacity:unlocked?1:.4}}>{c.name.toUpperCase()}</p>
+      <p style={{fontSize:9,fontWeight:700,letterSpacing:'.18em',color:col,whiteSpace:'nowrap',opacity:unlocked?1:.4}}>{c.name.toUpperCase()}</p>
       <div style={{flex:1,height:1,background:unlocked?'linear-gradient(270deg,transparent,'+c.accent+'55)':'linear-gradient(270deg,transparent,var(--w08))'}}/>
     </div>
   );
@@ -3139,7 +4228,7 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
               {x.mur
                 ?<span className="pill" style={{background:'var(--gold)',color:'#0A0E1C'}}>Essayer gratuitement</span>
                 :verrou
-                  ?<span style={{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:600,color:'var(--text-2)'}}>
+                  ?<span style={{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,color:'var(--text-2)'}}>
                      {I.lock({size:12,sw:1.8})}{x.raison||"Terminez le niveau en cours"}
                    </span>
                   :<span className="pill">Commencer</span>}
@@ -3173,20 +4262,48 @@ function ProgressPath({st,go,setMod,setExam,setSceneAn}){
 /* ═══ LEVEL UP MODAL ═══ */
 function LevelUpModal({level,isTierChange,onClose}){
   const tier=getTier(level);
+  /* Le passage de niveau : la lumière monte, le dessin du nouveau rang
+     entre par le bas, le nom s'inscrit. Pas une fenêtre — un lever de rideau. */
   return(
-    <div style={{position:'fixed',inset:0,background:'rgba(5,5,10,0.95)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:300}}>
-      {isTierChange?<Confetti count={80} duration={4000}/>:<Confetti count={50} duration={3000}/>}
-      <div style={{textAlign:'center',animation:'fadeIn .5s ease-out'}}>
-        {isTierChange&&<div style={{marginBottom:16,animation:'fadeUp .6s cubic-bezier(.22,1,.36,1) both',filter:'drop-shadow(0 0 30px rgba(212,168,67,0.4))'}}><EI e="✨" s={80}/></div>}
-        <div className="emoji em-xl" style={{marginBottom:16,animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) both'}}>
-          {level.icon}
-        </div>
-        {isTierChange&&<p className="heading" style={{fontSize:32,color:'var(--gold)',marginBottom:8,animation:'fadeUp .8s cubic-bezier(.22,1,.36,1) both',letterSpacing:'0.05em'}}>{tier.name.toUpperCase()}</p>}
-        <h2 className="heading" style={{fontSize:isTierChange?28:24,color:'var(--text)',marginBottom:12,animation:'fadeUp .9s cubic-bezier(.22,1,.36,1) both'}}>{level.name}</h2>
-        <p className="body" style={{fontSize:13,color:'var(--text-2)',marginBottom:28,animation:'fadeUp 1s cubic-bezier(.22,1,.36,1) both',maxWidth:300}}>{level.desc}</p>
-        <button onClick={onClose} className="btn-gold" style={{padding:'12px 32px',fontSize:14,fontWeight:700,animation:'fadeUp 1.1s cubic-bezier(.22,1,.36,1) both'}}>
-          Continuer
-        </button>
+    <div style={{position:'fixed',inset:0,zIndex:300,overflow:'hidden',display:'flex',flexDirection:'column',
+      background:'#0A0E1C',color:'#F2F0EA'}}>
+
+      {/* le faisceau qui s'ouvre */}
+      <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:0,
+        background:`radial-gradient(120% 62% at 50% 106%,rgba(224,184,78,.32),rgba(224,184,78,.08) 44%,transparent 72%)`,
+        animation:'lumiere-monte 1.5s cubic-bezier(.22,1,.36,1) both'}}/>
+      <div style={{position:'absolute',inset:'14px',border:'1px solid rgba(224,184,78,.18)',borderRadius:6,pointerEvents:'none',zIndex:6,
+        animation:'fadeIn 1s ease .8s both'}}/>
+
+      {/* le texte */}
+      <div style={{position:'relative',zIndex:4,padding:'calc(var(--barre-haut) + 9vh) 32px 0',textAlign:'center',maxWidth:420,margin:'0 auto',width:'100%'}}>
+        <p className="eb eb-or" style={{animation:'fadeIn .7s ease .25s both'}}>
+          {isTierChange?`Vous entrez dans le palier ${tier.name}`:"Nouveau niveau"}
+        </p>
+        <h2 className="heading" style={{fontSize:'clamp(28px,8.4vw,36px)',margin:'12px 0 0',
+          animation:'monte-nom 1s cubic-bezier(.22,1,.36,1) .4s both'}}>{level.name}</h2>
+        <div style={{width:44,height:1,background:'var(--gold)',opacity:.7,margin:'18px auto 0',
+          animation:'trait-ouvre .9s cubic-bezier(.22,1,.36,1) .9s both'}}/>
+        <p className="vers" style={{fontSize:15,color:'rgba(242,240,234,.75)',marginTop:16,
+          animation:'fadeUp .8s ease 1.1s both'}}>{level.desc}</p>
+      </div>
+
+      {/* le dessin du nouveau rang entre par le bas */}
+      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'54vh',pointerEvents:'none',zIndex:1,
+        display:'flex',alignItems:'flex-end',justifyContent:'center',
+        animation:'salut 1.5s cubic-bezier(.22,1,.36,1) .6s both'}}>
+        <img src={`img/n/${level.id}.svg`} alt="" aria-hidden="true" decoding="async"
+          onError={e=>{e.target.style.display='none'}}
+          style={{height:'100%',maxWidth:'118%',objectFit:'contain',objectPosition:'bottom'}}/>
+      </div>
+      <div style={{position:'absolute',left:0,right:0,bottom:'28vh',height:'28vh',zIndex:2,pointerEvents:'none',
+        background:'linear-gradient(180deg,#0A0E1C 6%,rgba(10,14,28,.7) 46%,rgba(10,14,28,0) 100%)'}}/>
+      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'24vh',zIndex:2,pointerEvents:'none',
+        background:'linear-gradient(0deg,#0A0E1C 16%,rgba(10,14,28,.7) 56%,rgba(10,14,28,0))'}}/>
+
+      <div style={{position:'relative',zIndex:4,marginTop:'auto',padding:'0 32px calc(32px + env(safe-area-inset-bottom,0px))',
+        textAlign:'center',animation:'fadeUp .7s ease 1.7s both'}}>
+        <button onClick={onClose} className="pill" style={{padding:'14px 40px',fontSize:11.5}}>Continuer</button>
       </div>
     </div>
   );
@@ -3195,8 +4312,9 @@ function LevelUpModal({level,isTierChange,onClose}){
 /* ═══ HOME ═══ */
 function Home({st,setSt,go,setMod,setExam,lancerSeance}){
   const[sceneAn,setSceneAn]=useState(null);
-  const[levelUpShow,setLevelUpShow]=useState(null);
-  const prevLvRef=useRef(getLv(st.xp,st.passedExams).id);
+  const[voirProgramme,setVoirProgramme]=useState(false);
+  const openPaywall=usePaywall();
+
   const lv=getLv(st.xp,st.passedExams),li=LEVELS.indexOf(lv),nx=LEVELS[li+1],inL=st.xp-lv.xp,forN=nx?nx.xp-lv.xp:1000;
   const bg=BADGES.filter(b=>b.c(st));
   const order=[lv.id,...LEVELS.filter((_,i)=>i<li).reverse().map(l=>l.id),...LEVELS.filter((_,i)=>i>li&&st.xp>=_.xp).map(l=>l.id)];
@@ -3216,18 +4334,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
   /* Exam available only when everything else at this level is complete */
   const examAvailable=allPrDone&&allCuDone&&allSADone&&examNotPassed;
 
-  useEffect(()=>{
-    const currentLv=getLv(st.xp,st.passedExams).id;
-    if(currentLv!==prevLvRef.current){
-      const prevIdx=LEVELS.findIndex(l=>l.id===prevLvRef.current);
-      const curIdx=LEVELS.findIndex(l=>l.id===currentLv);
-      const prevTier=LEVELS[prevIdx]?.tier;
-      const curTier=lv.tier;
-      setLevelUpShow({level:lv,prevTier,isTierChange:prevTier!==curTier});
-      SFX.levelUp();
-      prevLvRef.current=currentLv;
-    }
-  },[st.xp]);
+
 
   /* Daily content (changes every day, non-mandatory) */
   const today=new Date().getDay();
@@ -3236,13 +4343,41 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
   const dailyScene=(()=>{const notDone=SCENE_ANALYSES.filter(s=>!(st.doneSA||[]).includes(s.id));return notDone.length>0?notDone[0]:SCENE_ANALYSES[dayOfYear%SCENE_ANALYSES.length]})();
 
   /* La séance du jour : le bouton principal de l'app et la section qui le
-     détaille sont le même objet, ils partagent donc le même calcul. */
-  const laSeance=lancerSeance?construireSeance(st):[];
-  const dejaFaite=seanceFaiteAujourdhui(st);
-  const enSeance=laSeance.length>=2&&!dejaFaite;
+     détaille sont le même objet, ils partagent donc le même calcul. Elle est
+     fixée pour la journée (voir seanceDuJourFigee) : on ne la recalcule pas
+     à chaque étape faite, sinon la liste change toute seule sous les yeux. */
+  useEffect(()=>{
+    const auj=new Date().toDateString();
+    if(lancerSeance&&(!st.seanceDuJour||st.seanceDuJour.date!==auj)){
+      const items=construireSeance(st);
+      if(items.length)setSt(p=>(p.seanceDuJour&&p.seanceDuJour.date===auj)?p:({...p,seanceDuJour:{date:auj,items}}));
+    }
+  },[st.seanceDuJour&&st.seanceDuJour.date,lv.id]);
+  const laSeance=lancerSeance?seanceDuJourFigee(st):[];
+  const montrerSeance=laSeance.length>0;
+  const toutesFaites=laSeance.length>0&&laSeance.every(m=>(st.doneEx||[]).includes(m.id)||(st.doneCu||[]).includes(m.id));
+  const dejaFaite=toutesFaites||seanceFaiteAujourdhui(st);
+  const peutRefaire=peutRefaireUneSeance(st);
+  const capAtteint=toutesFaites&&!peutRefaire;
+  const enSeance=montrerSeance&&(!toutesFaites||peutRefaire);
+  /* Abonnées : une fois la séance du jour finie, on peut en ajouter une
+     autre à la suite — jamais en silence, seulement sur un vrai bouton. */
+  const refaireUneSeance=()=>{
+    _track('seance_supplementaire',{plan:st.plan});
+    setSt(p=>{
+      const nv=construireSeance(p);
+      if(!nv.length)return p;
+      const auj=new Date().toDateString();
+      const base=(p.seanceDuJour&&p.seanceDuJour.date===auj)?p.seanceDuJour.items:[];
+      return{...p,seanceDuJour:{date:auj,items:[...base,...nv]}};
+    });
+  };
 
   if(sceneAn) return <SceneAnalysis analysis={sceneAn} st={st} setSt={setSt} onClose={()=>setSceneAn(null)}/>;
-  if(levelUpShow) return <LevelUpModal level={levelUpShow.level} isTierChange={levelUpShow.isTierChange} onClose={()=>setLevelUpShow(null)}/>;
+  /* Le programme complet du niveau, ouvert depuis l'accueil : on doit
+     pouvoir voir tout ce qu'on va travailler sans lancer quoi que ce soit. */
+  if(voirProgramme) return <ApercuNiveau niveau={lv} mods={PR[lv.id]||[]} sec="pr" dk="doneEx"
+    st={st} onClose={()=>setVoirProgramme(false)} onOuvrir={m=>{setVoirProgramme(false);setMod({...m,sec:"pr"});go("practice")}}/>;
 
   return(
     <div className="safe-b fade-up" style={{padding:'68px 20px 100px'}}>
@@ -3276,12 +4411,18 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
         {(()=>{
           const pct=Math.round(Math.min(inL,forN)/(forN||1)*100);
           /* Le bouton principal de l'app : la séance du jour. On ne propose plus
-             un contenu isolé, on propose un début et une fin. */
+             un contenu isolé, on propose un début et une fin — une par jour,
+             gratuite ; au-delà, on demande de passer en abonnée. */
+          const nonFaits=laSeance.filter(m=>!((st.doneEx||[]).includes(m.id)||(st.doneCu||[]).includes(m.id)));
+          const depart=Math.max(0,laSeance.findIndex(m=>!((st.doneEx||[]).includes(m.id)||(st.doneCu||[]).includes(m.id))));
           const suite=enSeance
-              ?{lab:`Ma séance · ${dureeSeance(laSeance)} min`,act:()=>{_track('seance_lancee',{n:laSeance.length});lancerSeance(laSeance)}}
+              ?(toutesFaites
+                ?{lab:"Faire une séance de plus",act:refaireUneSeance}
+                :{lab:`Ma séance · ${dureeSeance(nonFaits.length?nonFaits:laSeance)} min`,act:()=>{_track('seance_lancee',{n:laSeance.length});lancerSeance({items:laSeance,depart})}})
             :examAvailable?{lab:"Passer l'examen",act:()=>setExam(lv.id)}
-            :nP?{lab:dejaFaite?"Travailler encore":"Continuer",act:()=>{setMod({...nP,sec:"pr"});go("practice")}}
-            :nC?{lab:dejaFaite?"Travailler encore":"Continuer",act:()=>{setMod({...nC,sec:"cu"});go("culture")}}
+            :capAtteint?{lab:"Débloquer plus de séances",act:()=>openPaywall('daily')}
+            :nP?{lab:"Continuer",act:()=>{setMod({...nP,sec:"pr"});go("practice")}}
+            :nC?{lab:"Continuer",act:()=>{setMod({...nC,sec:"cu"});go("culture")}}
             :(nSA&&!allSADone)?{lab:"Analyser une scène",act:()=>setSceneAn(nSA)}
             :{lab:"Voir les exercices",act:()=>go("practice")};
           return(
@@ -3291,12 +4432,20 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                 <span className="eb eb-or">Vous êtes ici</span>
                 <span className="heading" style={{display:'block',fontSize:20,margin:'5px 0'}}>{lv.name}</span>
                 <span style={{display:'block',fontSize:11.5,lineHeight:1.45,color:'rgba(242,240,234,.74)',marginBottom:11}}>{lv.desc}</span>
-                <span className="track" style={{display:'block',height:5,marginBottom:5}}>
-                  <span className="fill fill-gold" style={{display:'block',height:'100%',width:pct+'%'}}/>
+                {/* La barre de progression du niveau, avec le chiffre à côté —
+                    sans ça, un trait de 5px de haut ne se lit pas comme une
+                    progression. */}
+                <span style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
+                  <span className="track" style={{display:'block',height:6,flex:1}}>
+                    <span className="fill fill-gold" style={{display:'block',height:'100%',width:pct+'%'}}/>
+                  </span>
+                  <span style={{flexShrink:0,fontSize:10,fontWeight:700,color:'rgba(242,240,234,.78)',fontVariantNumeric:'tabular-nums'}}>
+                    {Math.min(inL,forN)}/{forN}
+                  </span>
                 </span>
-                <span style={{display:'block',fontSize:9.5,fontWeight:600,color:'rgba(242,240,234,.66)',marginBottom:12,fontVariantNumeric:'tabular-nums'}}>
-                  {dejaFaite
-                    ?"Séance du jour terminée. À demain."
+                <span style={{display:'block',fontSize:9.5,fontWeight:700,color:'rgba(242,240,234,.66)',marginBottom:12,fontVariantNumeric:'tabular-nums'}}>
+                  {capAtteint
+                    ?"Séance du jour terminée. Revenez demain, ou débloquez l'illimité."
                     :nx?(inL>=forN?`Prêt·e pour l'examen → ${nx.name}`:`${forN-inL} XP avant ${nx.name}`):"Le sommet. Il n'y a plus rien au-dessus."}
                 </span>
                 <span className="pill">{suite.lab}</span>
@@ -3307,21 +4456,62 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
 
         {/* ── Aujourd'hui : les trois choses à faire, en rangées ── */}
         <div style={{marginBottom:22}}>
-          <div className="sep"><b>{enSeance?"Votre séance":"Aujourd'hui"}</b><i/></div>
+          <div className="sep">
+            <b>{montrerSeance?"Votre séance":"Aujourd'hui"}</b>
+            <button onClick={()=>{_track('programme_ouvert',{niveau:lv.id});setVoirProgramme(true)}}
+              style={{fontSize:9,fontWeight:700,letterSpacing:'.06em',color:'var(--gold)',background:'none',
+                border:'none',cursor:'pointer',padding:0,whiteSpace:'nowrap'}}>
+              TOUT LE PROGRAMME
+            </button>
+            <i/>
+          </div>
 
-          {/* Quand la séance est disponible, cette section EST la séance :
-              on ne propose pas deux fois les mêmes contenus côte à côte. */}
-          {enSeance&&laSeance.map((m,k)=>(
+          {/* Une séance au format cinq temps : la section liste les cinq
+              domaines de la journée. Chacun se grise dès qu'il est travaillé,
+              et c'est le même compteur que « fait aujourd'hui » — il n'y en a
+              plus deux qui disent la même chose. */}
+          {montrerSeance&&laSeance.length===1&&laSeance[0].temps&&(()=>{
+            const S=laSeance[0],faits=domainesDuJour(st);
+            return S.temps.map((t,k)=>{
+              const D=DOMAINES[t.dom]||{};
+              return(
+                <Rang key={k} ic={<EI e={D.icon||S.icon} s={17}/>} teinte={D.teinte}
+                  eb={D.nom} titre={t.titre}
+                  note={t.pourquoi}
+                  fait={faits.has(t.dom)}
+                  onClick={()=>{_track('seance_lancee',{depuis:'liste',temps:k+1});
+                    lancerSeance({items:laSeance,depart:0})}}/>
+              );
+            });
+          })()}
+
+          {/* Ancien format (niveaux pas encore réécrits) : la liste des
+              contenus enchaînés, chacun grisé une fois fait. */}
+          {montrerSeance&&!(laSeance.length===1&&laSeance[0].temps)&&laSeance.map((m,k)=>(
             <Rang key={m.id} ic={<EI e={m.icon} s={17}/>}
               teinte={m.sec==="cu"?"var(--violet)":"var(--gold)"}
               eb={`Étape ${k+1}`} titre={m.title}
               note={m.revision?"À revoir · "+m.dur:(m.cat||(m.sec==="cu"?"Culture":"Pratique"))+" · "+m.dur}
               xp={`+${m.xp} XP`}
-              onClick={()=>{_track('seance_lancee',{n:laSeance.length,depuis:'liste'});lancerSeance(laSeance)}}/>
+              fait={(st.doneEx||[]).includes(m.id)||(st.doneCu||[]).includes(m.id)}
+              onClick={()=>{_track('seance_lancee',{n:laSeance.length,depuis:'liste',etape:k+1});
+                lancerSeance({items:laSeance,depart:k})}}/>
           ))}
 
+          {/* Séance du jour épuisée, gratuite : la journée s'arrête là — on
+              montre le mur au lieu de laisser filer vers d'autres contenus. */}
+          {capAtteint&&(
+            <button onClick={()=>openPaywall('daily')} className="rang" style={{cursor:'pointer',textAlign:'left',borderColor:'var(--line-s)',background:'linear-gradient(120deg,rgba(224,184,78,.08),var(--bg-card) 70%)'}}>
+              <div className="rang-ic" style={{background:'rgba(224,184,78,.16)',color:'var(--gold)'}}>{I.crown({size:17,sw:1.7})}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <span className="eb eb-or" style={{marginBottom:3}}>Séances illimitées</span>
+                <p className="rang-t">Une séance par jour, c'est la version gratuite. En abonnée, autant que vous voulez.</p>
+              </div>
+              <span className="pill" style={{fontSize:9.5,padding:'6px 13px'}}>Débloquer</span>
+            </button>
+          )}
 
-          {!enSeance&&<>
+          {!montrerSeance&&<>
           {nP?<Rang ic={<EI e={nP.icon} s={17}/>} teinte="var(--gold)" eb="Exercice" titre={nP.title}
                 note={`${nP.cat||"Pratique"} · ${nP.dur||"quelques minutes"}`} xp={`+${nP.xp} XP`}
                 onClick={()=>{setMod({...nP,sec:"pr"});go("practice")}}/>
@@ -3354,6 +4544,12 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
           )}
           </>}
         </div>
+
+        {/* Les cinq cases ne sont montrées à part que pour les niveaux pas
+            encore réécrits : sur une séance en cinq temps, la liste ci-dessus
+            porte déjà l'information, et deux compteurs identiques se
+            contrediraient à la première hésitation. */}
+        {!(montrerSeance&&laSeance.length===1&&laSeance[0].temps)&&<DomainesDuJour st={st}/>}
 
         {/* ── À revoir ─────────────────────────────────────────────────
             Alimentée par les dates de révision espacée écrites à chaque quiz
@@ -3412,41 +4608,6 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
         </div>
 
 
-        {/* Objectifs hebdomadaires */}
-        {(()=>{
-          const weekGoals=[
-            {id:"wg1",label:"Faire 3 exercices",done:(st.weekEx||0)>=3,target:3,current:Math.min(st.weekEx||0,3)},
-            {id:"wg2",label:"Faire une leçon culture",done:st.weekCulture||false,target:1,current:(st.weekCulture||false)?1:0},
-            {id:"wg3",label:"Analyser une scène",done:st.weekAnalysis||false,target:1,current:(st.weekAnalysis||false)?1:0},
-            {id:"wg4",label:"Réviser la culture",done:st.weekRevision||false,target:1,current:(st.weekRevision||false)?1:0},
-          ];
-          const doneCount=weekGoals.filter(g=>g.done).length;
-          const allDone=doneCount===4;
-          return(
-            <div className="card" style={{padding:18,marginBottom:20,border:allDone?'1px solid rgba(74,222,128,.25)':'1px solid var(--line)',background:allDone?'linear-gradient(160deg,rgba(74,222,128,.06),var(--bg-card))':'var(--bg-card)'}}>
-              {st.lastWeekScore!==null&&st.lastWeekScore<4&&doneCount===0&&<div style={{padding:'8px 12px',borderRadius:8,background:st.lastWeekScore>=3?'rgba(200,164,78,.06)':st.lastWeekScore>=2?'rgba(167,139,250,.06)':'rgba(232,116,90,.06)',border:st.lastWeekScore>=3?'1px solid rgba(200,164,78,.1)':st.lastWeekScore>=2?'1px solid rgba(167,139,250,.1)':'1px solid rgba(232,116,90,.1)',marginBottom:10,textAlign:'center'}}>
-                <p style={{fontSize:10,color:'var(--text-2)'}}>{st.lastWeekScore>=3?"Presque ! "+st.lastWeekScore+"/4 la semaine dernière — cette semaine c'est la bonne !":st.lastWeekScore>=2?st.lastWeekScore+"/4 la semaine dernière — on peut faire mieux !":st.lastWeekScore>=1?"Allez, "+st.lastWeekScore+"/4 la semaine dernière — on accélère !":"Nouvelle semaine, nouveau départ — on y croit !"}</p>
-              </div>}
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-                <p className="label-gold">OBJECTIFS HEBDO</p>
-                {allDone?<span style={{fontSize:9,fontWeight:800,color:'var(--emerald)',padding:'3px 8px',borderRadius:6,background:'rgba(74,222,128,.12)'}}>Complété !</span>
-                :<span style={{fontSize:9,fontWeight:700,color:'var(--text-3)'}}>{doneCount}/4</span>}
-              </div>
-              {weekGoals.map(g=>(
-                <div key={g.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
-                  <div style={{width:18,height:18,borderRadius:5,background:g.done?'rgba(74,222,128,.1)':'var(--bg)',border:`1.5px solid ${g.done?'var(--emerald)':'var(--line)'}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    {g.done&&<span style={{fontSize:9,color:'var(--emerald)'}}>✓</span>}
-                  </div>
-                  <p style={{fontSize:10,fontWeight:500,color:g.done?'var(--emerald)':'var(--text-2)',flex:1,textDecoration:g.done?'line-through':'none'}}>{g.label}</p>
-                  <div style={{width:40,height:3,borderRadius:3,background:'var(--w04)',overflow:'hidden'}}>
-                    <div style={{height:'100%',borderRadius:3,width:(g.current/g.target*100)+"%",background:g.done?'var(--emerald)':'var(--gold)'}}/>
-                  </div>
-                </div>
-              ))}
-              {allDone&&<p style={{fontSize:9,color:'var(--emerald)',textAlign:'center',marginTop:8,fontStyle:'italic'}}>Semaine parfaite — le théâtre vous sourit !</p>}
-            </div>
-          );
-        })()}
 
         {/* Promotional card for Free users */}
         {st.plan==="free"&&(
@@ -3676,7 +4837,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                 <p className="label-gold" style={{fontSize:9,marginBottom:8}}>BILAN PERSONNALISÉ</p>
                 <p style={{fontSize:13,fontWeight:700,color:'#fff',marginBottom:6,lineHeight:1.4}}>Votre coach personnel vous attend</p>
                 <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.6,marginBottom:16,maxWidth:280,margin:'0 auto 16px'}}>Diagnostic sur mesure, forces et axes d'amélioration, recommandations adaptées à votre profil. Disponible en Standard.</p>
-                <button onClick={()=>{_track('paywall_viewed',{source:'bilan_gate',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{display:'inline-block',padding:'11px 22px',borderRadius:10,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',border:'none',color:'var(--ink)',fontWeight:800,fontSize:11,letterSpacing:'.04em',cursor:'pointer',boxShadow:'0 6px 18px rgba(200,164,78,.25)'}}>
+                <button onClick={()=>{_track('paywall_viewed',{source:'bilan_gate',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{display:'inline-block',padding:'11px 22px',borderRadius:10,background:'linear-gradient(135deg,var(--gold-dim),var(--gold))',border:'none',color:'var(--ink)',fontWeight:700,fontSize:11,letterSpacing:'.04em',cursor:'pointer',boxShadow:'0 6px 18px rgba(200,164,78,.25)'}}>
                   DÉBLOQUER — 4 JOURS GRATUITS
                 </button>
                 <p style={{fontSize:8,color:'var(--text-3)',marginTop:10}}>Puis 9,90€/mois · sans engagement</p>
@@ -3702,7 +4863,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                   <div style={{height:6,borderRadius:3,background:'var(--w06)',overflow:'hidden',marginBottom:6}}>
                     <div style={{height:'100%',borderRadius:3,width:totalPct+'%',background:'linear-gradient(90deg,var(--gold-dim),var(--gold))',transition:'width .8s ease'}}/>
                   </div>
-                  <p style={{fontSize:8,color:'var(--text-3)',fontWeight:600}}>{totalPct}% — {totalPct<50?"On y est presque…":totalPct<90?"Bientôt prêt !":"Plus que quelques pas…"}</p>
+                  <p style={{fontSize:8,color:'var(--text-3)',fontWeight:700}}>{totalPct}% — {totalPct<50?"On y est presque…":totalPct<90?"Bientôt prêt !":"Plus que quelques pas…"}</p>
                 </div>
               </div>
             );
@@ -3746,17 +4907,17 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
               {/* Data sources indicator */}
               <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:14}}>
                 {[{k:"onboarding",l:"Profil",ic:I.user({size:8,sw:1.2})},{k:"feedback",l:"Retours",ic:I.msg({size:8,sw:1.2})},{k:"stars",l:"Étoiles",ic:I.star({size:8,sw:1.2})},{k:"analyses",l:"Analyses",ic:I.book({size:8,sw:1.2})},{k:"culture",l:"Culture",ic:I.layers({size:8,sw:1.2})},{k:"warmups",l:"Échauff.",ic:I.mic({size:8,sw:1.2})},{k:"pulse",l:"Pulse",ic:I.target({size:8,sw:1.2})}].map(d=>(
-                  <span key={d.k} style={{fontSize:6,padding:'2px 6px',borderRadius:4,display:'inline-flex',alignItems:'center',gap:2,background:dataSources.includes(d.k)?'rgba(200,164,78,.08)':'var(--w02)',border:dataSources.includes(d.k)?'1px solid rgba(200,164,78,.15)':'1px solid var(--line)',color:dataSources.includes(d.k)?'var(--gold)':'var(--text-3)',opacity:dataSources.includes(d.k)?1:.4,fontWeight:600}}>{d.ic} {d.l}</span>
+                  <span key={d.k} style={{fontSize:6,padding:'2px 6px',borderRadius:4,display:'inline-flex',alignItems:'center',gap:2,background:dataSources.includes(d.k)?'rgba(200,164,78,.08)':'var(--w02)',border:dataSources.includes(d.k)?'1px solid rgba(200,164,78,.15)':'1px solid var(--line)',color:dataSources.includes(d.k)?'var(--gold)':'var(--text-3)',opacity:dataSources.includes(d.k)?1:.4,fontWeight:700}}>{d.ic} {d.l}</span>
                 ))}
               </div>
 
               {/* ═══ SECTION 1: DIAGNOSTIC ═══ */}
               <div style={{marginBottom:16}}>
-                <p style={{fontSize:9,fontWeight:800,color:'var(--gold)',letterSpacing:'.06em',marginBottom:8,textTransform:'uppercase'}}>Diagnostic</p>
+                <p style={{fontSize:9,fontWeight:700,color:'var(--gold)',letterSpacing:'.06em',marginBottom:8,textTransform:'uppercase'}}>Diagnostic</p>
 
                 {totalDone<4?(
                   <div style={{padding:12,borderRadius:10,background:'rgba(200,164,78,.04)',border:'1px solid rgba(200,164,78,.08)'}}>
-                    <p style={{fontSize:10,color:'var(--text)',lineHeight:1.6}}>{I.search({size:12,sw:1.2})} <span style={{fontStyle:'italic'}}>J'ai besoin de plus de données pour établir votre diagnostic. Faites encore {4-totalDone} exercice{4-totalDone>1?"s":""} pour que je puisse analyser votre profil.</span></p>
+                    <p style={{fontSize:10,color:'var(--text)',lineHeight:1.6}}>{I.search({size:12,sw:1.2})} <span className="vers">J'ai besoin de plus de données pour établir votre diagnostic. Faites encore {4-totalDone} exercice{4-totalDone>1?"s":""} pour que je puisse analyser votre profil.</span></p>
                   </div>
                 ):(
                   <div style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -3847,7 +5008,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                     {/* Global overview */}
                     {strengths.length===0&&weaknesses.length===0&&pulseAnswers.length<3&&(
                       <div style={{padding:10,borderRadius:10,background:'rgba(200,164,78,.04)',border:'1px solid rgba(200,164,78,.08)'}}>
-                        <p style={{fontSize:10,color:'var(--text)',lineHeight:1.6,fontStyle:'italic'}}>{coachMsg.text}</p>
+                        <p style={{fontSize:10,color:'var(--text)',lineHeight:1.6}}>{coachMsg.text}</p>
                       </div>
                     )}
                   </div>
@@ -3856,7 +5017,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
 
               {/* ═══ SECTION 2: CATEGORY RADAR ═══ */}
               <div style={{marginBottom:16}}>
-                <p style={{fontSize:9,fontWeight:800,color:'var(--gold)',letterSpacing:'.06em',marginBottom:8,textTransform:'uppercase'}}>Les 4 piliers</p>
+                <p style={{fontSize:9,fontWeight:700,color:'var(--gold)',letterSpacing:'.06em',marginBottom:8,textTransform:'uppercase'}}>Les 4 piliers</p>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
                   {cats.map(cat=>{
                     const s=catStats[cat];const pct=s.total>0?Math.round(s.done/s.total*100):0;
@@ -3872,9 +5033,9 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                           <div style={{height:'100%',borderRadius:2,width:pct+'%',background:barColor,transition:'width .5s'}}/>
                         </div>
                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                          <span style={{fontSize:7,color:s.avg>=2.5?'var(--emerald)':s.avg>=1.5?'var(--gold)':s.done>0?'var(--coral)':'var(--text-3)',fontWeight:600}}>{s.done>0?`${s.avg.toFixed(1)} ★`:"—"}</span>
-                          {diffLabel&&<span style={{fontSize:7,color:s.difficulty>0.3?'var(--coral)':s.difficulty<-0.3?'var(--emerald)':'var(--text-3)',fontWeight:600}}>{diffLabel}</span>}
-                          {s.daysSince>=3&&s.daysSince<999&&<span style={{fontSize:7,color:'var(--coral)',fontWeight:600}}>{s.daysSince}j</span>}
+                          <span style={{fontSize:7,color:s.avg>=2.5?'var(--emerald)':s.avg>=1.5?'var(--gold)':s.done>0?'var(--coral)':'var(--text-3)',fontWeight:700}}>{s.done>0?`${s.avg.toFixed(1)} ★`:"—"}</span>
+                          {diffLabel&&<span style={{fontSize:7,color:s.difficulty>0.3?'var(--coral)':s.difficulty<-0.3?'var(--emerald)':'var(--text-3)',fontWeight:700}}>{diffLabel}</span>}
+                          {s.daysSince>=3&&s.daysSince<999&&<span style={{fontSize:7,color:'var(--coral)',fontWeight:700}}>{s.daysSince}j</span>}
                         </div>
                       </div>
                     );
@@ -3885,19 +5046,19 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
               {/* ═══ SECTION 3: PROGRESSION ═══ */}
               {totalDone>=3&&(
                 <div style={{marginBottom:16}}>
-                  <p style={{fontSize:9,fontWeight:800,color:'var(--gold)',letterSpacing:'.06em',marginBottom:8,textTransform:'uppercase'}}>Votre progression</p>
+                  <p style={{fontSize:9,fontWeight:700,color:'var(--gold)',letterSpacing:'.06em',marginBottom:8,textTransform:'uppercase'}}>Votre progression</p>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}}>
                     <div style={{padding:8,borderRadius:8,background:'var(--w02)',border:'1px solid var(--line)',textAlign:'center'}}>
-                      <p style={{fontSize:16,fontWeight:800,color:'var(--text)'}}>{totalDone}</p>
-                      <p style={{fontSize:7,color:'var(--text-3)',fontWeight:600}}>exercices faits</p>
+                      <p style={{fontSize:16,fontWeight:700,color:'var(--text)'}}>{totalDone}</p>
+                      <p style={{fontSize:7,color:'var(--text-3)',fontWeight:700}}>exercices faits</p>
                     </div>
                     <div style={{padding:8,borderRadius:8,background:'var(--w02)',border:'1px solid var(--line)',textAlign:'center'}}>
-                      <p style={{fontSize:16,fontWeight:800,color:'var(--gold)'}}>{avgStarsGlobal} ★</p>
-                      <p style={{fontSize:7,color:'var(--text-3)',fontWeight:600}}>moyenne étoiles</p>
+                      <p style={{fontSize:16,fontWeight:700,color:'var(--gold)'}}>{avgStarsGlobal} ★</p>
+                      <p style={{fontSize:7,color:'var(--text-3)',fontWeight:700}}>moyenne étoiles</p>
                     </div>
                     <div style={{padding:8,borderRadius:8,background:'var(--w02)',border:'1px solid var(--line)',textAlign:'center'}}>
-                      <p style={{fontSize:16,fontWeight:800,color:easyRatio>=hardRatio?'var(--emerald)':'var(--coral)'}}>{easyRatio>=hardRatio?easyRatio:hardRatio}%</p>
-                      <p style={{fontSize:7,color:'var(--text-3)',fontWeight:600}}>{easyRatio>=hardRatio?"trouvent ça facile":"trouvent ça dur"}</p>
+                      <p style={{fontSize:16,fontWeight:700,color:easyRatio>=hardRatio?'var(--emerald)':'var(--coral)'}}>{easyRatio>=hardRatio?easyRatio:hardRatio}%</p>
+                      <p style={{fontSize:7,color:'var(--text-3)',fontWeight:700}}>{easyRatio>=hardRatio?"trouvent ça facile":"trouvent ça dur"}</p>
                     </div>
                   </div>
                   {daysSinceStart>=7&&(
@@ -3909,14 +5070,14 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
               {/* ═══ SECTION 4: RECOMMENDATIONS WITH WHY + TIPS ═══ */}
               {recs.length>0&&(
                 <div style={{marginBottom:10}}>
-                  <p style={{fontSize:9,fontWeight:800,color:'var(--gold)',letterSpacing:'.06em',marginBottom:8,textTransform:'uppercase'}}>Mon programme</p>
+                  <p style={{fontSize:9,fontWeight:700,color:'var(--gold)',letterSpacing:'.06em',marginBottom:8,textTransform:'uppercase'}}>Mon programme</p>
                   <p style={{fontSize:9,color:'var(--text-3)',marginBottom:10,lineHeight:1.5}}>Exercices choisis en fonction de votre diagnostic :</p>
                   {recs.map((rec,ri)=>(
                     <div key={rec.id} style={{marginBottom:10,borderRadius:12,border:'1px solid var(--line)',overflow:'hidden'}}>
                       {/* Why this exercise */}
                       <div style={{padding:'8px 12px',background:'rgba(200,164,78,.03)',borderBottom:'1px solid var(--line)',display:'flex',alignItems:'center',gap:6}}>
                         <span style={{fontSize:11}}>{rec.reasonIcon}</span>
-                        <p style={{fontSize:8,color:'var(--gold)',fontWeight:700,lineHeight:1.4}}>Pourquoi : <span style={{color:'var(--text-2)',fontWeight:500}}>{rec.reason}</span></p>
+                        <p style={{fontSize:8,color:'var(--gold)',fontWeight:700,lineHeight:1.4}}>Pourquoi : <span style={{color:'var(--text-2)',fontWeight:400}}>{rec.reason}</span></p>
                       </div>
                       {/* Exercise button */}
                       <button onClick={()=>{setMod({...rec});go("practice")}}
@@ -3930,7 +5091,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                       </button>
                       {/* Tip */}
                       <div style={{padding:'8px 12px',background:'var(--w01)'}}>
-                        <p style={{fontSize:8,color:'var(--text-3)',lineHeight:1.5}}>{I.zap({size:9,sw:1.2})} <span style={{fontWeight:600,color:'var(--text-2)'}}>Conseil :</span> {tipMap[rec.cat]||"Prenez un moment pour vous concentrer avant de commencer."}</p>
+                        <p style={{fontSize:8,color:'var(--text-3)',lineHeight:1.5}}>{I.zap({size:9,sw:1.2})} <span style={{fontWeight:700,color:'var(--text-2)'}}>Conseil :</span> {tipMap[rec.cat]||"Prenez un moment pour vous concentrer avant de commencer."}</p>
                       </div>
                     </div>
                   ))}
@@ -3940,7 +5101,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
               {recs.length===0&&(
                 <div style={{textAlign:'center',padding:'12px 0',marginBottom:8}}>
                   <span style={{color:'var(--emerald)'}}>{I.check({size:18})}</span>
-                  <p style={{fontSize:10,color:'var(--emerald)',fontWeight:600,marginTop:4}}>Programme complété — vous êtes au top !</p>
+                  <p style={{fontSize:10,color:'var(--emerald)',fontWeight:700,marginTop:4}}>Programme complété — vous êtes au top !</p>
                 </div>
               )}
             </div>
@@ -3959,7 +5120,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                   <button key={e.id} onClick={()=>{setMod({...e,sec:"pr"});go("practice")}}
                     style={{flexShrink:0,width:110,padding:'12px 10px',borderRadius:12,background:'var(--bg-card)',border:'1px solid var(--line)',textAlign:'center',cursor:'pointer'}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:18}}><EI e={e.icon} s={18}/></div>
-                    <p style={{fontSize:9,fontWeight:600,color:'var(--text)',marginTop:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.title}</p>
+                    <p style={{fontSize:9,fontWeight:700,color:'var(--text)',marginTop:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.title}</p>
                     <p style={{fontSize:8,color:'var(--emerald)',marginTop:2}}>Refaire →</p>
                   </button>
                 ));
@@ -4169,7 +5330,7 @@ function Warmup({onClose,st,setSt}){
                 <div style={{flex:1}}>
                   <p style={{fontSize:14,fontWeight:700,color:locked?'var(--text-3)':'var(--text)'}}>{lv.name}</p>
                   <p style={{fontSize:10,color:'var(--text-3)',marginTop:2}}>{exCount} exercices · {lv.id==="debutant"?"Phrases courtes":lv.id==="intermediaire"?"Enchaînements rapides":"Textes complexes"}</p>
-                  {locked&&<p style={{fontSize:9,color:lv.color,marginTop:3,fontWeight:600}}>{lv.unlockXP} XP requis</p>}
+                  {locked&&<p style={{fontSize:9,color:lv.color,marginTop:3,fontWeight:700}}>{lv.unlockXP} XP requis</p>}
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:3,color:lv.color,fontSize:10,fontWeight:700}}>
                   {lv.id==="debutant"?"⭐":lv.id==="intermediaire"?"⭐⭐":"⭐⭐⭐"}
@@ -4229,10 +5390,10 @@ function Warmup({onClose,st,setSt}){
                   background:h.skipped?'rgba(78,74,68,.1)':h.pct>=80?'rgba(74,222,128,.1)':h.pct>=50?'rgba(200,164,78,.1)':'rgba(239,68,68,.08)',
                   border:h.skipped?'1px solid var(--text-3)':h.pct>=80?'1px solid var(--emerald)':h.pct>=50?'1px solid var(--gold)':'1px solid var(--red)',flexShrink:0}}>
                   {h.skipped?<span style={{fontSize:9,color:'var(--text-3)'}}>—</span>
-                  :<span style={{fontSize:10,fontWeight:800,color:h.pct>=80?'var(--emerald)':h.pct>=50?'var(--gold)':'var(--red)'}}>{h.pct}%</span>}
+                  :<span style={{fontSize:10,fontWeight:700,color:h.pct>=80?'var(--emerald)':h.pct>=50?'var(--gold)':'var(--red)'}}>{h.pct}%</span>}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
-                  <p style={{fontSize:11,fontWeight:600,color:h.skipped?'var(--text-3)':'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{h.title}</p>
+                  <p style={{fontSize:11,fontWeight:700,color:h.skipped?'var(--text-3)':'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{h.title}</p>
                   <p style={{fontSize:8,color:'var(--text-3)'}}>{h.cat} · {h.skipped?"Passé":h.correct+"/"+h.total+" mots"}</p>
                 </div>
                 {!h.skipped&&<div style={{width:40}}>
@@ -4281,7 +5442,7 @@ function Warmup({onClose,st,setSt}){
         <div style={{padding:24,borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line-s)',marginBottom:16,textAlign:'center',boxShadow:'0 0 40px var(--gold-glow)',position:'relative'}}>
           <p className="label-gold" style={{marginBottom:10}}>RÉPÉTEZ À VOIX HAUTE</p>
           {wordResults.length>0?(
-            <p style={{fontSize:18,lineHeight:2,fontFamily:'Cormorant Garamond, serif',fontWeight:400,fontStyle:'italic'}}>
+            <p className="vers" style={{fontSize:19,lineHeight:1.95}}>
               «{" "}{wordResults.map((wr,i)=>(
                 <span key={i} style={{
                   color:wr.status==="correct"?"var(--emerald)":wr.status==="wrong"?"var(--red)":"var(--text-3)",
@@ -4295,7 +5456,7 @@ function Warmup({onClose,st,setSt}){
               ))}{" »"}
             </p>
           ):(
-            <p className="heading-light" style={{fontSize:18,color:'var(--text)',lineHeight:1.7,fontStyle:'italic'}}>« {ex.phrase} »</p>
+            <p className="vers" style={{fontSize:19,color:'var(--text)',lineHeight:1.7}}>« {ex.phrase} »</p>
           )}
           {/* Score indicator */}
           {score&&phase==="active"&&(
@@ -4316,7 +5477,7 @@ function Warmup({onClose,st,setSt}){
             <div style={{width:10,height:10,borderRadius:'50%',background:listening?'var(--coral)':'var(--text-3)',
               animation:listening?'pulse 1.5s ease-in-out infinite':'none',
               boxShadow:listening?'0 0 12px rgba(212,115,92,.5)':'none'}}/>
-            <span style={{fontSize:10,fontWeight:600,color:listening?'var(--coral)':'var(--text-3)'}}>
+            <span style={{fontSize:10,fontWeight:700,color:listening?'var(--coral)':'var(--text-3)'}}>
               {listening?"Micro actif — parlez...":"Micro inactif"}
             </span>
           </div>
@@ -4326,7 +5487,7 @@ function Warmup({onClose,st,setSt}){
         {phase==="ready"&&micSupported&&(
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:16,padding:'8px 12px',borderRadius:10,background:'rgba(212,115,92,.06)',border:'1px solid rgba(212,115,92,.12)'}}>
             <div style={{width:8,height:8,borderRadius:'50%',background:'var(--coral)',animation:'pulse 1.5s ease-in-out infinite'}}/>
-            <span style={{fontSize:10,fontWeight:600,color:'var(--coral)'}}>Micro prêt à écouter</span>
+            <span style={{fontSize:10,fontWeight:700,color:'var(--coral)'}}>Micro prêt à écouter</span>
           </div>
         )}
 
@@ -4417,7 +5578,7 @@ function Warmup({onClose,st,setSt}){
                   {isDone?"✓":i+1}
                 </div>
                 <div style={{flex:1}}>
-                  <p style={{fontSize:10,fontWeight:isDone||isCur?700:500,color:isDone?'var(--emerald)':isCur?'var(--text)':'var(--text-3)'}}>{w.title}</p>
+                  <p style={{fontSize:10,fontWeight:isDone||isCur?700:400,color:isDone?'var(--emerald)':isCur?'var(--text)':'var(--text-3)'}}>{w.title}</p>
                   <p style={{fontSize:8,color:'var(--text-3)'}}>{w.cat} · {w.dur}</p>
                 </div>
               </div>);
@@ -4513,7 +5674,7 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
     <div className="fade-up" style={{minHeight:'100vh',background:'var(--bg)',paddingBottom:'calc(120px + env(safe-area-inset-bottom))'}}>
       <div style={{position:'sticky',top:0,zIndex:50,background:'var(--nav-bg)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',borderBottom:'1px solid var(--line)',paddingTop:'max(12px,env(safe-area-inset-top))',paddingBottom:12,paddingLeft:20,paddingRight:20,marginBottom:20}}>
         <div className="mw">
-          <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-2)',fontSize:13,fontWeight:600,padding:'8px 14px',borderRadius:10,background:'var(--w04)',border:'1px solid var(--line)'}}>{I.chL({size:16})} Retour</button>
+          <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-2)',fontSize:13,fontWeight:700,padding:'8px 14px',borderRadius:10,background:'var(--w04)',border:'1px solid var(--line)'}}>{I.chL({size:16})} Retour</button>
         </div>
       </div>
       <div style={{padding:'8px 20px 0'}}>
@@ -4529,7 +5690,7 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
         </div>}
         <div className="card-gold" style={{padding:22,marginBottom:20}}>
           <p className="label-gold" style={{marginBottom:10}}>EXTRAIT</p>
-          <p style={{fontSize:14,lineHeight:1.9,color:'var(--text)',fontFamily:'Cormorant Garamond, serif',fontWeight:400}}>« {analysis.extract} »</p>
+          <p className="vers" style={{fontSize:15,lineHeight:1.85,color:'var(--text)'}}>« {analysis.extract} »</p>
         </div>
         <p className="body" style={{fontSize:11,textAlign:'center',marginBottom:16}}>{total} question{total>1?"s":""} — QCM, réflexion libre et analyse argumentée</p>
         <button onClick={()=>setPhase("question")} className="btn-gold btn-pulse" style={{width:'100%',padding:'14px 0',fontSize:13}}>Commencer l'analyse</button>
@@ -4574,10 +5735,10 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
                   <div style={{width:26,height:26,borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',
                     background:ok?'rgba(74,222,128,.1)':partial?'rgba(200,164,78,.1)':'rgba(239,68,68,.08)',
                     border:ok?'1px solid var(--emerald)':partial?'1px solid var(--gold)':'1px solid var(--red)',flexShrink:0}}>
-                    <span style={{fontSize:10,fontWeight:800,color:ok?'var(--emerald)':partial?'var(--gold)':'var(--red)'}}>{ok?"✓":partial?"½":"✗"}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:ok?'var(--emerald)':partial?'var(--gold)':'var(--red)'}}>{ok?"✓":partial?"½":"✗"}</span>
                   </div>
                   <div style={{flex:1}}>
-                    <p style={{fontSize:10,fontWeight:600,color:'var(--text)'}}>{qq.q.substring(0,60)}{qq.q.length>60?"…":""}</p>
+                    <p style={{fontSize:10,fontWeight:700,color:'var(--text)'}}>{qq.q.substring(0,60)}{qq.q.length>60?"…":""}</p>
                     <p style={{fontSize:8,color:'var(--text-3)'}}>{qq.type==="qcm"?"QCM":qq.type==="libre"?"Réponse libre":"Question argumentée"}</p>
                   </div>
                 </div>
@@ -4596,8 +5757,8 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
       {/* Sticky top nav — always accessible, respects iPhone safe area */}
       <div style={{position:'sticky',top:0,zIndex:50,background:'var(--nav-bg)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',borderBottom:'1px solid var(--line)',paddingTop:'max(12px,env(safe-area-inset-top))',paddingBottom:12,paddingLeft:20,paddingRight:20}}>
         <div className="mw" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <button onClick={()=>{if(qi>0)setQi(qi-1);else setPhase("intro")}} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-2)',fontSize:13,fontWeight:600,padding:'8px 14px',borderRadius:10,background:'var(--w04)',border:'1px solid var(--line)'}}>{I.chL({size:16})} {qi>0?"Précédent":"Retour"}</button>
-          <button onClick={onClose} style={{fontSize:12,color:'var(--text-2)',fontWeight:600,padding:'8px 14px',borderRadius:10,background:'var(--w04)',border:'1px solid var(--line)'}}>Quitter ✕</button>
+          <button onClick={()=>{if(qi>0)setQi(qi-1);else setPhase("intro")}} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-2)',fontSize:13,fontWeight:700,padding:'8px 14px',borderRadius:10,background:'var(--w04)',border:'1px solid var(--line)'}}>{I.chL({size:16})} {qi>0?"Précédent":"Retour"}</button>
+          <button onClick={onClose} style={{fontSize:12,color:'var(--text-2)',fontWeight:700,padding:'8px 14px',borderRadius:10,background:'var(--w04)',border:'1px solid var(--line)'}}>Quitter ✕</button>
         </div>
       </div>
       <div style={{padding:'20px 20px 40px'}}>
@@ -4607,9 +5768,9 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
 
         {/* Extract reminder (collapsed) */}
         <details style={{marginTop:14,marginBottom:14}}>
-          <summary style={{fontSize:10,color:'var(--gold)',cursor:'pointer',fontWeight:600}}>Revoir l'extrait</summary>
+          <summary style={{fontSize:10,color:'var(--gold)',cursor:'pointer',fontWeight:700}}>Revoir l'extrait</summary>
           <div style={{padding:12,marginTop:6,borderRadius:10,background:'var(--bg-card)',border:'1px solid var(--line)'}}>
-            <p style={{fontSize:12,lineHeight:1.8,color:'var(--text-2)',fontFamily:'Cormorant Garamond, serif',fontWeight:400}}>« {analysis.extract} »</p>
+            <p className="vers" style={{fontSize:13,lineHeight:1.75,color:'var(--text-2)'}}>« {analysis.extract} »</p>
             <p style={{fontSize:9,color:'var(--text-3)',marginTop:6}}>— {analysis.source}</p>
           </div>
         </details>
@@ -4641,7 +5802,7 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
                     border:`1.5px solid ${showResult?(isCorrect?'var(--emerald)':selected?'var(--red)':'var(--line)'):(selected?'var(--gold)':'var(--line)')}`,
                     color:showResult?(isCorrect?'var(--emerald)':selected?'var(--red)':'var(--text-2)'):(selected?'var(--gold)':'var(--text)'),
                     transition:'all .2s',cursor:ans.revealed?'default':'pointer'}}>
-                  <span style={{marginRight:8,fontWeight:800}}>{String.fromCharCode(65+i)}.</span>{opt}
+                  <span style={{marginRight:8,fontWeight:700}}>{String.fromCharCode(65+i)}.</span>{opt}
                   {showResult&&isCorrect&&" ✓"}
                   {showResult&&selected&&!isCorrect&&" ✗"}
                 </button>
@@ -4674,7 +5835,7 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
                     <div style={{padding:14,borderRadius:12,background:`${col}08`,border:`1px solid ${col}33`,marginBottom:12}}>
                       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
                         <p className="label" style={{color:col,fontSize:9}}>{label}</p>
-                        <p style={{fontSize:14,fontWeight:800,color:col}}>{ans.aiResult.score}/100</p>
+                        <p style={{fontSize:14,fontWeight:700,color:col}}>{ans.aiResult.score}/100</p>
                       </div>
                       {ans.aiResult.feedback&&<p style={{fontSize:11,lineHeight:1.7,color:'var(--text)',marginBottom:ans.aiResult.matched&&ans.aiResult.matched.length>0?8:0}}>{ans.aiResult.feedback}</p>}
                       {ans.aiResult.matched&&ans.aiResult.matched.length>0&&(
@@ -4701,7 +5862,7 @@ function SceneAnalysis({analysis,st,setSt,onClose}){
                     <div style={{display:'flex',gap:6}}>
                       {[{v:"found",l:"J'ai trouvé l'essentiel",c:"var(--emerald)"},{v:"partial",l:"Partiellement",c:"var(--gold)"},{v:"missed",l:"Je n'avais pas vu ça",c:"var(--coral)"}].map(e=>(
                         <button key={e.v} onClick={()=>setSelfEval(e.v)}
-                          style={{flex:1,padding:'8px 4px',borderRadius:8,fontSize:9,fontWeight:600,
+                          style={{flex:1,padding:'8px 4px',borderRadius:8,fontSize:9,fontWeight:700,
                             background:`${e.c}08`,border:`1px solid ${e.c}33`,color:e.c}}>{e.l}</button>
                       ))}
                     </div>
@@ -4955,8 +6116,8 @@ function DictionChallenge({onClose,st,setSt}){
                 <div style={{flex:1}}>
                   <p style={{fontSize:14,fontWeight:700,color:locked?'var(--text-3)':'var(--text)'}}>{lv.name}</p>
                   <p style={{fontSize:10,color:'var(--text-3)',marginTop:2}}>{phraseCount} phrases · 60 secondes</p>
-                  {best!=null&&<p style={{fontSize:9,color:'var(--gold)',marginTop:2,fontWeight:600}}>Record : {best} phrases</p>}
-                  {locked&&<p style={{fontSize:9,color:lv.color,marginTop:3,fontWeight:600}}>{lv.unlockXP} XP requis</p>}
+                  {best!=null&&<p style={{fontSize:9,color:'var(--gold)',marginTop:2,fontWeight:700}}>Record : {best} phrases</p>}
+                  {locked&&<p style={{fontSize:9,color:lv.color,marginTop:3,fontWeight:700}}>{lv.unlockXP} XP requis</p>}
                 </div>
                 {I.zap({size:18,sw:1.4,style:{color:lv.color}})}
               </button>
@@ -5037,7 +6198,7 @@ function DictionChallenge({onClose,st,setSt}){
             <span style={{fontSize:28,fontWeight:900,color:timerColor,fontVariantNumeric:'tabular-nums'}}>{fmtTime(timeLeft)}</span>
             <div style={{textAlign:'right'}}>
               <p style={{fontSize:24,fontWeight:900,color:'var(--text)'}}>{validated}</p>
-              <p style={{fontSize:8,color:'var(--text-3)',fontWeight:600}}>phrase{validated!==1?"s":""}</p>
+              <p style={{fontSize:8,color:'var(--text-3)',fontWeight:700}}>phrase{validated!==1?"s":""}</p>
             </div>
           </div>
           <div style={{height:4,borderRadius:2,background:'var(--w06)',overflow:'hidden'}}>
@@ -5052,7 +6213,7 @@ function DictionChallenge({onClose,st,setSt}){
         </div>
 
         {/* Phrase number */}
-        <p style={{fontSize:9,color:'var(--text-3)',textAlign:'center',marginBottom:8,fontWeight:600}}>Phrase {phraseIdx+1} / {phrases.length}</p>
+        <p style={{fontSize:9,color:'var(--text-3)',textAlign:'center',marginBottom:8,fontWeight:700}}>Phrase {phraseIdx+1} / {phrases.length}</p>
 
         {/* Phrase to say */}
         <div style={{padding:24,borderRadius:16,background:'var(--w03)',border:'1px solid var(--line)',textAlign:'center',marginBottom:16,minHeight:100,display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -5069,10 +6230,10 @@ function DictionChallenge({onClose,st,setSt}){
         <div style={{textAlign:'center',marginBottom:16}}>
           {listening&&<div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,background:'rgba(74,222,128,.08)',border:'1px solid rgba(74,222,128,.15)'}}>
             <div style={{width:8,height:8,borderRadius:'50%',background:'var(--emerald)',animation:'pulse 1.5s infinite'}}/>
-            <span style={{fontSize:10,color:'var(--emerald)',fontWeight:600}}>Parlez maintenant</span>
+            <span style={{fontSize:10,color:'var(--emerald)',fontWeight:700}}>Parlez maintenant</span>
           </div>}
           {micError&&<p style={{fontSize:10,color:'var(--coral)',marginTop:8}}>{micError}</p>}
-          {transcript&&<p style={{fontSize:9,color:'var(--text-3)',marginTop:10,fontStyle:'italic',maxWidth:300,margin:'10px auto 0'}}>« {transcript} »</p>}
+          {transcript&&<p className="vers" style={{fontSize:12,color:'var(--text-3)',maxWidth:300,margin:'10px auto 0'}}>« {transcript} »</p>}
         </div>
 
         {/* Action buttons */}
@@ -5376,7 +6537,7 @@ function AvantScene({onClose,st}){
                   {introFormats.map(f=>(
                     <button key={f.id} onClick={()=>setFormat(f.id)} className="card"
                       style={{flex:1,padding:'14px 10px',textAlign:'center',background:'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:'1px solid rgba(167,139,250,.12)'}}>
-                      <p style={{fontSize:16,fontWeight:800,color:'var(--violet)',marginBottom:2}}>{f.dur}</p>
+                      <p style={{fontSize:16,fontWeight:700,color:'var(--violet)',marginBottom:2}}>{f.dur}</p>
                       <p style={{fontSize:8,color:'var(--text-3)'}}>{f.modules.length} étapes</p>
                     </button>
                   ))}
@@ -5388,7 +6549,7 @@ function AvantScene({onClose,st}){
         {/* Mantras preview */}
         <div style={{marginTop:24,padding:18,borderRadius:14,background:'rgba(200,164,78,.03)',border:'1px solid var(--line)'}}>
           <p className="label-gold" style={{marginBottom:8}}>MANTRA DU JOUR</p>
-          <p className="heading-light" style={{fontSize:14,fontStyle:'italic',lineHeight:1.6}}>« {AVANTSCENE_MANTRAS[new Date().getDay()%AVANTSCENE_MANTRAS.length].text} »</p>
+          <p className="vers" style={{fontSize:15,lineHeight:1.6}}>« {AVANTSCENE_MANTRAS[new Date().getDay()%AVANTSCENE_MANTRAS.length].text} »</p>
           <p style={{fontSize:9,color:'var(--text-3)',marginTop:6}}>— {AVANTSCENE_MANTRAS[new Date().getDay()%AVANTSCENE_MANTRAS.length].author}</p>
         </div>
       </div>
@@ -5406,10 +6567,10 @@ function AvantScene({onClose,st}){
           </div>
           <h2 className="heading" style={{fontSize:24,marginBottom:6}}>Vous êtes prêt·e</h2>
           <p className="body" style={{fontSize:12,marginBottom:4}}>Préparation {fmt.name} terminée</p>
-          <p style={{fontSize:11,color:'var(--gold)',fontWeight:600}}>{fmtTime(sessionTime)} de préparation</p>
+          <p style={{fontSize:11,color:'var(--gold)',fontWeight:700}}>{fmtTime(sessionTime)} de préparation</p>
         </div>
         <div style={{padding:18,borderRadius:14,background:'rgba(200,164,78,.03)',border:'1px solid var(--line)',marginBottom:24}}>
-          <p className="heading-light" style={{fontSize:15,fontStyle:'italic',lineHeight:1.6}}>« {AVANTSCENE_MANTRAS[mantraIdx].text} »</p>
+          <p className="vers" style={{fontSize:16,lineHeight:1.6}}>« {AVANTSCENE_MANTRAS[mantraIdx].text} »</p>
           <p style={{fontSize:9,color:'var(--text-3)',marginTop:8}}>— {AVANTSCENE_MANTRAS[mantraIdx].author}</p>
         </div>
         <button onClick={onClose} className="btn-gold" style={{width:'100%',padding:'14px 0',fontSize:13}}>Retour</button>
@@ -5423,13 +6584,13 @@ function AvantScene({onClose,st}){
       <div className="mw">
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
           <button onClick={()=>{if(modIdx>0){setModIdx(modIdx-1);setBodyStep(0);setVisuStep(0)}else{setFormat(null)}}} style={{display:'flex',alignItems:'center',gap:5,color:'var(--text-3)',fontSize:12}}>{I.chL({size:16})} {modIdx>0?"Précédent":"Retour"}</button>
-          <span style={{fontSize:10,color:'var(--gold)',fontWeight:600}}>{fmtTime(sessionTime)}</span>
+          <span style={{fontSize:10,color:'var(--gold)',fontWeight:700}}>{fmtTime(sessionTime)}</span>
           <button onClick={onClose} style={{fontSize:10,color:'var(--text-3)'}}>Quitter ✕</button>
         </div>
         {/* Music toggle */}
         <button onClick={()=>{if(musicOn)stopAmbient();else startAmbient()}} style={{display:'flex',alignItems:'center',gap:8,margin:'0 auto 14px',padding:'8px 16px',borderRadius:20,background:musicOn?'rgba(167,139,250,.08)':'var(--bg-card)',border:'1px solid '+(musicOn?'rgba(167,139,250,.3)':'var(--line)'),cursor:'pointer',transition:'all .3s'}}>
           {I.headphones({size:14,sw:1.5,style:{color:musicOn?'var(--violet)':'var(--text-3)'}})}
-          <span style={{fontSize:10,fontWeight:600,color:musicOn?'var(--violet)':'var(--text-3)'}}>{musicOn?"Musique activée":"Activer la musique"}</span>
+          <span style={{fontSize:10,fontWeight:700,color:musicOn?'var(--violet)':'var(--text-3)'}}>{musicOn?"Musique activée":"Activer la musique"}</span>
           <div style={{width:28,height:16,borderRadius:8,background:musicOn?'var(--violet)':'var(--w10)',padding:2,transition:'all .3s',display:'flex',alignItems:'center',justifyContent:musicOn?'flex-end':'flex-start'}}>
             <div style={{width:12,height:12,borderRadius:6,background:musicOn?'#fff':'rgba(255,255,255,.3)',transition:'all .3s'}}/>
           </div>
@@ -5442,7 +6603,7 @@ function AvantScene({onClose,st}){
           <div style={{textAlign:'center',marginTop:20}}>
             <h2 className="heading" style={{fontSize:20,marginBottom:4}}>{br.name}</h2>
             <p className="body" style={{fontSize:11,marginBottom:8,color:'var(--text-2)'}}>{br.desc}</p>
-            <p style={{fontSize:10,fontStyle:'italic',color:'var(--text-3)',marginBottom:28}}>Fermez les yeux. Suivez le rythme.</p>
+            <p style={{fontSize:10,color:'var(--text-3)',marginBottom:28}}>Fermez les yeux. Suivez le rythme.</p>
             <div style={{position:'relative',width:200,height:200,margin:'0 auto 24px'}}>
               {/* Outer glow ring */}
               <div style={{position:'absolute',inset:-10,borderRadius:'50%',background:breathPhase==="in"?'radial-gradient(circle,rgba(74,222,128,.08) 0%,transparent 70%)':'radial-gradient(circle,rgba(167,139,250,.08) 0%,transparent 70%)',transition:'all 2s ease-in-out'}}/>
@@ -5473,7 +6634,7 @@ function AvantScene({onClose,st}){
           <div style={{textAlign:'center',marginTop:20}}>
             {immersionPhase==="breathing"&&(<>
               <h2 className="heading" style={{fontSize:18,marginBottom:4,opacity:.6}}>Respirez</h2>
-              <p style={{fontSize:10,fontStyle:'italic',color:'var(--text-3)',marginBottom:28}}>Fermez les yeux. Suivez le cercle. {immersionTarget-immersionBreathCount} respiration{immersionTarget-immersionBreathCount>1?"s":""} restante{immersionTarget-immersionBreathCount>1?"s":""}.</p>
+              <p style={{fontSize:10,color:'var(--text-3)',marginBottom:28}}>Fermez les yeux. Suivez le cercle. {immersionTarget-immersionBreathCount} respiration{immersionTarget-immersionBreathCount>1?"s":""} restante{immersionTarget-immersionBreathCount>1?"s":""}.</p>
               <div style={{position:'relative',width:200,height:200,margin:'0 auto 24px'}}>
                 <div style={{position:'absolute',inset:-10,borderRadius:'50%',background:breathPhase==="in"?'radial-gradient(circle,rgba(74,222,128,.08) 0%,transparent 70%)':'radial-gradient(circle,rgba(167,139,250,.08) 0%,transparent 70%)',transition:'all 2s ease-in-out'}}/>
                 <div style={{width:200,height:200,borderRadius:'50%',
@@ -5500,10 +6661,10 @@ function AvantScene({onClose,st}){
 
             {immersionPhase==="affirmations"&&(<>
               <h2 className="heading" style={{fontSize:18,marginBottom:8,opacity:.6}}>Écoutez-vous</h2>
-              <p style={{fontSize:10,fontStyle:'italic',color:'var(--text-3)',marginBottom:28}}>Ouvrez les yeux pour lire. Refermez-les pour absorber.</p>
+              <p style={{fontSize:10,color:'var(--text-3)',marginBottom:28}}>Ouvrez les yeux pour lire. Refermez-les pour absorber.</p>
               <div style={{width:220,height:220,borderRadius:'50%',margin:'0 auto 28px',background:'radial-gradient(circle,rgba(167,139,250,.08) 0%,rgba(167,139,250,.01) 60%,transparent 100%)',border:'1.5px solid rgba(167,139,250,.15)',display:'flex',alignItems:'center',justifyContent:'center',animation:'breatheCircle 8s ease-in-out infinite'}}>
                 <div style={{padding:24,maxWidth:180,opacity:textFade?1:0,transition:'opacity 1.5s ease-in-out'}}>
-                  <p className="heading-light" style={{fontSize:14,fontStyle:'italic',lineHeight:1.8,color:'var(--text)',textAlign:'center'}}>
+                  <p className="vers" style={{fontSize:15,lineHeight:1.8,color:'var(--text)',textAlign:'center'}}>
                     « {AVANTSCENE_AFFIRMATIONS[detenteIdx]} »
                   </p>
                 </div>
@@ -5531,7 +6692,7 @@ function AvantScene({onClose,st}){
                 <button onClick={()=>setBodyStep(bi===bodyStep?-1:bi)} style={{width:'100%',padding:'12px 16px',borderRadius:12,
                   background:bi===bodyStep?'rgba(200,164,78,.04)':'var(--bg-card)',border:`1px solid ${bi===bodyStep?'var(--gold-dim)':'var(--line)'}`,
                   display:'flex',alignItems:'center',justifyContent:'space-between',textAlign:'left'}}>
-                  <span style={{fontSize:13,fontWeight:600,color:bi===bodyStep?'var(--gold)':'var(--text)'}}>{b.title}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:bi===bodyStep?'var(--gold)':'var(--text)'}}>{b.title}</span>
                   <span style={{fontSize:10,color:'var(--text-3)'}}>{bi===bodyStep?"▾":"▸"}</span>
                 </button>
                 {bi===bodyStep&&(
@@ -5573,11 +6734,11 @@ function AvantScene({onClose,st}){
         {currentMod==="detente"&&(
           <div style={{textAlign:'center',marginTop:20}}>
             <h2 className="heading" style={{fontSize:20,marginBottom:6,opacity:.7}}>Moment de détente</h2>
-            <p style={{fontSize:10,fontStyle:'italic',color:'var(--text-3)',marginBottom:32}}>Fermez les yeux. Écoutez la musique. Ouvrez-les de temps en temps pour lire.</p>
+            <p style={{fontSize:10,color:'var(--text-3)',marginBottom:32}}>Fermez les yeux. Écoutez la musique. Ouvrez-les de temps en temps pour lire.</p>
             {/* Pulsing ambient circle with text that fades */}
             <div style={{width:220,height:220,borderRadius:'50%',margin:'0 auto 28px',background:'radial-gradient(circle,rgba(167,139,250,.08) 0%,rgba(167,139,250,.01) 60%,transparent 100%)',border:'1.5px solid rgba(167,139,250,.15)',display:'flex',alignItems:'center',justifyContent:'center',animation:'breatheCircle 8s ease-in-out infinite'}}>
               <div style={{padding:24,maxWidth:180,opacity:textFade?1:0,transition:'opacity 1.5s ease-in-out'}}>
-                <p className="heading-light" style={{fontSize:14,fontStyle:'italic',lineHeight:1.8,color:'var(--text)',textAlign:'center'}}>
+                <p className="vers" style={{fontSize:15,lineHeight:1.8,color:'var(--text)',textAlign:'center'}}>
                   « {AVANTSCENE_AFFIRMATIONS[detenteIdx]} »
                 </p>
               </div>
@@ -5602,9 +6763,9 @@ function AvantScene({onClose,st}){
         {currentMod==="mantra"&&(
           <div style={{textAlign:'center',marginTop:30}}>
             <h2 className="heading" style={{fontSize:18,marginBottom:8,opacity:.6}}>Votre mantra</h2>
-            <p style={{fontSize:10,fontStyle:'italic',color:'var(--text-3)',marginBottom:28}}>Lisez cette phrase à voix haute. Trois fois. Lentement. Laissez-la résonner en vous.</p>
+            <p style={{fontSize:10,color:'var(--text-3)',marginBottom:28}}>Lisez cette phrase à voix haute. Trois fois. Lentement. Laissez-la résonner en vous.</p>
             <div style={{padding:36,marginBottom:28,borderRadius:20,background:'radial-gradient(circle at center,rgba(200,164,78,.06) 0%,transparent 70%)',border:'1px solid rgba(200,164,78,.12)'}}>
-              <p className="heading-light" style={{fontSize:20,fontStyle:'italic',lineHeight:1.9,color:'var(--text)',animation:'fadeIn 2s ease-out'}}>« {AVANTSCENE_MANTRAS[mantraIdx].text} »</p>
+              <p className="vers" style={{fontSize:21,lineHeight:1.9,color:'var(--text)',animation:'fadeIn 2s ease-out'}}>« {AVANTSCENE_MANTRAS[mantraIdx].text} »</p>
               <p style={{fontSize:10,color:'var(--text-3)',marginTop:14,letterSpacing:'.05em'}}>— {AVANTSCENE_MANTRAS[mantraIdx].author}</p>
             </div>
             <button onClick={nextModule} className="btn-gold" style={{width:'100%',maxWidth:280,padding:'14px 0',fontSize:13}}>
@@ -5616,8 +6777,8 @@ function AvantScene({onClose,st}){
         {/* VISUALISATION */}
         {currentMod==="visu"&&(
           <div style={{textAlign:'center',marginTop:10}}>
-            <h2 className="heading" style={{fontSize:16,marginBottom:6,opacity:.4,letterSpacing:'.15em',fontWeight:600}}>VISUALISATION</h2>
-            <p style={{fontSize:10,fontStyle:'italic',color:'var(--text-3)',marginBottom:36}}>Fermez les yeux. Lisez. Fermez-les à nouveau. Prenez votre temps.</p>
+            <h2 className="heading" style={{fontSize:16,marginBottom:6,opacity:.4,letterSpacing:'.15em',fontWeight:700}}>VISUALISATION</h2>
+            <p style={{fontSize:10,color:'var(--text-3)',marginBottom:36}}>Fermez les yeux. Lisez. Fermez-les à nouveau. Prenez votre temps.</p>
 
             {/* Immersive circle with glow */}
             <div style={{position:'relative',width:260,height:260,margin:'0 auto 28px'}}>
@@ -5631,7 +6792,7 @@ function AvantScene({onClose,st}){
                 boxShadow:'0 0 60px rgba(200,164,78,.04) inset',
                 transition:'all 1.5s ease-in-out'}}>
                 <div style={{padding:28,maxWidth:210,opacity:textFade?1:0,transition:'opacity 1.2s ease-in-out'}}>
-                  <p style={{fontFamily:'Cormorant Garamond, serif',fontSize:15,lineHeight:2,fontStyle:'italic',color:'var(--text)',fontWeight:400,letterSpacing:'.01em'}}>
+                  <p className="vers" style={{fontSize:16,lineHeight:1.9,color:'var(--text)'}}>
                     {AVANTSCENE_VISU[visuStep]}
                   </p>
                 </div>
@@ -5655,7 +6816,7 @@ function AvantScene({onClose,st}){
                 {modIdx<modules.length-1?"Étape suivante →":"Terminer"}
               </button>
             )}
-            {isConnexion&&<p style={{fontSize:9,color:'var(--text-3)',fontStyle:'italic',marginTop:12,opacity:.5}}>Les phrases défilent doucement</p>}
+            {isConnexion&&<p style={{fontSize:9,color:'var(--text-3)',marginTop:12,opacity:.5}}>Les phrases défilent doucement</p>}
           </div>
         )}
       </div>
@@ -5774,7 +6935,7 @@ function MonTexte({st,setSt,onClose}){
             <label style={{display:'flex',alignItems:'center',gap:10,padding:'14px 16px',borderRadius:12,border:'2px dashed var(--line-s)',background:'var(--bg-card)',cursor:'pointer'}}>
               {I.upload({size:20,sw:1.5,style:{color:'var(--gold)'}})}
               <div style={{flex:1}}>
-                <p style={{fontSize:12,fontWeight:600,color:'var(--gold)'}}>{formImg?"Fichier sélectionné":"Importer une photo ou un PDF"}</p>
+                <p style={{fontSize:12,fontWeight:700,color:'var(--gold)'}}>{formImg?"Fichier sélectionné":"Importer une photo ou un PDF"}</p>
                 {formImgName&&<p style={{fontSize:9,color:'var(--text-3)',marginTop:2}}>{formImgName}</p>}
                 {!formImg&&<p style={{fontSize:9,color:'var(--text-3)',marginTop:2}}>Photo de la page, scan, PDF…</p>}
               </div>
@@ -5788,7 +6949,7 @@ function MonTexte({st,setSt,onClose}){
           </div>
           <div>
             <p className="label" style={{marginBottom:6}}>TEXTE (OPTIONNEL SI VOUS IMPORTEZ UNE PHOTO)</p>
-            <textarea value={formText} onChange={e=>setFormText(e.target.value)} placeholder="Facultatif si vous avez importé une photo" rows={3} style={{width:'100%',padding:'10px 14px',borderRadius:10,border:'1px solid var(--line-s)',background:'var(--bg-card)',color:'var(--text)',fontSize:13,fontFamily:'Cormorant Garamond, serif',lineHeight:1.6,resize:'vertical'}}/>
+            <textarea value={formText} onChange={e=>setFormText(e.target.value)} placeholder="Facultatif si vous avez importé une photo" rows={3} style={{width:'100%',padding:'10px 14px',borderRadius:10,border:'1px solid var(--line-s)',background:'var(--bg-card)',color:'var(--text)',fontSize:13,lineHeight:1.6,resize:'vertical'}}/>
           </div>
           <button onClick={createText} disabled={!formText.trim()&&!formImg} className="btn-gold" style={{padding:'14px 0',fontSize:14,width:'100%',opacity:(formText.trim()||formImg)?1:.4}}>Commencer le parcours</button>
         </div>
@@ -5853,18 +7014,18 @@ function MonTexte({st,setSt,onClose}){
           </button>
           {showRef&&<div style={{padding:14,borderRadius:10,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:16,maxHeight:150,overflow:'auto'}}>
             {activeText.image&&activeText.image.startsWith("data:image")&&<img src={activeText.image} style={{width:'100%',maxHeight:80,objectFit:'contain',marginBottom:8,borderRadius:6}} alt="ref"/>}
-            <p style={{fontSize:12,lineHeight:1.8,color:'var(--text-2)',fontFamily:'Cormorant Garamond, serif',fontWeight:400}}>{activeText.text}</p>
+            <p className="vers" style={{fontSize:13,lineHeight:1.75,color:'var(--text-2)'}}>{activeText.text}</p>
           </div>}
 
           {/* Question card */}
           <div className="card-gold" style={{padding:20,marginBottom:12}}>
-            <p className="body" style={{fontSize:14,color:'var(--text)',lineHeight:1.7,fontWeight:500}}>{q.q}</p>
+            <p className="body" style={{fontSize:14,color:'var(--text)',lineHeight:1.7,fontWeight:400}}>{q.q}</p>
           </div>
 
           {/* Tip */}
           <div style={{display:'flex',gap:8,padding:'10px 12px',borderRadius:8,background:'rgba(200,164,78,.04)',border:'1px solid var(--line)',marginBottom:16}}>
             <span style={{color:'var(--gold-dim)',flexShrink:0,marginTop:1}}>{I.info({size:12,sw:1.4})}</span>
-            <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.6,fontStyle:'italic'}}>{q.tip}</p>
+            <p className="vers" style={{fontSize:13,color:'var(--text-2)',lineHeight:1.55}}>{q.tip}</p>
           </div>
 
           {/* Optional answer area */}
@@ -5928,12 +7089,12 @@ function MonTexte({st,setSt,onClose}){
 
           {/* Reference text */}
           <details style={{marginBottom:20}}>
-            <summary style={{padding:'12px 14px',borderRadius:10,background:'var(--bg-card)',border:'1px solid var(--line)',cursor:'pointer',fontSize:11,fontWeight:600,display:'flex',alignItems:'center',gap:8,listStyle:'none'}}>
+            <summary style={{padding:'12px 14px',borderRadius:10,background:'var(--bg-card)',border:'1px solid var(--line)',cursor:'pointer',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',gap:8,listStyle:'none'}}>
               {I.book({size:14,sw:1.5,style:{color:'var(--gold)'}})} Voir mon texte
             </summary>
             <div style={{padding:14,borderRadius:'0 0 10px 10px',background:'var(--bg-card)',borderLeft:'1px solid var(--line)',borderRight:'1px solid var(--line)',borderBottom:'1px solid var(--line)'}}>
               {activeText.image&&activeText.image.startsWith("data:image")&&<img src={activeText.image} style={{width:'100%',maxHeight:200,objectFit:'contain',marginBottom:10,borderRadius:6}} alt="ref"/>}
-              <p style={{fontSize:14,lineHeight:1.9,color:'var(--text)',fontFamily:'Cormorant Garamond, serif',fontWeight:400}}>{activeText.text}</p>
+              <p className="vers" style={{fontSize:15,lineHeight:1.85,color:'var(--text)'}}>{activeText.text}</p>
             </div>
           </details>
 
@@ -6294,16 +7455,16 @@ function Feed({st,setSt}){
             {I.book({size:12})} {monoShowRef?"Masquer le monologue":"Voir le monologue"}
           </button>
           {monoShowRef&&<div style={{padding:14,borderRadius:10,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:16,maxHeight:150,overflow:'auto'}}>
-            <p style={{fontSize:12,lineHeight:1.8,color:'var(--text-2)',fontFamily:'Cormorant Garamond, serif',fontWeight:400}}>{workingMono.text}</p>
+            <p className="vers" style={{fontSize:13,lineHeight:1.75,color:'var(--text-2)'}}>{workingMono.text}</p>
           </div>}
 
           <div className="card-gold" style={{padding:20,marginBottom:12}}>
-            <p className="body" style={{fontSize:14,color:'var(--text)',lineHeight:1.7,fontWeight:500}}>{q.q}</p>
+            <p className="body" style={{fontSize:14,color:'var(--text)',lineHeight:1.7,fontWeight:400}}>{q.q}</p>
           </div>
 
           <div style={{display:'flex',gap:8,padding:'10px 12px',borderRadius:8,background:'rgba(200,164,78,.04)',border:'1px solid var(--line)',marginBottom:16}}>
             <span style={{color:'var(--gold-dim)',flexShrink:0,marginTop:1}}>{I.info({size:12,sw:1.4})}</span>
-            <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.6,fontStyle:'italic'}}>{q.tip}</p>
+            <p className="vers" style={{fontSize:13,color:'var(--text-2)',lineHeight:1.55}}>{q.tip}</p>
           </div>
 
           <p style={{fontSize:9,color:'var(--text-3)',marginBottom:6}}>✏️ Vous pouvez noter votre réponse ici :</p>
@@ -6349,11 +7510,11 @@ function Feed({st,setSt}){
           <p style={{fontSize:8,color:'var(--text-3)',marginTop:4,marginBottom:20}}>{allDone?"Parcours terminé ! Vous maîtrisez ce monologue.":`Étape ${done+1} sur ${MONTEXTE_PARCOURS.length} — continuez`}</p>
 
           <details style={{marginBottom:20}}>
-            <summary style={{padding:'12px 14px',borderRadius:10,background:'var(--bg-card)',border:'1px solid var(--line)',cursor:'pointer',fontSize:11,fontWeight:600,display:'flex',alignItems:'center',gap:8,listStyle:'none'}}>
+            <summary style={{padding:'12px 14px',borderRadius:10,background:'var(--bg-card)',border:'1px solid var(--line)',cursor:'pointer',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',gap:8,listStyle:'none'}}>
               {I.book({size:14,sw:1.5,style:{color:'var(--gold)'}})} Voir le monologue
             </summary>
             <div style={{padding:14,borderRadius:'0 0 10px 10px',background:'var(--bg-card)',borderLeft:'1px solid var(--line)',borderRight:'1px solid var(--line)',borderBottom:'1px solid var(--line)'}}>
-              <p style={{fontSize:14,lineHeight:1.9,color:'var(--text)',fontFamily:'Cormorant Garamond, serif',fontWeight:400}}>« {workingMono.text} »</p>
+              <p className="vers" style={{fontSize:15,lineHeight:1.85,color:'var(--text)'}}>« {workingMono.text} »</p>
             </div>
           </details>
 
@@ -6401,14 +7562,14 @@ function Feed({st,setSt}){
                     <div>
                       {prog.uploadProgress!=null?(
                         <div style={{padding:'16px 14px',borderRadius:10,border:'1px solid var(--gold-dim)',background:'rgba(200,164,78,.03)',marginBottom:12}}>
-                          <p style={{fontSize:11,fontWeight:600,color:'var(--gold)',marginBottom:8}}>Envoi en cours... {prog.uploadProgress}%</p>
+                          <p style={{fontSize:11,fontWeight:700,color:'var(--gold)',marginBottom:8}}>Envoi en cours... {prog.uploadProgress}%</p>
                           <div style={{height:4,borderRadius:2,background:'var(--line)',overflow:'hidden'}}><div style={{height:'100%',borderRadius:2,background:'var(--gold)',width:prog.uploadProgress+'%',transition:'width .3s'}}/></div>
                         </div>
                       ):(
                       <label style={{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',borderRadius:10,border:'1px solid var(--gold-dim)',background:'rgba(200,164,78,.03)',cursor:'pointer',marginBottom:12}}>
                         {I.upload({size:18,sw:1.5,style:{color:'var(--gold)'}})}
                         <div style={{flex:1}}>
-                          <p style={{fontSize:11,fontWeight:600,color:'var(--gold)'}}>Filmer et envoyer</p>
+                          <p style={{fontSize:11,fontWeight:700,color:'var(--gold)'}}>Filmer et envoyer</p>
                           <p style={{fontSize:9,color:'var(--text-3)',marginTop:1}}>Cliquez ici pour sélectionner une vidéo</p>
                         </div>
                         <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={async(e)=>{
@@ -6443,7 +7604,7 @@ function Feed({st,setSt}){
                     <div style={{padding:14,borderRadius:10,background:'rgba(74,222,128,.08)',border:'1px solid rgba(74,222,128,.2)',display:'flex',alignItems:'center',gap:10}}>
                       <div><EI e="✅" s={20}/></div>
                       <div style={{flex:1}}>
-                        <p style={{fontSize:11,fontWeight:600,color:'var(--emerald)',marginBottom:2}}>Vidéo envoyée !</p>
+                        <p style={{fontSize:11,fontWeight:700,color:'var(--emerald)',marginBottom:2}}>Vidéo envoyée !</p>
                         <p style={{fontSize:10,color:'var(--text-2)'}}>Un coach de la Compagnie Castigat vous répondra sous 48h avec des retours personnalisés.</p>
                       </div>
                     </div>
@@ -6454,7 +7615,7 @@ function Feed({st,setSt}){
           )}
 
           {allDone&&(
-            <button onClick={()=>{setWorkingMono(null);setMonoStepIdx(null);}} style={{display:'block',margin:'8px auto 20px',padding:'10px 28px',fontSize:12,fontWeight:600,color:'var(--text-3)',background:'transparent',border:'1px solid var(--line)',borderRadius:10,cursor:'pointer'}}>
+            <button onClick={()=>{setWorkingMono(null);setMonoStepIdx(null);}} style={{display:'block',margin:'8px auto 20px',padding:'10px 28px',fontSize:12,fontWeight:700,color:'var(--text-3)',background:'transparent',border:'1px solid var(--line)',borderRadius:10,cursor:'pointer'}}>
               Passer — retour aux monologues
             </button>
           )}
@@ -6478,7 +7639,7 @@ function Feed({st,setSt}){
         </div>
         <div className="card-gold" style={{padding:22,marginBottom:18}}>
           <p className="label-gold" style={{marginBottom:10}}>TEXTE</p>
-          <p style={{fontSize:15,lineHeight:1.9,color:'var(--text)',fontFamily:'Cormorant Garamond, serif',fontWeight:400}}>« {viewMono.text} »</p>
+          <p className="vers" style={{fontSize:16,lineHeight:1.85,color:'var(--text)'}}>« {viewMono.text} »</p>
         </div>
         <div style={{padding:16,borderRadius:12,background:'rgba(200,164,78,.03)',border:'1px solid var(--line)',marginBottom:18}}>
           <div style={{display:'flex',gap:8}}>
@@ -6493,7 +7654,7 @@ function Feed({st,setSt}){
             <button key={m.id} onClick={()=>setViewMono(m)} className="card" style={{padding:'10px 14px',display:'flex',alignItems:'center',gap:10,textAlign:'left',background:m.id===viewMono.id?'rgba(200,164,78,.04)':'var(--bg-card)',borderColor:m.id===viewMono.id?'var(--gold-dim)':'var(--line)'}}>
               <div style={{width:6,height:6,borderRadius:3,background:m.tier==="avance"?'var(--violet)':m.tier==="intermediaire"?'var(--coral)':'var(--gold)',flexShrink:0}}/>
               <div style={{flex:1,minWidth:0}}>
-                <p style={{fontSize:10,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</p>
+                <p style={{fontSize:10,fontWeight:700,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</p>
                 <p style={{fontSize:8,color:'var(--text-3)'}}>{m.source}</p>
               </div>
             </button>
@@ -6526,7 +7687,7 @@ function Feed({st,setSt}){
             <span style={{fontSize:11,fontWeight:700,color:'var(--text-2)'}}>📱 ENREGISTREMENT (OPTIONNEL)</span>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-            {!dailyRecording?<button onClick={startDailyRecording} className="btn-outline" style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5}}>🎤 Enregistrer</button>:<button onClick={stopDailyRecording} style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5,background:'rgba(232,116,90,.15)',border:'1.5px solid var(--coral)',borderRadius:12,color:'var(--coral)',fontWeight:600,cursor:'pointer'}}>⏹️ Arrêter</button>}
+            {!dailyRecording?<button onClick={startDailyRecording} className="btn-outline" style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5}}>🎤 Enregistrer</button>:<button onClick={stopDailyRecording} style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5,background:'rgba(232,116,90,.15)',border:'1.5px solid var(--coral)',borderRadius:12,color:'var(--coral)',fontWeight:700,cursor:'pointer'}}>⏹️ Arrêter</button>}
             {dailyAudio&&<><button onClick={playDailyRecording} className="btn-outline" style={{padding:'10px 16px',fontSize:11,display:'flex',alignItems:'center',gap:5}}>▶️ Écouter</button><audio ref={dailyAudioRef} src={dailyAudio} style={{display:'none'}}/></>}
           </div>
         </div>
@@ -6535,7 +7696,7 @@ function Feed({st,setSt}){
         <div style={{display:'flex',flexDirection:'column',gap:6,textAlign:'left'}}>
           {FEED_DAILY_EXERCISES.map(ex=>(
             <div key={ex.id} className="card" style={{padding:'12px 14px',background:ex.id===dailyEx.id?'rgba(74,222,128,.04)':'var(--bg-card)',borderColor:ex.id===dailyEx.id?'var(--emerald)':'var(--line)'}}>
-              <p style={{fontSize:11,fontWeight:600,marginBottom:3}}>{ex.title}</p>
+              <p style={{fontSize:11,fontWeight:700,marginBottom:3}}>{ex.title}</p>
               <p className="body" style={{fontSize:9}}>{ex.desc}</p>
             </div>
           ))}
@@ -6595,7 +7756,7 @@ function Feed({st,setSt}){
         {st.plan==="premium"&&<button onClick={()=>{setCoachChat(true);setUnreadCoach(0);}} className="card obj-3d" style={{padding:18,marginBottom:14,width:'100%',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,background:unreadCoach>0?'linear-gradient(160deg,rgba(167,139,250,.12),var(--bg-card))':'linear-gradient(160deg,rgba(167,139,250,.06),var(--bg-card))',border:unreadCoach>0?'1px solid rgba(167,139,250,.25)':'1px solid rgba(167,139,250,.1)',animation:unreadCoach>0?'breatheCircle 2s ease-in-out infinite':'none'}}>
           <div style={{width:42,height:42,borderRadius:12,background:'rgba(184,160,224,.14)',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative'}}>
             {I.users({size:18,sw:1.6,style:{color:'#fff'}})}
-            {unreadCoach>0&&<span style={{position:'absolute',top:-4,right:-4,minWidth:18,height:18,borderRadius:9,background:'var(--red)',color:'#fff',fontSize:9,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',border:'2px solid var(--bg)',boxShadow:'0 2px 8px rgba(239,68,68,.4)'}}>{unreadCoach}</span>}
+            {unreadCoach>0&&<span style={{position:'absolute',top:-4,right:-4,minWidth:18,height:18,borderRadius:9,background:'var(--red)',color:'#fff',fontSize:9,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',border:'2px solid var(--bg)',boxShadow:'0 2px 8px rgba(239,68,68,.4)'}}>{unreadCoach}</span>}
           </div>
           <div style={{flex:1}}>
             <p className="label" style={{color:'var(--violet)',marginBottom:3}}>MON COACH</p>
@@ -6614,7 +7775,7 @@ function Feed({st,setSt}){
             <p className="label" style={{color:'var(--coral)',marginBottom:3}}>CHALLENGE DICTION</p>
             <p style={{fontSize:11,fontWeight:700}}>60 secondes chrono</p>
             <p style={{fontSize:9,color:'var(--text-3)',marginTop:2}}>Dites un max de phrases correctement</p>
-            {Object.values(st.challengeScores||{}).length>0&&<p style={{fontSize:8,color:'var(--gold)',marginTop:3,fontWeight:600}}>Record : {Math.max(...Object.values(st.challengeScores))} phrases</p>}
+            {Object.values(st.challengeScores||{}).length>0&&<p style={{fontSize:8,color:'var(--gold)',marginTop:3,fontWeight:700}}>Record : {Math.max(...Object.values(st.challengeScores))} phrases</p>}
           </div>
           {I.chR({size:16,sw:1.5,style:{color:'var(--coral)'}})}
         </button>
@@ -6711,7 +7872,7 @@ function Feed({st,setSt}){
                           {perso
                             ?<Illus id={perso} dossier="p" style={unlocked?null:{filter:'grayscale(.7)',opacity:.5}}/>
                             :<span aria-hidden="true" style={{position:'absolute',right:16,bottom:-30,zIndex:2,pointerEvents:'none',
-                                fontFamily:"'Cormorant Garamond',Georgia,serif",fontStyle:'italic',fontWeight:600,
+                                fontFamily:"'Cormorant Garamond',Georgia,serif",fontWeight:700,
                                 fontSize:132,lineHeight:1,color:'rgba(242,240,234,.11)',letterSpacing:'-.04em'}}>{(m.title||"?").trim()[0]}</span>}
                           <span className="ill-in" style={{padding:'13px 15px 12px',maxWidth:perso?'66%':'62%'}}>
                             {isComplete
@@ -6724,7 +7885,7 @@ function Feed({st,setSt}){
                             <span style={{display:'flex',alignItems:'center',gap:9,marginTop:10}}>
                               {unlocked
                                 ?<span className="pill" style={{fontSize:9.5,padding:'6px 14px'}}>{done>0?"Reprendre":"Travailler"}</span>
-                                :<span style={{display:'flex',alignItems:'center',gap:5,fontSize:10,fontWeight:600,color:'var(--text-2)'}}>{I.lock({size:11,sw:1.8})}{premierVerrouMono?"Terminez le texte précédent":"À débloquer"}</span>}
+                                :<span style={{display:'flex',alignItems:'center',gap:5,fontSize:10,fontWeight:700,color:'var(--text-2)'}}>{I.lock({size:11,sw:1.8})}{premierVerrouMono?"Terminez le texte précédent":"À débloquer"}</span>}
                               {isComplete&&<span style={{color:'var(--emerald)',display:'flex'}}>{I.check({size:14,sw:2.2})}</span>}
                             </span>
                           </span>
@@ -6755,7 +7916,7 @@ function Feed({st,setSt}){
         {/* Separator */}
         <div style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0 6px'}}>
           <div style={{flex:1,height:1,background:'linear-gradient(90deg,transparent,var(--w06))'}}/>
-          <p style={{fontSize:9,fontWeight:800,letterSpacing:'.18em',color:'var(--text-3)',whiteSpace:'nowrap',opacity:.5}}>COMMUNAUTÉ</p>
+          <p style={{fontSize:9,fontWeight:700,letterSpacing:'.18em',color:'var(--text-3)',whiteSpace:'nowrap',opacity:.5}}>COMMUNAUTÉ</p>
           <div style={{flex:1,height:1,background:'linear-gradient(270deg,transparent,var(--w06))'}}/>
         </div>
 
@@ -6774,7 +7935,7 @@ function Feed({st,setSt}){
             {communityPosts.map(p=>(
               <div key={p.id} style={{padding:14,borderRadius:12,background:'var(--bg-raised)',border:'1px solid var(--line)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-                  <div style={{width:24,height:24,borderRadius:12,background:p.pseudo.includes("Coach")?'linear-gradient(135deg,var(--gold-dim),var(--gold))':'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'#fff'}}>{p.pseudo[0]}</div>
+                  <div style={{width:24,height:24,borderRadius:12,background:p.pseudo.includes("Coach")?'linear-gradient(135deg,var(--gold-dim),var(--gold))':'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700,color:'#fff'}}>{p.pseudo[0]}</div>
                   <div style={{flex:1}}>
                     <p style={{fontSize:10,fontWeight:700}}>{p.pseudo}</p>
                     <p style={{fontSize:8,color:'var(--text-3)'}}>{p.time}</p>
@@ -6790,7 +7951,7 @@ function Feed({st,setSt}){
                 {p.replies.length>0&&<div style={{marginTop:8,paddingTop:8,borderTop:'1px solid var(--line)',display:'flex',flexDirection:'column',gap:6}}>
                   {p.replies.map((r,ri)=>(
                     <div key={ri} style={{display:'flex',gap:8,alignItems:'flex-start'}}>
-                      <div style={{width:18,height:18,borderRadius:9,background:r.pseudo.includes("Coach")?'linear-gradient(135deg,var(--gold-dim),var(--gold))':'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:7,fontWeight:800,color:'#fff',flexShrink:0,marginTop:2}}>{r.pseudo[0]}</div>
+                      <div style={{width:18,height:18,borderRadius:9,background:r.pseudo.includes("Coach")?'linear-gradient(135deg,var(--gold-dim),var(--gold))':'linear-gradient(135deg,var(--violet-dim),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:7,fontWeight:700,color:'#fff',flexShrink:0,marginTop:2}}>{r.pseudo[0]}</div>
                       <div>
                         <p style={{fontSize:9,fontWeight:700,marginBottom:1}}>{r.pseudo} <span style={{fontWeight:400,color:'var(--text-3)'}}>{r.time}</span></p>
                         <p style={{fontSize:10,color:'var(--text-2)',lineHeight:1.5}}>{r.text}</p>
@@ -6841,8 +8002,129 @@ function Feed({st,setSt}){
 }
 
 /* ═══ MODULE LIST ═══ */
+/* ═══ LE SOMMAIRE D'UN NIVEAU ═══
+   « Est-ce qu'on peut appuyer quelque part pour voir tout ce qu'on va
+   travailler ? » — oui : ici, avant même d'avoir commencé. */
+function ApercuNiveau({niveau,mods,sec,dk,st,onClose,onOuvrir}){
+  const faits=mods.filter(m=>st[dk].includes(m.id)).length;
+  const totalXP=mods.reduce((a,m)=>a+(m.xp||0),0);
+  /* Tout est déplié d'entrée : la question posée ici est « qu'est-ce que je
+     vais travailler », pas « quels titres existent ». On peut replier. */
+  const[ouverts,setOuverts]=useState(()=>new Set(mods.map(m=>m.id)));
+  const toutOuvert=ouverts.size>=mods.length;
+  const basculer=id=>setOuverts(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n});
+  /* Le compte réel de ce qui sera travaillé, temps par temps et par domaine. */
+  const parDom={};
+  mods.forEach(m=>{
+    const S=typeof SEANCE_PAR_ID!=="undefined"?SEANCE_PAR_ID[m.id]:null;
+    if(S&&S.temps)S.temps.forEach(t=>{const nom=(DOMAINES[t.dom]||{}).nom;if(nom)parDom[nom]=(parDom[nom]||0)+1});
+    else parDom[m.cat]=(parDom[m.cat]||0)+1;
+  });
+  return(
+    <div className="safe-b fade-up sous-barre" style={{minHeight:'100vh'}}>
+      <div className="back-bar"><button onClick={onClose}>{I.chL({size:16})} Retour</button></div>
+      <div className="mw" style={{padding:'16px 20px 110px'}}>
+        <div className="ill-card" style={{background:LV_ART[niveau.id]||'var(--gr-nuit)',marginBottom:16,minHeight:104}}>
+          <Illus id={niveau.id}/>
+          <span className="ill-in" style={{padding:'15px 16px 15px'}}>
+            <span className="eb eb-or">Le programme du niveau</span>
+            <span className="heading" style={{display:'block',fontSize:21,marginTop:5}}>{niveau.name}</span>
+            <span style={{display:'block',marginTop:10,maxWidth:180}}><Bar val={faits} max={mods.length||1} h={4}/></span>
+            <span style={{display:'block',fontSize:10.5,marginTop:7,fontWeight:600,color:'rgba(242,240,234,.68)'}}>
+              {faits} / {mods.length} {sec==="pr"?"séances":"leçons"} · {totalXP} XP
+            </span>
+          </span>
+        </div>
+
+        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:20}}>
+          {Object.entries(parDom).map(([c,n])=>(
+            <span key={c} className="tag" style={{background:'var(--w03)',color:'var(--text-2)',padding:'5px 10px',borderRadius:99}}>
+              {c} · {n}
+            </span>
+          ))}
+        </div>
+
+        <div className="sep" style={{marginTop:0}}>
+          <b>Dans l'ordre</b>
+          <button onClick={()=>setOuverts(toutOuvert?new Set():new Set(mods.map(m=>m.id)))}
+            style={{fontSize:9,fontWeight:700,letterSpacing:'.06em',color:'var(--gold)',background:'none',
+              border:'none',cursor:'pointer',padding:0,whiteSpace:'nowrap'}}>
+            {toutOuvert?"TOUT REPLIER":"TOUT DÉPLIER"}
+          </button>
+          <i/>
+        </div>
+        {mods.map((m,i)=>{
+          const d=st[dk].includes(m.id);
+          const S=typeof SEANCE_PAR_ID!=="undefined"?SEANCE_PAR_ID[m.id]:null;
+          const ouvert=ouverts.has(m.id);
+          return(
+            <div key={m.id} style={{borderTop:i?'1px solid var(--line)':'none',
+              opacity:d?.5:1,transition:'opacity .4s ease'}}>
+              <button onClick={()=>basculer(m.id)}
+                style={{width:'100%',display:'flex',gap:13,padding:'14px 0',textAlign:'left',
+                  background:'none',border:'none',cursor:'pointer'}}>
+                <span style={{flexShrink:0,width:24,height:24,borderRadius:8,marginTop:2,
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  background:d?'rgba(52,211,153,.12)':'var(--gold-glow)',
+                  border:'1px solid '+(d?'rgba(52,211,153,.22)':'var(--line-s)'),
+                  color:d?'var(--emerald)':'var(--gold)',fontSize:10,fontWeight:700}}>
+                  {d?I.check({size:12,sw:2.4}):i+1}
+                </span>
+                <span style={{flex:1,minWidth:0}}>
+                  <span className="eb" style={{color:'var(--text-3)',marginBottom:3,display:'block'}}>
+                    {S&&S.temps?`Séance ${S.jour||i+1}`:m.cat}
+                  </span>
+                  <span className="rang-t" style={{display:'block'}}>{m.title}</span>
+                  <span style={{display:'block',fontSize:9.5,color:'var(--text-3)',marginTop:5}}>
+                    {m.dur} · +{m.xp} XP{S&&S.temps?` · ${S.temps.length} temps`:""}
+                  </span>
+                </span>
+                <span style={{color:'var(--text-3)',flexShrink:0,marginTop:6,
+                  transform:ouvert?'rotate(90deg)':'none',transition:'transform .25s'}}>
+                  {I.chR({size:14,sw:2})}
+                </span>
+              </button>
+
+              {/* Le déroulé : chaque temps de la séance, dans l'ordre où il
+                  sera travaillé. C'est ce qu'on vient chercher sur cet écran. */}
+              {ouvert&&S&&S.temps&&(
+                <div style={{padding:'0 0 15px 37px'}}>
+                  {S.temps.map((t,k)=>{
+                    const D=DOMAINES[t.dom]||{};
+                    return(
+                      <div key={k} style={{display:'flex',gap:10,alignItems:'flex-start',
+                        padding:'7px 0',borderTop:k?'1px solid var(--line)':'none'}}>
+                        <span style={{flexShrink:0,fontSize:8,fontWeight:700,letterSpacing:'.07em',
+                          padding:'3px 7px',borderRadius:20,marginTop:1,minWidth:56,textAlign:'center',
+                          color:D.teinte,background:'var(--w03)',border:'1px solid var(--line)'}}>
+                          {(D.nom||"").toUpperCase()}
+                        </span>
+                        <span style={{flex:1,minWidth:0}}>
+                          <span style={{display:'block',fontSize:12,fontWeight:600,color:'var(--text)',lineHeight:1.4}}>{t.titre}</span>
+                          {t.pourquoi&&<span style={{display:'block',fontSize:10.5,color:'var(--text-3)',lineHeight:1.5,marginTop:2}}>{t.pourquoi}</span>}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {S.trace&&<p style={{fontSize:9.5,color:'var(--text-3)',marginTop:9,fontStyle:'italic'}}>
+                    Trace facultative · {S.trace.type==="audio"?"audio":S.trace.type==="video"?"vidéo":"écrite"}
+                  </p>}
+                </div>
+              )}
+              {ouvert&&S&&!S.temps&&S.notion&&(
+                <p className="vers" style={{fontSize:13,color:'var(--text-2)',lineHeight:1.55,padding:'0 0 15px 37px'}}>{S.notion.titre}</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
   const[showQuiz,setShowQuiz]=useState(false);
+  const[apercu,setApercu]=useState(null);/* le sommaire du niveau, ouvert depuis l'encadré */
   const openPaywall=usePaywall();
   const lv=getLv(st.xp,st.passedExams);const li=LEVELS.indexOf(lv);
   const sorted=[lv,...LEVELS.filter((_,i)=>i<li).reverse(),...LEVELS.filter((_,i)=>i>li)];
@@ -6854,11 +8136,16 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
         const i=ordre.findIndex(m=>m.id===active.id);
         return ordre.slice(i+1).find(m=>!st[dk].includes(m.id))||null;
       })();
-      return<ExV mod={active} st={st} setSt={setSt} back={()=>setMod(null)}
+      if(active.type==="seance")
+        return<SeanceV key={active.id} mod={active} st={st} setSt={setSt} back={()=>setMod(null)}
+          next={suite} onNext={()=>suite&&setMod({...suite,sec})}/>;
+      return<ExV key={active.id} mod={active} st={st} setSt={setSt} back={()=>setMod(null)}
         next={suite} onNext={()=>suite&&setMod({...suite,sec})}/>;
     }
-    return<CuV mod={active} st={st} setSt={setSt} back={()=>setMod(null)}/>;
+    return<CuV key={active.id} mod={active} st={st} setSt={setSt} back={()=>setMod(null)}/>;
   }
+  if(apercu)return<ApercuNiveau {...apercu} st={st} onClose={()=>setApercu(null)}
+    onOuvrir={m=>{setApercu(null);setMod({...m,sec:apercu.sec})}}/>;
   if(showQuiz&&sec==="cu")return<GlossaireQuiz st={st} setSt={setSt} onClose={()=>setShowQuiz(false)}/>;
   return(
     <div className="safe-b fade-up" style={{padding:'68px 20px 100px'}}>
@@ -6923,15 +8210,33 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
                  <span className="vl-x">{ms.length} contenus</span>
                </button>
               :cur
-              ?<div className="ill-card" style={{background:LV_ART[l.id]||'var(--gr-nuit)',marginBottom:10,minHeight:90}}>
-                 <Illus id={l.id} petit/>
-                 <span className="ill-in" style={{padding:'13px 15px 12px'}}>
-                   <span className="eb eb-or">Votre niveau</span>
-                   <span className="heading" style={{display:'block',fontSize:17,marginTop:4}}>{l.name}</span>
-                 </span>
-               </div>
+              ?(()=>{
+                 const nf=ms.filter(m=>st[dk].includes(m.id)).length;
+                 return(
+                 <button onClick={()=>setApercu({niveau:l,mods:ms,sec,dk})} className="ill-card"
+                   style={{background:LV_ART[l.id]||'var(--gr-nuit)',marginBottom:10,minHeight:90,width:'100%',
+                     textAlign:'left',cursor:'pointer',border:'none',padding:0,display:'block'}}>
+                   <Illus id={l.id} petit/>
+                   <span className="ill-in" style={{padding:'13px 15px 13px'}}>
+                     <span className="eb eb-or">Votre niveau</span>
+                     <span className="heading" style={{display:'block',fontSize:17,marginTop:4}}>{l.name}</span>
+                     {/* Combien y en a-t-il en tout : on ne débloque plus à l'aveugle. */}
+                     <span style={{display:'block',marginTop:9,maxWidth:170}}>
+                       <Bar val={nf} max={ms.length||1} h={4}/>
+                     </span>
+                     <span style={{display:'flex',alignItems:'center',gap:6,fontSize:10.5,marginTop:7,fontWeight:600,
+                       color:'rgba(242,240,234,.68)'}}>
+                       {nf} / {ms.length} {sec==="pr"?"séances":"leçons"}
+                       <span style={{color:'var(--gold)',display:'flex',alignItems:'center',gap:3}}>
+                         Tout voir {I.chR?I.chR({size:11,sw:2}):null}
+                       </span>
+                     </span>
+                   </span>
+                 </button>);
+               })()
               :<div className="sep" style={{marginTop:2}}>
                  <b style={{color:u?'var(--text-2)':'var(--text-3)'}}>{l.name}</b>
+                 <b style={{color:'var(--text-3)',letterSpacing:'.06em'}}>{ms.length} contenus</b>
                  {!u&&<b style={{color:'var(--text-3)',letterSpacing:'.06em'}}>{LEVELS.find(ll=>ll.id===l.id)?.xp||0} XP</b>}
                  {sec==="cu"&&!cultureUnlocked&&<b style={{color:'var(--text-3)',letterSpacing:'.06em'}}>Examen requis</b>}
                  <i/>
@@ -6957,10 +8262,17 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
                 });
                 const teinte=sec==="cu"?'var(--violet)':'var(--gold)';
                 return(<button key={m.id} onClick={()=>{if(mur)openPaywall(sec==="cu"?"culture":isMonologue?"monologue":"exercise");else if(!isLocked)setMod({...m,sec})}}
-                  className="rang" style={{marginBottom:0,opacity:isLocked?.42:1,cursor:(mur||!isLocked)?'pointer':'default',pointerEvents:(mur||!isLocked)?'auto':'none',
-                    borderColor:d?'rgba(52,211,153,.18)':'var(--line)'}}>
-                  <div className="rang-ic" style={{background:d?'rgba(52,211,153,.12)':isLocked?'var(--w02)':`color-mix(in srgb, ${teinte} 14%, transparent)`,color:isLocked?'var(--text-3)':d?'var(--emerald)':teinte}}>
-                    {isLocked?I.lock({size:15,sw:1.8}):<EI e={m.icon} s={16}/>}
+                  className="rang" style={{marginBottom:0,opacity:isLocked?.42:d?.5:1,cursor:(mur||!isLocked)?'pointer':'default',pointerEvents:(mur||!isLocked)?'auto':'none',
+                    borderColor:d?'rgba(52,211,153,.16)':'var(--line)',
+                    background:d?'transparent':undefined,transition:'opacity .4s ease'}}>
+                  <div className="rang-ic" style={{background:d?'rgba(52,211,153,.12)':isLocked?'var(--w02)':`color-mix(in srgb, ${teinte} 14%, transparent)`,color:isLocked?'var(--text-3)':d?'var(--emerald)':teinte,overflow:'hidden',position:'relative'}}>
+                    {isLocked
+                      ?I.lock({size:15,sw:1.8})
+                      :(sec==="cu"&&CU_DESSIN[m.id])
+                        ?<img src={`img/c/${CU_DESSIN[m.id]}.svg`} alt="" aria-hidden="true" loading="lazy" decoding="async"
+                           onError={e=>{e.target.style.display='none'}}
+                           style={{width:'128%',height:'128%',objectFit:'contain'}}/>
+                        :<EI e={m.icon} s={16}/>}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',alignItems:'center',gap:5}}>
@@ -6971,7 +8283,7 @@ function ModList({title,sub,mods,dk,st,setSt,active,setMod,sec}){
                       {mur
                         ?"Compris dans l'abonnement"
                         :isLocked
-                          ?(premierVerrou?(sec==="cu"&&!cultureUnlocked?"Passez l'examen du niveau précédent":sec==="pr"?"Terminez l'exercice précédent":"Terminez la leçon précédente"):m.cat+" · "+m.dur)
+                          ?(premierVerrou?(sec==="cu"&&!cultureUnlocked?"Passez l'examen du niveau précédent":sec==="pr"?(m.type==="seance"?"Terminez la séance précédente":"Terminez l'exercice précédent"):"Terminez la leçon précédente"):m.cat+" · "+m.dur)
                           :m.cat+" · "+m.dur}
                     </p>
                   </div>
@@ -7054,7 +8366,7 @@ function GlossaireQuiz({st,setSt,onClose}){
           </div>
           <p style={{fontSize:9,color:'var(--text-3)'}}>Question {currentIdx+1} / {terms.length}</p>
         </div>
-        <p style={{fontSize:10,color:'var(--text-3)',marginBottom:6,fontWeight:600}}>Quelle est la définition de :</p>
+        <p style={{fontSize:10,color:'var(--text-3)',marginBottom:6,fontWeight:700}}>Quelle est la définition de :</p>
         <h3 className="heading" style={{fontSize:22,marginBottom:24,color:'var(--gold)'}}>{current.term}</h3>
         <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:20}}>
           {shuffledOpts.map((opt,i)=>{
@@ -7094,84 +8406,112 @@ function GlossaireQuiz({st,setSt,onClose}){
 
 /* ═══ EXERCISE PURPOSE MAP ═══ */
 const EX_PURPOSE={
-  /* Figurant */
   f_r1:"Poser les bases de la respiration abdominale, indispensable pour projeter votre voix sans forcer.",
   f_d1:"Échauffer votre articulation avec des virelangues pour être compris de chaque spectateur.",
   f_c1:"Trouver votre ancrage au sol, le secret d'une présence scénique solide et naturelle.",
-  f_i1:"Découvrir comment une même phrase change totalement selon l'émotion que vous y mettez.",
+  f_i1:"Comprendre que le sens d'une réplique vient de la situation, jamais du visage qu'on fait.",
   f_r2:"Allonger votre souffle pour tenir des phrases longues sans couper votre élan.",
   f_d2:"Renforcer la précision de chaque consonne pour que votre texte porte au dernier rang.",
   f_c2:"Apprendre à utiliser vos mains et vos gestes au service du texte, sans parasites.",
   f_m1:"Mettre en pratique votre travail dans un monologue face caméra — votre premier pas sur les planches.",
-  /* Apprenti */
   a_r1:"Développer la respiration costale pour gagner en puissance vocale et en endurance.",
   a_d1:"Passer au niveau supérieur avec des virelangues plus exigeants et des enchaînements rapides.",
   a_c1:"Trouver votre rythme naturel de marche, le « point zéro » à partir duquel naissent tous les personnages.",
-  a_i1:"Travailler les micro-expressions faciales, ces signaux subtils qui racontent plus que les mots.",
+  a_i1:"Remplacer « jouer une émotion » par la seule chose qui se joue vraiment : ce que votre personnage essaie de faire à l'autre.",
   a_r2:"Connecter le souffle à la voix et aux émotions pour un son riche et expressif.",
   a_d2:"Maîtriser les voyelles ouvertes qui portent l'émotion de votre jeu.",
   a_c2:"Explorer le poids du corps pour donner une signature physique unique à chaque personnage.",
   a_m1:"Créer un personnage de toutes pièces et le faire vivre en improvisation face caméra.",
-  /* Comédien du dimanche */
   di_r1:"Apprendre à projeter votre voix sur de grandes distances sans jamais forcer la gorge.",
   di_d1:"Améliorer radicalement votre diction grâce à l'exercice mythique du stylo entre les dents.",
   di_c1:"Trouver la démarche propre à chaque personnage et sentir comment le corps transforme le jeu.",
-  di_i1:"Jouer une même réplique avec 5 intentions différentes — le cœur du métier d'acteur.",
+  di_i1:"Comprendre qu'une réplique ne devient jouable que lorsque quelque chose empêche de la dire simplement.",
   di_r2:"Développer votre tessiture et votre tenue vocale pour un son stable et maîtrisé.",
-  di_i2:"Maîtriser le sous-texte : faire comprendre au public ce que le personnage pense vraiment.",
+  di_i2:"Faire entendre au public ce que le personnage ne dit pas.",
   di_c2:"Comprendre comment vos déplacements sur scène racontent une histoire autant que vos mots.",
   di_m1:"Interpréter un texte émouvant en trouvant l'équilibre entre retenue et lâcher-prise.",
-  /* Amateur */
   am_r1:"Perfectionner votre projection vocale pour remplir une salle entière avec intention.",
-  am_d1:"Trouver votre propre musicalité : la diction n'est pas mécanique, c'est votre signature.",
+  am_d1:"Séparer les deux couches d'un texte dit à voix haute — le son et le sens — pour entendre laquelle vous négligez.",
   am_c1:"Explorer les qualités de mouvement (fluide, saccadé, lourd, léger) pour enrichir votre palette corporelle.",
-  am_i1:"Travailler l'écart entre le texte et l'intention cachée, moteur des grandes scènes.",
+  am_i1:"Tenir un sous-texte assez longtemps pour qu'il devienne visible sans être joué.",
   am_r2:"Découvrir les résonateurs (poitrine, masque, crâne) et placer votre voix pour un maximum d'impact.",
   am_c2:"Expérimenter le masque neutre de Lecoq : quand le visage se tait, le corps crie.",
-  am_i2:"Jouer le conflit intérieur — dire oui quand tout en vous crie non.",
+  am_i2:"Jouer deux choses à la fois : ce que le personnage dit, et ce qu'il refuse d'admettre.",
   am_m1:"Interpréter un monologue classique en y trouvant votre vérité personnelle.",
-  /* Pro */
   pe_r1:"Utiliser la respiration comme outil dramatique : les pauses deviennent des choix de mise en scène.",
   pe_d1:"Maîtriser l'alexandrin, le vers roi du théâtre français, pour le transcender ensuite.",
-  pe_c1:"Construire un personnage complet par le corps : démarche, posture, geste récurrent.",
-  pe_i1:"Enrichir votre palette avec 10 intentions sur une même réplique — le raffinement du jeu.",
+  pe_c1:"Trouver une action physique unique qui contient tout ce que veut le personnage — puis la rendre invisible.",
+  pe_i1:"Comprendre que l'intensité d'une réplique ne vient pas du ton, mais de ce que le personnage risque en la disant.",
   pe_c2:"Calibrer votre énergie scénique comme un curseur, du ralenti à l'explosion.",
-  pe_s1:"Travailler la scène à deux : l'écoute du partenaire est le cœur du jeu.",
+  pe_s1:"Jouer une scène à deux quand on est seul — et découvrir que l'essentiel se passe pendant les répliques de l'autre.",
   pe_m1:"Explorer la colère juste — celle qui bouleverse sans jamais perdre le contrôle.",
-  /* Sociétaire */
-  so_r1:"Créer des effets de chœur vocal pour comprendre la dimension collective du théâtre.",
+  so_r1:"Apprendre à garder de l'air en réserve, pour que les fins de phrases ne se serrent jamais.",
   so_d1:"Alterner vers et prose pour développer votre virtuosité vocale.",
-  so_c1:"Maîtriser l'improvisation guidée avec la règle du « oui, et… ».",
+  so_c1:"Improviser sans jamais bloquer l'autre, en poursuivant un objectif que le personnage ne nomme pas.",
   so_i1:"Comprendre comment l'adresse (à qui on parle) transforme radicalement un même texte.",
-  so_s1:"Développer l'écoute active en scène — ce qui sépare un récitant d'un acteur vivant.",
+  so_s1:"Déplacer le travail de votre réplique vers l'instant d'avant : celui où vous recevez celle de l'autre.",
   so_c2:"Explorer le jeu de statut (haut/bas) pour créer des dynamiques captivantes.",
   so_m1:"Travailler l'aveu : ce moment où le personnage décide enfin de dire la vérité.",
-  /* Interprète */
-  in_r1:"Connecter chaque émotion à sa signature vocale unique pour un jeu incarné.",
+  in_r1:"Sentir comment le son se place selon la situation et l'interlocuteur, pas selon un sentiment plaqué.",
   in_d1:"Enrichir votre palette musicale en passant par différents accents et langues.",
   in_c1:"Trouver l'animal intérieur de votre personnage pour un corps totalement habité.",
-  in_i1:"Raconter une histoire entière sans mots — le non-dit comme langage.",
-  in_s1:"Jouer une scène où le sous-texte contredit totalement le texte.",
+  in_i1:"Raconter une histoire entière à deux, sans une seule réplique.",
+  in_s1:"Tenir une scène où le texte ne dit jamais ce dont la scène parle.",
   in_c2:"Composer physiquement des personnages radicalement différents de vous.",
   in_m1:"Trouver votre connexion personnelle avec un texte contemporain — la vérité, pas le jeu.",
-  /* Artiste */
   ar_r1:"Adapter votre voix à chaque espace — sentir l'acoustique comme un instrument.",
   ar_d1:"Trouver la musique propre de votre personnage : rap, berceuse, discours.",
   ar_c1:"Épurer votre jeu : garder uniquement le geste essentiel, celui qui dit tout.",
   ar_i1:"Maîtriser la rupture émotionnelle — l'arme secrète des grands acteurs.",
-  ar_s1:"Faire confiance à votre premier instinct de mise en scène.",
+  ar_s1:"Faire confiance au premier instinct avant que l'analyse ne l'écrase.",
   ar_m1:"Briser le 4e mur avec sincérité et urgence.",
-  /* Metteur en scène */
   me_r1:"Développer votre oreille de metteur en scène en analysant et corrigeant votre propre voix.",
-  me_s1:"Penser en metteur en scène : analyser, dessiner, décider du rythme.",
+  me_s1:"Regarder une scène en metteur en scène : ce qu'elle raconte, où sont les corps, où va le regard du public.",
   me_c1:"Expérimenter la direction d'acteur sur vous-même — chaque indication transforme le jeu.",
-  me_i1:"Comprendre le rythme d'une scène : le tempo est la respiration de la mise en scène.",
+  me_i1:"Décider, seconde par seconde, qui le public doit regarder — c'est le cœur du métier de metteur en scène.",
   me_m1:"Incarner la parole d'un metteur en scène — conviction absolue et rapport intime au théâtre.",
-  /* Monstre sacré */
   mo_k1:"Se préparer au casting professionnel avec méthode et confiance.",
   mo_k2:"Maîtriser la self-tape comme outil de carrière incontournable.",
   mo_s1:"Réinventer un grand texte avec votre regard unique.",
   mo_m1:"Atteindre le sommet : un monologue de maître, votre chef-d'œuvre personnel.",
+  f_i2:"Découvrir que ce n'est pas votre sentiment qui change une réplique, mais la personne à qui vous l'adressez.",
+  a_i2:"Faire dire à un texte le contraire de ce qu'il dit, sans changer un mot.",
+  am_d2:"Faire dépendre l'articulation de l'état du personnage, et non l'inverse.",
+  pe_d2:"Constater que la diction est une conséquence de la situation, jamais une décoration ajoutée par-dessus.",
+  pe_im1:"Faire naître un personnage du corps plutôt que de la tête, en partant d'une posture arbitraire.",
+  so_r2:"Utiliser vos respirations comme une partition, décidée à l'avance plutôt que subie.",
+  so_c3:"Construire un personnage sur un unique détail physique, assez petit pour être tenu très longtemps.",
+  in_d2:"Adapter sa diction à l'écriture d'un auteur au lieu de plaquer la même sur tous.",
+  in_im1:"Improviser depuis un personnage, sans texte et sans filet.",
+  ar_d2:"Travailler l'enjambement : ce qui se passe quand la phrase refuse de s'arrêter à la fin du vers.",
+  ar_im1:"Improviser un monologue tenu sur un thème, sans préparation ni échappatoire.",
+  ar_r2:"Placer ses respirations là où elles servent le sens, et non là où le souffle manque.",
+  me_d1:"Écouter un enregistrement en ne surveillant qu'un paramètre à la fois — le seul moyen d'entendre vraiment.",
+  me_c1b:"Vérifier qu'une même scène raconte autre chose selon la position du corps — et choisir celle qui sert.",
+  me_im1:"Se servir d'une contrainte formelle pour sortir des réflexes de dialogue.",
+  me_r2:"Se servir de la respiration pour fabriquer le tempo d'une scène, au lieu de le subir.",
+  mo_i1:"Trouver ce qui empêche une improvisation de s'effondrer après deux minutes.",
+  mo_d1:"Garder une articulation intacte alors que le corps est en effort — la condition du théâtre physique.",
+  mo_r1:"Allonger la durée utile d'une expiration, pour ne plus jamais couper une phrase au mauvais endroit.",
+  mo_c1:"Fabriquer de la violence visible sans aucun contact — la règle de base du combat scénique.",
+  mo_im1:"Passer d'un état à un autre en improvisation, sans transition écrite.",
+  af_s1:"Mener une scène de bout en bout comme un metteur en scène : analyse, plan, rythme, proposition filmée.",
+  af_i1:"Rendre un changement de personnage visible en une seconde, par le corps et non par la voix.",
+  af_k1:"Assembler trois scènes qui montrent votre étendue de jeu en trois minutes.",
+  af_m1:"Écrire, apprendre et jouer votre propre texte — le passage de l'interprète à l'auteur.",
+  af_d1:"Entendre que deux proses n'ont pas le même souffle, et régler sa diction sur l'écriture.",
+  af_c1:"Occuper un espace sans rien faire — la présence à l'état pur.",
+  af_r1:"Placer un silence là où il raconte quelque chose, au lieu d'en distribuer partout.",
+  af_i2:"Tenir une improvisation longue sans jamais s'arrêter, avec un conflit et une résolution.",
+  af_s2:"Faire raconter à une même scène deux histoires opposées, uniquement par la mise en scène.",
+  et_s1:"Concevoir et jouer un spectacle entier dont vous êtes l'auteur, le metteur en scène et l'interprète.",
+  et_i1:"Transmettre un exercice que vous maîtrisez — la meilleure preuve que vous le maîtrisez.",
+  et_k1:"Passer de l'autre côté : penser un projet, une équipe, un budget, une diffusion.",
+  et_d1:"Séparer la musique d'un texte de son sens, puis les faire tenir ensemble.",
+  et_c1:"Se servir de la mémoire du corps — et non du souvenir — comme matière de jeu.",
+  et_im1:"Transformer une improvisation heureuse en une scène qu'on peut refaire — le vrai passage à l'écriture de plateau.",
+  et_r1:"Écrire sa propre partition de respiration et la jouer, au lieu de respirer par nécessité.",
+  et_k2:"Nommer ce que vous devez à d'autres, et le transmettre à votre tour.",
 };
 
 /* ═══ MODLIST ═══ */
@@ -7271,7 +8611,7 @@ function Compteur({total,onComplete}){
       {!fini
         ?<button onClick={()=>{const n=fait+1;setFait(n);SFX.tap&&SFX.tap();if(n>=total){SFX.success();onComplete&&onComplete()}}}
            className="pill" style={{padding:'11px 24px'}}>{fait===0?"J'ai fait la première":"Encore une de faite"}</button>
-        :<button onClick={()=>setFait(0)} style={{padding:'9px 16px',fontSize:10.5,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Recommencer</button>}
+        :<button onClick={()=>setFait(0)} style={{padding:'9px 16px',fontSize:10.5,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:700}}>Recommencer</button>}
     </div>
   );
 }
@@ -7346,7 +8686,7 @@ function Guide({plan,cycles=1,onComplete,soft=false}){
             strokeDasharray={C} strokeDashoffset={C*(1-frac)} style={{transition:'stroke-dashoffset .12s linear'}}/>
         </svg>
         <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-          <p style={{fontSize:soft?20:26,fontWeight:800,color:'var(--text)',lineHeight:1}}>{finished?"✓":left>=60?fmtDur(left):Math.ceil(left)}</p>
+          <p style={{fontSize:soft?20:26,fontWeight:700,color:'var(--text)',lineHeight:1}}>{finished?"✓":left>=60?fmtDur(left):Math.ceil(left)}</p>
           <p style={{fontSize:soft?7.5:9.5,fontWeight:700,letterSpacing:'.1em',color:col,marginTop:4}}>{label}</p>
         </div>
       </div>
@@ -7355,21 +8695,21 @@ function Guide({plan,cycles=1,onComplete,soft=false}){
       {plan.some(x=>x.texte)&&(
         <div style={{marginBottom:12}}>
           {plan.map((x,k)=>(
-            <p key={k} style={{fontSize:12,lineHeight:1.5,textAlign:'center',fontWeight:(running&&k===pos.i)?700:500,
+            <p key={k} style={{fontSize:12,lineHeight:1.5,textAlign:'center',fontWeight:(running&&k===pos.i)?700:400,
               color:(running&&k===pos.i)?'var(--text)':'var(--text-3)',transition:'color .3s,font-weight .3s',
               margin:'2px 0'}}>{x.texte}</p>
           ))}
         </div>
       )}
-      {cycles>1&&<p style={{textAlign:'center',fontSize:10.5,color:'var(--text-2)',marginBottom:12,fontWeight:600}}>Cycle {pos.c} / {cycles} <span style={{color:'var(--text-3)',fontWeight:400}}>· {fmtDur(totalSecs)} en tout</span></p>}
+      {cycles>1&&<p style={{textAlign:'center',fontSize:10.5,color:'var(--text-2)',marginBottom:12,fontWeight:700}}>Cycle {pos.c} / {cycles} <span style={{color:'var(--text-3)',fontWeight:400}}>· {fmtDur(totalSecs)} en tout</span></p>}
       {cycles<=1&&<p style={{textAlign:'center',fontSize:10.5,color:'var(--text-3)',marginBottom:12}}>{soft?"Temps suggéré : ":"Durée : "}{fmtDur(totalSecs)}</p>}
 
       <div style={{display:'flex',gap:8,justifyContent:'center'}}>
         {!finished&&<button onClick={()=>running?setRunning(false):start()} className={running?"btn-outline":"btn-gold"} style={{padding:'10px 22px',fontSize:11,fontWeight:700}}>
           {running?"Pause":pos.c>1||pos.i>0||left<cur.secs?"Reprendre":"Démarrer"}
         </button>}
-        {!finished&&<button onClick={()=>{setRunning(false);setFinished(true);onComplete&&onComplete()}} style={{padding:'10px 16px',fontSize:10.5,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Passer</button>}
-        {finished&&<button onClick={()=>{setFinished(false);setPos({i:0,c:1});setLeft(plan[0].secs)}} style={{padding:'10px 16px',fontSize:10.5,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Recommencer</button>}
+        {!finished&&<button onClick={()=>{setRunning(false);setFinished(true);onComplete&&onComplete()}} style={{padding:'10px 16px',fontSize:10.5,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:700}}>Passer</button>}
+        {finished&&<button onClick={()=>{setFinished(false);setPos({i:0,c:1});setLeft(plan[0].secs)}} style={{padding:'10px 16px',fontSize:10.5,color:'var(--text-3)',background:'none',border:'none',cursor:'pointer',fontWeight:700}}>Recommencer</button>}
       </div>
     </div>
   );
@@ -7417,13 +8757,22 @@ function ExV({mod,st,setSt,back,next,onNext,seance}){
         <span style={{fontSize:36}}>{I.check({size:36,sw:2,style:{color:'var(--emerald)'}})}</span>
       </div>
       <h2 className="heading" style={{fontSize:28,marginBottom:8}}>Bravo !</h2>
-      <p style={{fontSize:13,color:'var(--text-2)',fontStyle:'italic',marginBottom:12,animation:'fadeIn 1.5s ease-out'}}>{cheer}</p>
+      <p style={{fontSize:13,color:'var(--text-2)',marginBottom:12,animation:'fadeIn 1.5s ease-out'}}>{cheer}</p>
       <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:10}}>
         {[1,2,3].map(i=><span key={i} style={{fontSize:24,color:i<=(st.stars?.[mod.id]||3)?'var(--gold)':'var(--text-3)',filter:i<=(st.stars?.[mod.id]||3)?'none':'grayscale(1) brightness(.5)',transition:'all .3s',animationDelay:i*0.15+'s'}}>{I.star({size:24,sw:i<=(st.stars?.[mod.id]||3)?2:1.5,style:{color:i<=(st.stars?.[mod.id]||3)?'var(--gold)':'var(--text-3)',fill:i<=(st.stars?.[mod.id]||3)?'var(--gold)':'none'}})}</span>)}
       </div>
       <p style={{fontSize:11,color:'var(--text-3)',marginBottom:2}}>Vous venez de terminer</p>
       <p className="heading" style={{fontSize:16,marginBottom:8}}>{mod.title}</p>
       <p className="heading gold-shimmer" style={{fontSize:22,marginBottom:20}}>+{mod.xp} XP</p>
+      {/* Le mot de la fin : la maxime qui traînait en cinquième consigne — on ne
+          la « valide » plus comme une action, on la lit une fois le travail fait. */}
+      {mod.note&&(
+        <div className="card" style={{padding:'15px 17px',marginBottom:20,width:'100%',maxWidth:340,textAlign:'left',
+          borderColor:'var(--line-s)',background:'linear-gradient(120deg,rgba(224,184,78,.06),var(--bg-card) 72%)'}}>
+          <p className="eb eb-or" style={{marginBottom:7}}>Ce que vous venez de travailler</p>
+          <p className="body" style={{fontSize:12,lineHeight:1.65,color:'var(--text-2)'}}>{mod.note}</p>
+        </div>
+      )}
       {st.plan==="free"||!st.plan?(
         <div style={{marginBottom:20,padding:16,borderRadius:14,background:'linear-gradient(135deg,rgba(167,139,250,.06),rgba(200,164,78,.04))',border:'1px solid rgba(167,139,250,.15)',animation:'fadeIn .6s ease-out'}}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
@@ -7451,7 +8800,7 @@ function ExV({mod,st,setSt,back,next,onNext,seance}){
       ):(
         <div style={{marginBottom:20,padding:12,borderRadius:10,background:'rgba(74,222,128,.06)',border:'1px solid rgba(74,222,128,.12)',animation:'fadeIn .3s ease-out',display:'flex',alignItems:'center',gap:8,justifyContent:'center'}}>
           {I.check({size:14,sw:2,style:{color:'var(--emerald)'}})}
-          <p style={{fontSize:11,fontWeight:600,color:'var(--emerald)'}}>Noté — votre bilan personnalisé en tient compte !</p>
+          <p style={{fontSize:11,fontWeight:700,color:'var(--emerald)'}}>Noté — votre bilan personnalisé en tient compte !</p>
         </div>
       )}
       {/* On propose la suite immédiatement : c'est là que la séance se poursuit
@@ -7478,7 +8827,7 @@ function ExV({mod,st,setSt,back,next,onNext,seance}){
       {st.plan==="free"&&(
         <div style={{marginTop:24,padding:16,borderRadius:12,background:'var(--bg-card)',border:'2px solid rgba(200,164,78,.3)',animation:'fadeIn .8s ease-out'}}>
           <p style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:10}}>Passe en Standard pour débloquer le suivi personnalisé et tous les niveaux</p>
-          <button onClick={()=>{_track('paywall_viewed',{source:'post_exercise',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{fontSize:10,color:'var(--gold)',background:'none',border:'none',cursor:'pointer',fontWeight:600,textDecoration:'underline'}}>En savoir plus →</button>
+          <button onClick={()=>{_track('paywall_viewed',{source:'post_exercise',plan:st.plan});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201'}} style={{fontSize:10,color:'var(--gold)',background:'none',border:'none',cursor:'pointer',fontWeight:700,textDecoration:'underline'}}>En savoir plus →</button>
         </div>
       )}
     </div>
@@ -7489,19 +8838,27 @@ function ExV({mod,st,setSt,back,next,onNext,seance}){
       <div className="back-bar"><button onClick={back}>{I.chL({size:16})} {seance?"Quitter la séance":"Retour"}</button></div>
       <div className="mw" style={{padding:'16px 20px 100px'}}>
         {xp&&<XPPop n={mod.xp} done={()=>setXp(false)}/>}
-        <div style={{display:'flex',alignItems:'flex-start',gap:13,marginBottom:22}}>
-          <div className="rang-ic" style={{width:44,height:44,borderRadius:13,background:'rgba(224,184,78,.14)',color:'var(--gold)'}}><EI e={mod.icon} s={20}/></div>
-          <div style={{flex:1,minWidth:0}}>
-            <span className="eb eb-or">{seance?`Séance · étape ${seance.i} sur ${seance.n}`:mod.cat}</span>
-            <h1 className="heading" style={{fontSize:22,margin:'4px 0 4px'}}>{mod.title}</h1>
-            <p style={{fontSize:10,color:'var(--text-3)',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-              <span>{mod.dur}</span>
-              <span style={{color:'var(--gold)',fontWeight:700}}>+{mod.xp} XP</span>
-              <span style={{display:'flex',alignItems:'center',gap:4}}>{I.clock({size:11,sw:1.5})}{fmtDur(elapsed)}</span>
-            </p>
-          </div>
-        </div>
-        {EX_PURPOSE[mod.id]&&<div style={{padding:14,borderRadius:12,background:'linear-gradient(135deg,rgba(200,164,78,.04),rgba(167,139,250,.04))',border:'1px solid rgba(200,164,78,.1)',marginBottom:16}}>
+        {/* Sur un monologue, l'en-tête tient sur une ligne : c'est le texte qui
+            doit occuper l'écran, pas la fiche de l'exercice. */}
+        {(isV&&mod.text)
+          ?<p style={{fontSize:10.5,color:'var(--text-3)',marginBottom:16,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+             <span className="eb eb-or">{seance?`Séance · étape ${seance.i} sur ${seance.n}`:mod.title}</span>
+             <span>{mod.dur}</span>
+             <span style={{color:'var(--gold)',fontWeight:700}}>+{mod.xp} XP</span>
+           </p>
+          :<div style={{display:'flex',alignItems:'flex-start',gap:13,marginBottom:22}}>
+            <div className="rang-ic" style={{width:44,height:44,borderRadius:13,background:'rgba(224,184,78,.14)',color:'var(--gold)'}}><EI e={mod.icon} s={20}/></div>
+            <div style={{flex:1,minWidth:0}}>
+              <span className="eb eb-or">{seance?`Séance · étape ${seance.i} sur ${seance.n}`:mod.cat}</span>
+              <h1 className="heading" style={{fontSize:22,margin:'4px 0 4px'}}>{mod.title}</h1>
+              <p style={{fontSize:10,color:'var(--text-3)',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                <span>{mod.dur}</span>
+                <span style={{color:'var(--gold)',fontWeight:700}}>+{mod.xp} XP</span>
+                <span style={{display:'flex',alignItems:'center',gap:4}}>{I.clock({size:11,sw:1.5})}{fmtDur(elapsed)}</span>
+              </p>
+            </div>
+          </div>}
+        {EX_PURPOSE[mod.id]&&!(isV&&mod.text)&&<div style={{padding:14,borderRadius:12,background:'linear-gradient(135deg,rgba(200,164,78,.04),rgba(167,139,250,.04))',border:'1px solid rgba(200,164,78,.1)',marginBottom:16}}>
           <div style={{display:'flex',gap:8,alignItems:'flex-start'}}><span style={{color:'var(--gold)',flexShrink:0,marginTop:1}}>{I.target({size:13,sw:1.4})}</span>
           <div><p className="label-gold" style={{marginBottom:3,fontSize:8}}>OBJECTIF DE L'EXERCICE</p><p className="body" style={{fontSize:11,lineHeight:1.5,color:'var(--text)'}}>{EX_PURPOSE[mod.id]}</p></div></div>
         </div>}
@@ -7517,6 +8874,23 @@ function ExV({mod,st,setSt,back,next,onNext,seance}){
             <p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.55}}>Les trois dernières étapes — rapports de force, rythme et corps, interprétation — vous attendent dans <strong style={{color:'var(--text)'}}>Mon Texte</strong>, dans l'onglet Outils.</p>
           </div>
         )}
+        {/* La phrase sur laquelle on travaille reste sous les yeux à chaque
+            étape : « dites la phrase » ne veut rien dire si elle a défilé. */}
+        {mod.refrain&&(
+          <div className="card" style={{padding:'14px 16px',marginBottom:14,borderColor:'var(--line-s)'}}>
+            <p className="eb eb-or" style={{marginBottom:6}}>La phrase</p>
+            <p className="vers" style={{fontSize:17,lineHeight:1.5,color:'var(--text)'}}>« {mod.refrain} »</p>
+          </div>
+        )}
+        {/* « Prenez un texte de quatre lignes » : personne n'en a un sous la main.
+            Le texte de travail est fourni, et il reste à l'écran du début à la fin. */}
+        {mod.extrait&&(
+          <div className="card" style={{padding:'14px 16px',marginBottom:14,borderColor:'var(--line-s)'}}>
+            <p className="eb eb-or" style={{marginBottom:7}}>Le texte de travail</p>
+            <p className="vers" style={{fontSize:15,lineHeight:1.72,color:'var(--text)',whiteSpace:'pre-line'}}>{mod.extrait}</p>
+            {mod.source&&<p style={{fontSize:9.5,color:'var(--text-3)',marginTop:9,letterSpacing:'.02em'}}>{mod.source}</p>}
+          </div>
+        )}
         {!(isV&&mod.text)&&<div style={{marginBottom:14}}>
           <Bar val={finEtape+1} max={steps.length} cls="fill-coral" h={2.5}/>
           <p style={{fontSize:8,color:'var(--text-3)',marginTop:4,textAlign:'right'}}>ÉTAPE {finEtape+1} / {steps.length}</p>
@@ -7524,7 +8898,7 @@ function ExV({mod,st,setSt,back,next,onNext,seance}){
         {!(isV&&mod.text)&&<div style={{padding:22,borderRadius:14,background:'var(--bg-card)',border:'1px solid var(--line)',marginBottom:18,minHeight:150,display:'flex',flexDirection:'column',justifyContent:'space-between'}}>
           <div>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-              <div style={{width:24,height:24,borderRadius:7,background:'var(--gold-glow)',border:'1px solid var(--line-s)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'var(--gold)'}}>{finEtape+1}</div>
+              <div style={{width:24,height:24,borderRadius:7,background:'var(--gold-glow)',border:'1px solid var(--line-s)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700,color:'var(--gold)'}}>{finEtape+1}</div>
               <p className="label">ÉTAPE {finEtape+1}</p>
             </div>
             {!guide?.bloc&&<p className="body" style={{fontSize:13,color:'var(--text)',lineHeight:1.7}}>{steps[step]}</p>}
@@ -7545,7 +8919,7 @@ function ExV({mod,st,setSt,back,next,onNext,seance}){
             :null}
           </div>
         </div>}
-        {isV&&mod.text&&(<>
+        {isV&&mod.text&&done&&(<>
           {!done&&<button onClick={()=>finish()} style={{width:'100%',padding:'12px 0',fontSize:11,fontWeight:700,borderRadius:10,background:'var(--emerald)',color:'var(--ink)',display:'flex',alignItems:'center',justifyContent:'center',gap:5,marginBottom:12}}>{I.check({size:14})} J'ai travaillé ce monologue</button>}
           {done&&!vid&&<div style={{textAlign:'center',padding:'8px 0 12px'}}><span style={{color:'var(--emerald)'}}>{I.check({size:18})}</span><p style={{fontSize:11,fontWeight:700,color:'var(--emerald)',marginTop:2}}>Exercice validé</p>
             <button onClick={back} className="btn-gold" style={{marginTop:12,padding:'10px 28px',fontSize:12}}>Terminer</button></div>}
@@ -7565,7 +8939,7 @@ function ExV({mod,st,setSt,back,next,onNext,seance}){
                 {uploadPhase==="selected"&&videoFileName&&(
                   <div style={{marginBottom:12}}>
                     <div style={{padding:10,borderRadius:8,background:'rgba(74,222,128,.06)',border:'1px solid rgba(74,222,128,.15)',marginBottom:10}}>
-                      <p style={{fontSize:10,fontWeight:600,color:'var(--text)'}}>{I.film({size:12})} {videoFileName}</p>
+                      <p style={{fontSize:10,fontWeight:700,color:'var(--text)'}}>{I.film({size:12})} {videoFileName}</p>
                     </div>
                     <div style={{display:'flex',gap:8}}>
                       <button onClick={()=>{setUploadPhase("ready");setVideoFile(null);setVideoFileName("")}} style={{flex:1,padding:'8px 0',fontSize:10,borderRadius:8,background:'var(--bg-raised)',border:'1px solid var(--line)',color:'var(--text-2)'}}> Annuler</button>
@@ -7603,12 +8977,12 @@ function ExV({mod,st,setSt,back,next,onNext,seance}){
             </div>
             <div style={{display:'flex',gap:8,marginBottom:12}}>
               <div style={{flex:1,padding:12,borderRadius:12,background:'rgba(200,164,78,.06)',border:'2px solid var(--gold)',cursor:'pointer'}}>
-                <p style={{fontSize:9,fontWeight:800,color:'var(--gold)',letterSpacing:'.08em'}}>STANDARD</p>
-                <p style={{fontSize:16,fontWeight:800,marginTop:4}}>9,90€<span style={{fontSize:9,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
+                <p style={{fontSize:9,fontWeight:700,color:'var(--gold)',letterSpacing:'.08em'}}>STANDARD</p>
+                <p style={{fontSize:16,fontWeight:700,marginTop:4}}>9,90€<span style={{fontSize:9,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
               </div>
               <div style={{flex:1,padding:12,borderRadius:12,background:'rgba(167,139,250,.06)',border:'2px solid var(--violet)',cursor:'pointer'}}>
-                <p style={{fontSize:9,fontWeight:800,color:'var(--violet)',letterSpacing:'.08em'}}>PREMIUM</p>
-                <p style={{fontSize:16,fontWeight:800,marginTop:4}}>29,90€<span style={{fontSize:9,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
+                <p style={{fontSize:9,fontWeight:700,color:'var(--violet)',letterSpacing:'.08em'}}>PREMIUM</p>
+                <p style={{fontSize:16,fontWeight:700,marginTop:4}}>29,90€<span style={{fontSize:9,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
               </div>
             </div>
             <button onClick={()=>{_track('plan_clicked',{plan:'standard',price:9.90,source:'paywall_modal'});SFX.success();window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201';}} className="btn-gold btn-pulse" style={{width:'100%',padding:'13px 0',fontSize:12,marginBottom:8}}>Standard — 4 jours gratuits puis 9,90€/mois</button>
@@ -7635,6 +9009,8 @@ function TravailTexte({mod,st,setSt,onFini,seance}){
   const[si,setSi]=useState(0);
   const[qi,setQi]=useState(-1);          /* -1 = l'intro de l'étape */
   const[voirTexte,setVoirTexte]=useState(true);
+  const[corr,setCorr]=useState({});      /* la correction, par question */
+  const[corrEnCours,setCorrEnCours]=useState(false);
   const etape=etapes[si];
   const notes=(st.texteNotes||{})[mod.id]||{};
   const total=etapes.reduce((a,e)=>a+e.questions.length,0);
@@ -7642,6 +9018,38 @@ function TravailTexte({mod,st,setSt,onFini,seance}){
 
   const noter=(v)=>setSt(p=>({...p,texteNotes:{...(p.texteNotes||{}),
     [mod.id]:{...((p.texteNotes||{})[mod.id]||{}),[etape.id+"_"+qi]:v}}}));
+
+  /* La même correction que sur les analyses de scène : elle lit la réponse,
+     la situe et dit ce qui manque. Elle n'était branchée que là-bas. */
+  const cle=etape.id+"_"+qi;
+  const faireCorriger=async()=>{
+    const texte=(notes[cle]||"").trim();
+    if(texte.length<5||corrEnCours)return;
+    setCorrEnCours(true);
+    const ctl=new AbortController();
+    const t=setTimeout(()=>ctl.abort(),15000);
+    try{
+      const res=await fetch(`${SUPABASE_URL}/functions/v1/correct-scene`,{
+        method:"POST",
+        headers:{"content-type":"application/json","apikey":SUPABASE_ANON_KEY,"authorization":`Bearer ${SUPABASE_ANON_KEY}`},
+        body:JSON.stringify({
+          question:etape.questions[qi].q,
+          extract:mod.text||"",
+          userAnswer:texte,
+          reference:etape.questions[qi].tip||"",
+          keyPoints:[]
+        }),
+        signal:ctl.signal
+      });
+      clearTimeout(t);
+      if(res.ok){const d=await res.json();setCorr(c=>({...c,[cle]:d}));if(d.level==="found")SFX.success()}
+      else setCorr(c=>({...c,[cle]:{erreur:true}}));
+    }catch(e){
+      clearTimeout(t);
+      setCorr(c=>({...c,[cle]:{erreur:true}}));
+    }
+    setCorrEnCours(false);
+  };
 
   const avancer=()=>{
     if(qi<etape.questions.length-1){setQi(qi+1);window.scrollTo(0,0);return}
@@ -7655,36 +9063,29 @@ function TravailTexte({mod,st,setSt,onFini,seance}){
 
   return(
     <>
-      {/* Le texte reste sous les yeux : on ne travaille pas de mémoire. */}
-      <div className="card" style={{padding:0,marginBottom:16,overflow:'hidden'}}>
-        <button onClick={()=>setVoirTexte(v=>!v)}
-          style={{width:'100%',display:'flex',alignItems:'center',gap:9,padding:'12px 15px',background:'none',border:'none',cursor:'pointer',textAlign:'left'}}>
-          <span style={{color:'var(--gold)',display:'flex',flexShrink:0}}>{I.book({size:15,sw:1.6})}</span>
-          <span style={{flex:1,minWidth:0}}>
-            <span className="eb eb-or">Le texte</span>
-            <span style={{display:'block',fontSize:11,color:'var(--text-3)',marginTop:2}}>{mod.author}</span>
-          </span>
-          <span style={{color:'var(--text-3)',display:'flex',transform:voirTexte?'rotate(90deg)':'none',transition:'transform .2s'}}>{I.chR({size:15,sw:1.8})}</span>
-        </button>
+      {/* Le texte est le sujet de l'écran, pas une carte parmi d'autres.
+          On peut le replier quand on n'en a plus besoin sous les yeux. */}
+      <div style={{marginBottom:20}}>
         {voirTexte&&(
-          <div style={{padding:'0 15px 15px'}}>
-            <p className="vers" style={{fontSize:15,lineHeight:1.75,color:'var(--text)'}}>{mod.text}</p>
-          </div>
+          <p className="vers" style={{fontSize:'clamp(16px,4.4vw,18px)',lineHeight:1.72,color:'var(--text)',marginBottom:8}}>{mod.text}</p>
         )}
+        <button onClick={()=>setVoirTexte(v=>!v)}
+          style={{display:'flex',alignItems:'center',gap:6,padding:0,background:'none',border:'none',cursor:'pointer',color:'var(--text-3)',fontSize:10.5,fontWeight:700}}>
+          <span>{mod.author}</span>
+          <span style={{opacity:.6}}>·</span>
+          <span style={{color:'var(--gold)'}}>{voirTexte?"masquer":"revoir le texte"}</span>
+        </button>
       </div>
 
       {/* Où en est-on dans la méthode */}
-      <div style={{marginBottom:14}}>
+      <div style={{marginBottom:16}}>
         <div style={{display:'flex',gap:5,marginBottom:7}}>
           {etapes.map((e,k)=>(
             <span key={e.id} style={{flex:1,height:3,borderRadius:3,transition:'background .3s',
               background:k<si?'var(--gold)':k===si?'var(--gold-dim)':'var(--w06)'}}/>
           ))}
         </div>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-          <p className="eb eb-or">Étape {si+1} sur {etapes.length} · {etape.name}</p>
-          <p style={{fontSize:9,color:'var(--text-3)',fontVariantNumeric:'tabular-nums'}}>{faites}/{total}</p>
-        </div>
+        <p className="eb eb-or">Étape {si+1} sur {etapes.length} · {etape.name}</p>
       </div>
 
       {qi===-1?(
@@ -7699,17 +9100,57 @@ function TravailTexte({mod,st,setSt,onFini,seance}){
       ):(
         <>
           <div className="card" style={{padding:19,marginBottom:11}}>
-            <p style={{fontSize:14.5,lineHeight:1.65,fontWeight:600,color:'var(--text)'}}>{etape.questions[qi].q}</p>
+            <p style={{fontSize:14.5,lineHeight:1.65,fontWeight:700,color:'var(--text)'}}>{etape.questions[qi].q}</p>
           </div>
           <div style={{display:'flex',gap:9,padding:'12px 14px',borderRadius:12,background:'rgba(224,184,78,.05)',border:'1px solid var(--line)',marginBottom:14}}>
             <span style={{color:'var(--gold)',flexShrink:0,marginTop:1}}>{I.info({size:13,sw:1.5})}</span>
             <p className="vers" style={{fontSize:13.5,color:'var(--text-2)',lineHeight:1.55}}>{etape.questions[qi].tip}</p>
           </div>
           <label className="input-label">Votre réponse</label>
-          <textarea key={etape.id+"_"+qi} defaultValue={notes[etape.id+"_"+qi]||""}
+          <textarea key={etape.id+"_"+qi} defaultValue={notes[cle]||""}
             onBlur={e=>noter(e.target.value)} rows={4}
-            placeholder="Écrivez ici — personne ne le lira, c'est votre carnet."
-            className="input-field" style={{resize:'vertical',lineHeight:1.6,marginBottom:16}}/>
+            placeholder="Écrivez ici. Vous pourrez faire relire votre réponse."
+            className="input-field" style={{resize:'vertical',lineHeight:1.6,marginBottom:10}}/>
+
+          {!corr[cle]&&(
+            <button onClick={faireCorriger} disabled={corrEnCours}
+              className="btn-outline" style={{width:'100%',padding:'11px 0',fontSize:11.5,marginBottom:16,opacity:corrEnCours?.5:1}}>
+              {corrEnCours?"Lecture en cours…":"Faire relire ma réponse"}
+            </button>
+          )}
+
+          {corr[cle]&&!corr[cle].erreur&&(()=>{
+            const n=corr[cle];
+            const col=n.level==="found"?'var(--emerald)':n.level==="partial"?'var(--gold)':'var(--coral)';
+            const titre=n.level==="found"?"Vous y êtes":n.level==="partial"?"Sur la bonne voie":"Il manque l'essentiel";
+            return(
+              <div style={{padding:'14px 16px',borderRadius:14,marginBottom:16,
+                background:'var(--bg-card)',border:`1px solid ${col}`}}>
+                <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:8}}>
+                  <span className="eb" style={{color:col}}>{titre}</span>
+                  {typeof n.score==="number"&&<span style={{fontSize:14,fontWeight:700,color:col,fontVariantNumeric:'tabular-nums'}}>{n.score}/100</span>}
+                </div>
+                {n.feedback&&<p style={{fontSize:12,lineHeight:1.65,color:'var(--text)'}}>{n.feedback}</p>}
+                {n.matched&&n.matched.length>0&&(
+                  <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:10}}>
+                    {n.matched.map((m,k)=>(
+                      <span key={k} className="tag" style={{background:'rgba(52,211,153,.12)',color:'var(--emerald)',textTransform:'none',letterSpacing:'.01em'}}>{m}</span>
+                    ))}
+                  </div>
+                )}
+                <button onClick={()=>setCorr(c=>{const d={...c};delete d[cle];return d})}
+                  style={{marginTop:10,padding:0,background:'none',border:'none',cursor:'pointer',color:'var(--text-3)',fontSize:10.5,fontWeight:700}}>
+                  Reprendre ma réponse
+                </button>
+              </div>
+            );
+          })()}
+
+          {corr[cle]&&corr[cle].erreur&&(
+            <p style={{fontSize:11,color:'var(--text-3)',marginBottom:16,lineHeight:1.5}}>
+              La relecture n'a pas répondu — votre réponse est enregistrée quand même.
+            </p>
+          )}
         </>
       )}
 
@@ -7735,7 +9176,8 @@ function CuV({mod,st,setSt,back,next,onNext,seance}){
          par quatre sur un quiz de quatre questions. */
       updateSRS(st,setSt,mod.id,ns/mod.quiz.length>=0.6);
       if(!st.doneCu.includes(mod.id)){setXp(true);SFX.xp();const ratio=ns/mod.quiz.length,cStars=ratio>=1?3:ratio>=0.6?2:1;setSt(p=>({...p,xp:p.xp+mod.xp,weekXP:(p.weekXP||0)+mod.xp,weekCulture:true,doneCu:[...p.doneCu,mod.id],perf:p.perf+(ns===mod.quiz.length?1:0),stars:{...p.stars,[mod.id]:Math.max(cStars,p.stars?.[mod.id]||0)},
-      cuResults:{...(p.cuResults||{}),[mod.id]:{score:ns,total:mod.quiz.length,cat:mod.cat,date:new Date().toISOString()}}
+      cuResults:{...(p.cuResults||{}),[mod.id]:{score:ns,total:mod.quiz.length,cat:mod.cat,date:new Date().toISOString()}},
+      catLastPracticed:{...(p.catLastPracticed||{}),Culture:new Date().toISOString()}
     }))}}
   };
   const scoreRef=React.useRef(sc);scoreRef.current=sc;
@@ -7751,7 +9193,19 @@ function CuV({mod,st,setSt,back,next,onNext,seance}){
       <div className="mw" style={{padding:'16px 20px 100px'}}>
         {xp&&<XPPop n={mod.xp} done={()=>setXp(false)}/>}
         {seance&&<p className="eb eb-or" style={{textAlign:'center',marginBottom:8}}>Séance · étape {seance.i} sur {seance.n}</p>}
-        <div style={{textAlign:'center',marginBottom:24}}>
+        {CU_DESSIN[mod.id]&&(
+          <div className="ill-card ic-violet" style={{marginBottom:18,minHeight:118}}>
+            <img src={`img/c/${CU_DESSIN[mod.id]}.svg`} alt="" aria-hidden="true" decoding="async"
+              onError={e=>{e.target.style.display='none'}}
+              style={{position:'absolute',right:-14,bottom:-10,width:152,height:152,objectFit:'contain',zIndex:2,pointerEvents:'none'}}/>
+            <span className="ill-in" style={{padding:'16px 17px 15px'}}>
+              <span className="eb" style={{color:'var(--violet)'}}>{mod.cat}</span>
+              <span className="heading" style={{display:'block',fontSize:20,marginTop:5}}>{mod.title}</span>
+              <span style={{display:'block',fontSize:11,color:'rgba(242,240,234,.6)',marginTop:5}}>{mod.dur}</span>
+            </span>
+          </div>
+        )}
+        <div style={{textAlign:'center',marginBottom:24,display:CU_DESSIN[mod.id]?'none':'block'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginBottom:8}}><EI e={mod.icon} s={36}/></div>
           <h1 className="heading" style={{fontSize:22}}>{mod.title}</h1>
           <p style={{fontSize:10,color:'var(--text-3)',marginTop:4}}>{mod.cat} · {mod.dur}</p>
@@ -7777,7 +9231,7 @@ function CuV({mod,st,setSt,back,next,onNext,seance}){
                 const isC=i===mod.quiz[qi].a,isS=sel===i;
                 let bg='var(--bg-raised)',bc='var(--line)';
                 if(sel!==null){if(isC){bg='rgba(74,222,128,.08)';bc='var(--emerald)'}else if(isS){bg='rgba(239,68,68,.08)';bc='var(--red)'}}
-                return(<button key={i} onClick={()=>sel===null&&answer(i)} style={{padding:'10px 12px',borderRadius:8,border:'1.5px solid',borderColor:bc,background:bg,textAlign:'left',fontSize:11,fontWeight:500,display:'flex',alignItems:'center',gap:7}}>
+                return(<button key={i} onClick={()=>sel===null&&answer(i)} style={{padding:'10px 12px',borderRadius:8,border:'1.5px solid',borderColor:bc,background:bg,textAlign:'left',fontSize:11,fontWeight:400,display:'flex',alignItems:'center',gap:7}}>
                   <span style={{fontSize:9,fontWeight:700,color:'var(--gold)'}}>{String.fromCharCode(65+i)}</span><span style={{flex:1}}>{o}</span>
                   {sel!==null&&isC&&<span style={{color:'var(--emerald)',fontSize:10}}>✓</span>}
                   {sel!==null&&isS&&!isC&&<span style={{color:'var(--red)',fontSize:10}}>✗</span>}
@@ -7786,7 +9240,7 @@ function CuV({mod,st,setSt,back,next,onNext,seance}){
             </div>
             {showCorrection&&<div className="fade-up" style={{marginTop:14,padding:'14px 16px',borderRadius:10,background:'rgba(74,222,128,.06)',border:'1px solid rgba(74,222,128,.15)'}}>
               <p style={{fontSize:10,fontWeight:700,color:'var(--emerald)',marginBottom:4}}>✓ Bonne réponse :</p>
-              <p style={{fontSize:12,color:'var(--text)',fontWeight:600,marginBottom:10}}>{mod.quiz[qi].o[mod.quiz[qi].a]}</p>
+              <p style={{fontSize:12,color:'var(--text)',fontWeight:700,marginBottom:10}}>{mod.quiz[qi].o[mod.quiz[qi].a]}</p>
               <button onClick={()=>advance(scoreRef.current)} className="btn-gold" style={{width:'100%',padding:'10px 0',fontSize:11}}>Continuer</button>
             </div>}
           </div>
@@ -7800,7 +9254,7 @@ function CuV({mod,st,setSt,back,next,onNext,seance}){
             <div style={{padding:32,borderRadius:16,background:'var(--bg-card)',border:'1px solid var(--line-s)',boxShadow:'0 0 60px var(--gold-glow)'}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14}}>{sc===mod.quiz.length?I.trophy({size:52,sw:1.6,style:{color:'var(--gold)'}}):sc>0?I.check({size:52,sw:1.6,style:{color:'var(--emerald)'}}):I.body({size:52,sw:1.6})}</div>
               <h2 className="heading" style={{fontSize:26,marginBottom:6}}>{sc===mod.quiz.length?"Parfait !":sc>0?"Bien joué !":"On recommence ?"}</h2>
-              <p style={{fontSize:12,color:'var(--text-2)',fontStyle:'italic',marginBottom:12,animation:'fadeIn 1.5s ease-out'}}>{cuCheer}</p>
+              <p style={{fontSize:12,color:'var(--text-2)',marginBottom:12,animation:'fadeIn 1.5s ease-out'}}>{cuCheer}</p>
               <p className="body" style={{fontSize:14,marginBottom:16}}>{sc}/{mod.quiz.length}</p>
               <p className="heading gold-shimmer" style={{fontSize:20,marginBottom:24}}>+{mod.xp} XP</p>
               {seance
@@ -7820,8 +9274,8 @@ function CuV({mod,st,setSt,back,next,onNext,seance}){
 }
 
 /* ═══ LA SÉANCE ═══ */
-function Seance({items,st,setSt,onQuit,onFini}){
-  const[i,setI]=useState(0);
+function Seance({items,depart=0,st,setSt,onQuit,onFini}){
+  const[i,setI]=useState(Math.min(Math.max(0,depart),Math.max(0,items.length-1)));
   const[fini,setFini]=useState(false);
   const debut=useRef(Date.now());
   const xpDebut=useRef(st.xp);
@@ -7837,6 +9291,8 @@ function Seance({items,st,setSt,onQuit,onFini}){
   const it=items[i];
   const info={i:i+1,n:items.length};
   const suivant=items[i+1]||null;
+  if(it.type==="seance")
+    return <SeanceV key={it.id} mod={it} st={st} setSt={setSt} back={onQuit} next={suivant} onNext={avancer} seance={info}/>;
   return it.sec==="pr"
     ? <ExV key={it.id} mod={it} st={st} setSt={setSt} back={onQuit} next={suivant} onNext={avancer} seance={info}/>
     : <CuV key={it.id} mod={it} st={st} setSt={setSt} back={onQuit} next={suivant} onNext={avancer} seance={info}/>;
@@ -7903,6 +9359,7 @@ function SeanceFin({minutes,xp,n,onClose}){
 function Profile({st,setSt}){
   const[editMode,setEditMode]=useState(false);
   const[confirmReset,setConfirmReset]=useState(false);
+  const[voirCarnet,setVoirCarnet]=useState(false);
   const[adminTaps,setAdminTaps]=useState(0);
   const[adminTimer,setAdminTimer]=useState(null);
   const[showSupport,setShowSupport]=useState(false);
@@ -7943,6 +9400,7 @@ function Profile({st,setSt}){
   };
   const lv=getLv(st.xp,st.passedExams),tier=getTier(lv);
   const tE=Object.values(PR).flat().length,tC=Object.values(CU).flat().length;
+  if(voirCarnet)return<Carnet onClose={()=>setVoirCarnet(false)}/>;
   return(
     <div className="safe-b fade-up" style={{padding:'68px 20px 100px'}}>
       <div className="mw">
@@ -7959,7 +9417,7 @@ function Profile({st,setSt}){
             </span>
             <span style={{display:'flex',alignItems:'center',gap:7,marginBottom:3}}>
               <span className="tag tag-fil" style={{textTransform:'none',letterSpacing:'.01em',fontSize:9.5,fontWeight:700,whiteSpace:'nowrap'}}>{lv.name}</span>
-              <span style={{fontSize:9.5,fontWeight:600,color:'rgba(242,240,234,.6)',whiteSpace:'nowrap'}}>{tier?.name}</span>
+              <span style={{fontSize:9.5,fontWeight:700,color:'rgba(242,240,234,.6)',whiteSpace:'nowrap'}}>{tier?.name}</span>
             </span>
             {st.user&&!editMode&&<span style={{display:'block',fontSize:9.5,color:'rgba(242,240,234,.55)',marginTop:5,overflow:'hidden',textOverflow:'ellipsis'}}>{st.user.email}</span>}
           </span>
@@ -8039,15 +9497,15 @@ function Profile({st,setSt}){
             ].sort((a,b)=>b.xp-a.xp).map((u,idx)=>{
               const rank=idx+1;const isYou=u.you;
               return(<div key={idx} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 4px',borderRadius:8,background:isYou?'rgba(200,164,78,.06)':'transparent',borderBottom:idx<6?'1px solid var(--line)':'none'}}>
-                <span style={{fontSize:11,fontWeight:800,width:20,textAlign:'center',color:rank<=3?['var(--gold)','#c0c0c0','#cd7f32'][rank-1]:'var(--text-3)'}}>{rank<=3?I.medal({size:14,sw:1.6}):rank}</span>
+                <span style={{fontSize:11,fontWeight:700,width:20,textAlign:'center',color:rank<=3?['var(--gold)','#c0c0c0','#cd7f32'][rank-1]:'var(--text-3)'}}>{rank<=3?I.medal({size:14,sw:1.6}):rank}</span>
                 <div style={{width:28,height:28,borderRadius:'50%',background:isYou?'var(--gold-glow)':'var(--w03)',border:isYou?'1.5px solid var(--gold)':'1.5px solid var(--line)',display:'flex',alignItems:'center',justifyContent:'center'}}>{isYou?I.user({size:14,sw:1.6}):I.drama({size:14,sw:1.6})}</div>
                 <div style={{flex:1,minWidth:0}}>
-                  <p style={{fontSize:11,fontWeight:isYou?700:500,color:isYou?'var(--gold)':'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.name}{isYou?" (vous)":""}</p>
+                  <p style={{fontSize:11,fontWeight:isYou?700:400,color:isYou?'var(--gold)':'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.name}{isYou?" (vous)":""}</p>
                 </div>
                 <span style={{fontSize:10,fontWeight:700,color:isYou?'var(--gold)':'var(--text-2)'}}>{u.xp} XP</span>
               </div>);
             })}
-            <p style={{fontSize:8,color:'var(--text-3)',marginTop:10,textAlign:'center',fontStyle:'italic'}}>Classement mis à jour chaque semaine</p>
+            <p style={{fontSize:8,color:'var(--text-3)',marginTop:10,textAlign:'center'}}>Classement mis à jour chaque semaine</p>
           </div>
         </div>
 
@@ -8090,7 +9548,7 @@ function Profile({st,setSt}){
         {st.plan==="free"&&(
           <div style={{marginBottom:24}}>
             <div style={{padding:'22px 20px',borderRadius:16,background:'linear-gradient(160deg,rgba(200,164,78,.09),var(--bg-card))',border:'2px solid var(--gold)',marginBottom:12,boxShadow:'0 8px 30px rgba(200,164,78,.10)'}}>
-              <p style={{fontSize:9,fontWeight:800,letterSpacing:'.16em',color:'var(--gold)',marginBottom:8}}>STANDARD</p>
+              <p style={{fontSize:9,fontWeight:700,letterSpacing:'.16em',color:'var(--gold)',marginBottom:8}}>STANDARD</p>
               <h3 className="heading" style={{fontSize:26,lineHeight:1.15,marginBottom:6}}>4 jours gratuits</h3>
               <p style={{fontSize:11,color:'var(--text-2)',marginBottom:16,lineHeight:1.5}}>Puis 9,90 €/mois. Sans engagement, résiliable à tout moment.</p>
               <div style={{marginBottom:18}}>
@@ -8102,12 +9560,12 @@ function Profile({st,setSt}){
                 ))}
               </div>
               <button onClick={()=>{_track('plan_clicked',{plan:'standard',price:9.90,source:'profile_hero'});SFX.success();window.location.href=STRIPE_STANDARD}}
-                className="btn-gold btn-pulse" style={{width:'100%',padding:'15px 0',fontSize:13,fontWeight:800}}>Essayer gratuitement</button>
+                className="btn-gold btn-pulse" style={{width:'100%',padding:'15px 0',fontSize:13,fontWeight:700}}>Essayer gratuitement</button>
             </div>
 
             <div style={{padding:'18px 20px',borderRadius:16,background:'rgba(171,71,188,.05)',border:'1.5px solid rgba(171,71,188,.25)',marginBottom:12}}>
-              <p style={{fontSize:9,fontWeight:800,letterSpacing:'.16em',color:'var(--purple)',marginBottom:6}}>PREMIUM</p>
-              <p style={{fontSize:16,fontWeight:800,marginBottom:6}}>29,90 €<span style={{fontSize:10,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
+              <p style={{fontSize:9,fontWeight:700,letterSpacing:'.16em',color:'var(--purple)',marginBottom:6}}>PREMIUM</p>
+              <p style={{fontSize:16,fontWeight:700,marginBottom:6}}>29,90 €<span style={{fontSize:10,fontWeight:400,color:'var(--text-3)'}}>/mois</span></p>
               <p style={{fontSize:10.5,color:'var(--text-2)',marginBottom:14,lineHeight:1.5}}>Tout Standard, plus un coach personnel par chat, des retours vidéo et la correction de vos monologues.</p>
               <button onClick={()=>{_track('plan_clicked',{plan:'premium',price:29.90,source:'profile_hero'});SFX.levelUp();window.location.href=STRIPE_PREMIUM}}
                 style={{width:'100%',padding:'13px 0',fontSize:12,fontWeight:700,color:'var(--purple)',borderRadius:10,background:'rgba(171,71,188,.1)',border:'1px solid rgba(171,71,188,.3)',cursor:'pointer'}}>Passer en Premium</button>
@@ -8125,7 +9583,7 @@ function Profile({st,setSt}){
             <button key={plan.id} onClick={()=>{if(plan.id==="standard"){_track('plan_clicked',{plan:'standard',price:9.90,source:'profile'});window.location.href='https://buy.stripe.com/00w8wPfvR3docyF2W4eZ201';}else if(plan.id==="premium"){_track('plan_clicked',{plan:'premium',price:29.90,source:'profile'});window.location.href='https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202';}}}
               style={{padding:14,borderRadius:12,background:plan.id==="premium"?'rgba(171,71,188,.06)':plan.highlight?'rgba(200,164,78,.08)':'var(--bg-card)',border:st.plan===plan.id?(plan.id==="premium"?'2px solid var(--purple)':plan.highlight?'2px solid var(--gold)':'2px solid var(--emerald)'):'2px solid var(--line)',cursor:'pointer',transition:'all .2s',display:'flex',flexDirection:'column',textAlign:'left'}}>
               <p style={{fontSize:11,fontWeight:700,marginBottom:4,color:plan.id==="premium"?'var(--purple)':plan.highlight?'var(--gold)':'var(--text)'}}>{plan.name}</p>
-              <p style={{fontSize:10,fontWeight:600,marginBottom:4,color:st.plan===plan.id?'var(--gold)':'var(--text-2)'}}>{plan.price}</p>
+              <p style={{fontSize:10,fontWeight:700,marginBottom:4,color:st.plan===plan.id?'var(--gold)':'var(--text-2)'}}>{plan.price}</p>
               {plan.trial&&<p style={{fontSize:8,fontWeight:700,color:'var(--emerald)',marginBottom:6}}>✨ {plan.trial}</p>}
               <div style={{fontSize:8,color:'var(--text-3)',lineHeight:1.6}}>{plan.features.map((f,i)=><div key={i}>• {f}</div>)}</div>
               {st.plan===plan.id&&<div style={{fontSize:7,marginTop:8,padding:'4px 8px',borderRadius:8,background:'rgba(74,222,128,.15)',color:'var(--emerald)',fontWeight:700}}>✓ Actif</div>}
@@ -8135,7 +9593,7 @@ function Profile({st,setSt}){
 
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
           <p className="label-gold">COLLECTION DE BADGES</p>
-          <span style={{fontSize:8,color:'var(--text-3)',fontWeight:600}}>{BADGES.filter(b=>b.c(st)).length}/{BADGES.length} débloqués</span>
+          <span style={{fontSize:8,color:'var(--text-3)',fontWeight:700}}>{BADGES.filter(b=>b.c(st)).length}/{BADGES.length} débloqués</span>
         </div>
         <div style={{display:'flex',gap:6,marginBottom:12,flexWrap:'wrap'}}>
           {Object.entries(RARITY).map(([k,v])=><span key={k} style={{fontSize:7,fontWeight:700,color:v.color,padding:'3px 8px',borderRadius:6,background:v.bg,border:`1px solid ${v.border}`}}>{v.name}</span>)}
@@ -8272,6 +9730,19 @@ function Profile({st,setSt}){
           </div>
         </div>}
 
+        {/* Le carnet : les traces laissées à la fin de chaque séance. */}
+        <button onClick={()=>setVoirCarnet(true)} className="rang"
+          style={{cursor:'pointer',textAlign:'left',marginBottom:10,borderColor:'var(--line-s)',
+            background:'linear-gradient(120deg,rgba(224,184,78,.08),var(--bg-card) 70%)'}}>
+          <div className="rang-ic" style={{background:'rgba(224,184,78,.16)',color:'var(--gold)'}}>{I.book({size:17,sw:1.6})}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <span className="eb eb-or" style={{marginBottom:3}}>Votre carnet</span>
+            <p className="rang-t">Ce que vous avez enregistré</p>
+            <p style={{fontSize:9.5,color:'var(--text-3)',marginTop:2}}>Voix, vidéos et notes — sur cet appareil uniquement</p>
+          </div>
+          <span style={{color:'var(--text-3)',display:'flex'}}>{I.chR?I.chR({size:15}):null}</span>
+        </button>
+
         <button onClick={()=>{setSt(p=>({...p,onb:false,user:null}))}}
           style={{width:'100%',padding:'12px 0',fontSize:11,color:'var(--text-2)',display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginBottom:6,borderRadius:10,border:'1px solid var(--w06)',background:'var(--w02)'}}>
           {I.logOut({size:13})} Se déconnecter
@@ -8402,8 +9873,8 @@ function BadgePopup({badge,onClose}){
     <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:999,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(5,5,10,.85)',backdropFilter:'blur(8px)',animation:'fadeIn .4s ease-out'}} onClick={onClose}>
       <div style={{textAlign:'center',animation:'fadeUp .5s ease-out',padding:40}} onClick={e=>e.stopPropagation()}>
         <div style={{marginBottom:16,animation:'breatheCircle 2s ease-in-out infinite'}}><EI e={badge.ic} s={64}/></div>
-        <p style={{fontSize:9,fontWeight:800,letterSpacing:'.18em',color:rar.color,marginBottom:6,padding:'4px 14px',borderRadius:20,background:rar.bg,border:`1px solid ${rar.border}`,display:'inline-block'}}>{rar.name.toUpperCase()}</p>
-        <p style={{fontSize:11,fontWeight:800,letterSpacing:'.2em',color:'var(--gold)',marginBottom:8,marginTop:10}}>NOUVEAU BADGE !</p>
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'.18em',color:rar.color,marginBottom:6,padding:'4px 14px',borderRadius:20,background:rar.bg,border:`1px solid ${rar.border}`,display:'inline-block'}}>{rar.name.toUpperCase()}</p>
+        <p style={{fontSize:11,fontWeight:700,letterSpacing:'.2em',color:'var(--gold)',marginBottom:8,marginTop:10}}>NOUVEAU BADGE !</p>
         <h2 className="heading" style={{fontSize:28,marginBottom:8}}>{badge.n}</h2>
         <p style={{fontSize:13,color:'var(--text-2)',marginBottom:24}}>{badge.d}</p>
         <button onClick={onClose} className="btn-gold" style={{padding:'12px 32px',fontSize:12}}>Super !</button>
@@ -8412,55 +9883,141 @@ function BadgePopup({badge,onClose}){
   );
 }
 
-function TutoOverlay({step,onNext,onDone}){
-  const steps=[
-    {target:"tuto-exercice",color:"var(--gold)",title:"Exercices",desc:"Travaille ta voix, ton corps et ton jeu pour progresser et gagner de l'XP."},
-    {target:"tuto-culture",color:"var(--violet)",title:"Culture théâtrale",desc:"Découvre l'histoire du théâtre et les grands auteurs grâce à des quiz."},
-    {target:"tuto-analyse",color:"var(--coral)",title:"Analyse de scène",desc:"Plonge dans les grandes scènes du répertoire pour affiner ton regard."},
-  ];
-  const s=steps[step]||steps[0];
-  const[rect,setRect]=useState(null);
-  useEffect(()=>{
-    let tries=0;
-    const find=()=>{
-      const el=document.querySelector(`[data-tuto="${s.target}"]`);
-      if(el){const r=el.getBoundingClientRect();setRect({top:r.top,left:r.left,width:r.width,height:r.height})}
-      else if(tries<20){tries++;setTimeout(find,100)}
-    };
-    find();
-    const onScroll=()=>{const el=document.querySelector(`[data-tuto="${s.target}"]`);if(el){const r=el.getBoundingClientRect();setRect({top:r.top,left:r.left,width:r.width,height:r.height})}};
-    window.addEventListener("scroll",onScroll);window.addEventListener("resize",onScroll);
-    return()=>{window.removeEventListener("scroll",onScroll);window.removeEventListener("resize",onScroll)};
-  },[step,s.target]);
-  if(!rect)return null;
-  const pad=8;
+/* ── L'intro du rituel ────────────────────────────────────────────────
+   Montrée une seule fois, à la première arrivée sur le parcours. Elle ne
+   fait pas visiter l'interface — elle explique ce qui va se passer tous
+   les jours, parce que c'est ça qui décide si on revient demain.
+   Trois temps, trois dessins, et on entre. */
+function RituelIntro({niveau,onDone}){
+  const[beat,setBeat]=useState(0);
+  const NB=3;
+  const suite=()=>{beat<NB-1?(setBeat(beat+1),SFX.tap&&SFX.tap()):(SFX.levelUp&&SFX.levelUp(),onDone())};
+  const lv=niveau||LEVELS[0];
+
+  const medaillon=(src,taille=126,delai=0)=>(
+    <div style={{position:'relative',width:taille,height:taille,margin:'0 auto',
+      animation:`rit-pose .85s cubic-bezier(.22,1,.36,1) ${delai}s both`}}>
+      <div style={{position:'absolute',inset:0,borderRadius:'50%',
+        background:'radial-gradient(circle at 50% 62%,rgba(224,184,78,.24),rgba(224,184,78,.06) 58%,transparent 72%)',
+        animation:`rit-halo 3.4s ease-in-out ${delai+.6}s infinite`}}/>
+      <div style={{position:'absolute',inset:0,borderRadius:'50%',border:'1px solid rgba(224,184,78,.22)'}}/>
+      <img src={`img/${src}.svg`} alt="" aria-hidden="true" decoding="async"
+        onError={e=>{e.target.style.display='none'}}
+        style={{position:'absolute',inset:'9px',width:'calc(100% - 18px)',height:'calc(100% - 18px)',
+          objectFit:'contain',objectPosition:'bottom'}}/>
+    </div>
+  );
+
   return(
-    <div style={{position:'fixed',inset:0,zIndex:900}}>
-      {/* Dark overlay with cutout */}
-      <svg style={{position:'absolute',inset:0,width:'100%',height:'100%'}}>
-        <defs>
-          <mask id="tuto-mask">
-            <rect x="0" y="0" width="100%" height="100%" fill="white"/>
-            <rect x={rect.left-pad} y={rect.top-pad} width={rect.width+pad*2} height={rect.height+pad*2} rx="14" fill="black"/>
-          </mask>
-        </defs>
-        <rect x="0" y="0" width="100%" height="100%" fill="rgba(5,5,10,0.82)" mask="url(#tuto-mask)"/>
-      </svg>
-      {/* Highlight border */}
-      <div style={{position:'absolute',top:rect.top-pad,left:rect.left-pad,width:rect.width+pad*2,height:rect.height+pad*2,borderRadius:14,border:`2px solid ${s.color}`,boxShadow:`0 0 30px ${s.color}44`,pointerEvents:'none',animation:'pathPulse 2s ease-in-out infinite'}}/>
-      {/* Tooltip */}
-      <div className="fade-up" key={step} style={{position:'fixed',bottom:24,left:24,right:24,maxWidth:320,margin:'0 auto',background:'var(--bg-card)',border:`1px solid ${s.color}33`,borderRadius:16,padding:'20px 22px',textAlign:'center',boxShadow:`0 16px 50px rgba(0,0,0,.5), 0 0 20px ${s.color}11`}}>
-        <p style={{fontSize:10,fontWeight:800,letterSpacing:'.16em',color:s.color,marginBottom:6}}>{step+1}/3</p>
-        <h3 className="heading" style={{fontSize:18,marginBottom:6,color:'var(--text)'}}>{s.title}</h3>
-        <p style={{fontSize:12,color:'var(--text-2)',lineHeight:1.6,marginBottom:16}}>{s.desc}</p>
-        <div style={{display:'flex',gap:10,justifyContent:'center'}}>
-          {step<2?(
-            <React.Fragment>
-              <button onClick={onDone} style={{padding:'10px 20px',borderRadius:10,background:'transparent',border:'1px solid var(--line)',color:'var(--text-3)',fontSize:11,cursor:'pointer'}}>Passer</button>
-              <button onClick={onNext} className="btn-gold" style={{padding:'10px 28px',fontSize:12}}>Suivant</button>
-            </React.Fragment>
-          ):(
-            <button onClick={onDone} className="btn-gold" style={{padding:'11px 36px',fontSize:12}}>C'est parti !</button>
+    <div style={{position:'fixed',inset:0,zIndex:920,background:'#0A0E1C',color:'#F2F0EA',
+      display:'flex',flexDirection:'column',overflow:'hidden',animation:'fadeIn .4s ease both'}}>
+      {/* La lumière de scène qui monte du bas */}
+      <div style={{position:'absolute',inset:0,pointerEvents:'none',
+        background:'radial-gradient(120% 62% at 50% 108%,rgba(224,184,78,.22),rgba(224,184,78,.05) 46%,transparent 74%)',
+        animation:'lumiere-monte 1.5s cubic-bezier(.22,1,.36,1) both'}}/>
+      <div style={{position:'absolute',inset:'14px',border:'1px solid rgba(224,184,78,.14)',borderRadius:6,pointerEvents:'none'}}/>
+
+      <div className="mw" style={{position:'relative',zIndex:2,flex:1,display:'flex',flexDirection:'column',
+        padding:'calc(env(safe-area-inset-top,0px) + 34px) 26px calc(env(safe-area-inset-bottom,0px) + 22px)',
+        maxWidth:400,width:'100%',margin:'0 auto'}}>
+
+        <div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'center',textAlign:'center'}}>
+
+          {/* ── 1 · Le rendez-vous quotidien ── */}
+          {beat===0&&<div key="b0">
+            {medaillon("n/"+lv.id,132)}
+            <p className="eb eb-or" style={{marginTop:26,animation:'fadeIn .6s ease .25s both'}}>Votre entraînement</p>
+            <h2 className="heading" style={{fontSize:'clamp(25px,7.2vw,31px)',lineHeight:1.12,margin:'11px 0 0',
+              animation:'fadeUp .8s cubic-bezier(.22,1,.36,1) .35s both'}}>Quinze minutes,<br/>tous les jours.</h2>
+            <div style={{width:38,height:1,background:'var(--gold)',opacity:.7,margin:'19px auto',
+              animation:'trait-ouvre .7s ease .6s both'}}/>
+            <p className="body" style={{fontSize:13.5,lineHeight:1.75,color:'rgba(242,240,234,.72)',
+              animation:'fadeUp .8s ease .7s both'}}>
+              Une séance par jour, courte et complète. C'est la régularité qui forme un comédien, pas les journées héroïques une fois par mois.
+            </p>
+          </div>}
+
+          {/* ── 2 · Les cinq domaines ── */}
+          {beat===1&&<div key="b1">
+            <p className="eb eb-or" style={{animation:'fadeIn .5s ease both'}}>Chaque séance</p>
+            <h2 className="heading" style={{fontSize:'clamp(23px,6.6vw,28px)',lineHeight:1.14,margin:'10px 0 22px',
+              animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) .1s both'}}>On touche les cinq,<br/>à chaque fois.</h2>
+            {/* Les cinq dessins se posent l'un après l'autre : c'est là que
+                l'idée devient concrète. */}
+            <div style={{display:'flex',flexDirection:'column',gap:9}}>
+              {DOM_ORDRE_SEANCE.map(([id],k)=>{
+                const D=DOMAINES[id]||{};
+                return(
+                  <div key={id} style={{display:'flex',alignItems:'center',gap:13,textAlign:'left',
+                    padding:'9px 14px',borderRadius:14,background:'rgba(242,240,234,.035)',
+                    border:'1px solid rgba(242,240,234,.07)',
+                    animation:`rit-pose .6s cubic-bezier(.22,1,.36,1) ${.25+k*.16}s both`}}>
+                    <div style={{position:'relative',width:38,height:38,flexShrink:0}}>
+                      <div style={{position:'absolute',inset:0,borderRadius:'50%',background:'rgba(224,184,78,.07)',
+                        border:'1px solid rgba(224,184,78,.16)'}}/>
+                      <img src={`img/${D.dessin}.svg`} alt="" aria-hidden="true" decoding="async"
+                        onError={e=>{e.target.style.display='none'}}
+                        style={{position:'absolute',inset:'5px',width:'calc(100% - 10px)',height:'calc(100% - 10px)',
+                          objectFit:'contain'}}/>
+                    </div>
+                    <div style={{minWidth:0}}>
+                      <p style={{fontSize:9,fontWeight:700,letterSpacing:'.1em',color:D.teinte}}>{(D.nom||"").toUpperCase()}</p>
+                      <p style={{fontSize:11.5,color:'rgba(242,240,234,.7)',lineHeight:1.45,marginTop:2}}>{D.intro}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="body" style={{fontSize:12,lineHeight:1.7,color:'rgba(242,240,234,.6)',marginTop:18,
+              animation:'fadeUp .7s ease 1.15s both'}}>
+              Trois minutes chacun. Comme un musicien fait ses gammes avant de travailler un morceau.
+            </p>
+          </div>}
+
+          {/* ── 3 · La progression ── */}
+          {beat===2&&<div key="b2">
+            {medaillon("n/"+((LEVELS[1]||lv).id),118)}
+            <p className="eb eb-or" style={{marginTop:24,animation:'fadeIn .5s ease .2s both'}}>Et ensuite</p>
+            <h2 className="heading" style={{fontSize:'clamp(23px,6.6vw,28px)',lineHeight:1.14,margin:'10px 0 0',
+              animation:'fadeUp .7s cubic-bezier(.22,1,.36,1) .3s both'}}>Sept séances,<br/>et vous changez de niveau.</h2>
+
+            {/* La barre se remplit toute seule : on voit ce que « finir un
+                niveau » veut dire avant même d'avoir commencé. */}
+            <div style={{maxWidth:250,margin:'22px auto 0',animation:'fadeIn .6s ease .5s both'}}>
+              <div style={{display:'flex',gap:5}}>
+                {Array.from({length:7}).map((_,k)=>(
+                  <div key={k} style={{flex:1,height:5,borderRadius:99,background:'rgba(242,240,234,.11)',overflow:'hidden'}}>
+                    <div style={{height:'100%',borderRadius:99,background:'var(--gold)',
+                      animation:`rit-remplit .5s cubic-bezier(.22,1,.36,1) ${.65+k*.13}s both`}}/>
+                  </div>
+                ))}
+              </div>
+              <p style={{fontSize:9.5,fontWeight:700,letterSpacing:'.06em',color:'rgba(242,240,234,.5)',marginTop:9}}>
+                {lv.name} → {(LEVELS[1]||{}).name||"la suite"}
+              </p>
+            </div>
+
+            <p className="body" style={{fontSize:13,lineHeight:1.75,color:'rgba(242,240,234,.72)',marginTop:20,
+              animation:'fadeUp .8s ease 1.5s both'}}>
+              Un examen, puis le niveau suivant. Il y en a douze, du figurant à l'étoile.
+            </p>
+          </div>}
+        </div>
+
+        {/* Les points et le bouton */}
+        <div style={{animation:'fadeUp .6s ease .4s both'}}>
+          <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:17}}>
+            {Array.from({length:NB}).map((_,k)=>(
+              <span key={k} style={{width:k===beat?18:6,height:6,borderRadius:99,transition:'all .35s ease',
+                background:k===beat?'var(--gold)':'rgba(242,240,234,.2)'}}/>
+            ))}
+          </div>
+          <button onClick={suite} className="btn-gold" style={{width:'100%',padding:'15px 0',fontSize:13,letterSpacing:'.05em'}}>
+            {beat<NB-1?"Suivant":"Commencer"}
+          </button>
+          {beat<NB-1&&(
+            <button onClick={onDone} style={{width:'100%',padding:'11px 0',marginTop:3,fontSize:11,fontWeight:700,
+              color:'rgba(242,240,234,.42)',background:'none',border:'none',cursor:'pointer'}}>Passer</button>
           )}
         </div>
       </div>
@@ -8549,7 +10106,7 @@ return(
             Installer
           </button>
         )}
-        <button onClick={handleDismiss} style={{width:'100%',padding:'10px 16px',background:'transparent',color:'var(--text-3)',borderRadius:12,border:'none',fontWeight:500,fontSize:12,cursor:'pointer',transition:'color .2s'}}>
+        <button onClick={handleDismiss} style={{width:'100%',padding:'10px 16px',background:'transparent',color:'var(--text-3)',borderRadius:12,border:'none',fontWeight:400,fontSize:12,cursor:'pointer',transition:'color .2s'}}>
           Plus tard
         </button>
       </div>
@@ -8572,7 +10129,7 @@ function PreviewBar({onSignup}){
           <p style={{fontSize:11,fontWeight:700,color:'var(--gold)',marginBottom:1}}>Mode découverte</p>
           <p style={{fontSize:9.5,color:'var(--text-3)',lineHeight:1.4}}>Créez un compte pour garder votre progression.</p>
         </div>
-        <button onClick={onSignup} className="btn-gold" style={{padding:'9px 14px',fontSize:10.5,fontWeight:800,flexShrink:0}}>Créer mon compte</button>
+        <button onClick={onSignup} className="btn-gold" style={{padding:'9px 14px',fontSize:10.5,fontWeight:700,flexShrink:0}}>Créer mon compte</button>
       </div>
     </div>
   );
@@ -8584,10 +10141,10 @@ function App(){
   const[mod,setMod]=useState(null);
   const[exam,setExam]=useState(null);
   const[seance,setSeance]=useState(null);/* la séance du jour, une fois lancée */
+  const[montee,setMontee]=useState(null);/* le passage de niveau, où qu'il arrive */
   const[badgePopup,setBadgePopup]=useState(null);
   const[paywall,setPaywall]=useState(null);
   const openPaywall=React.useCallback(src=>{SFX.whoosh&&SFX.whoosh();setPaywall(src||"default")},[]);
-  const[tutoStep,setTutoStep]=useState(0);
   const[showTip,setShowTip]=useState("visible");/* "visible" | "exiting" | false */
   const tipParticles=useState(()=>{
     const drifters=Array.from({length:18}).map(()=>({kind:'drift',size:2+Math.random()*5,left:Math.random()*100,top:5+Math.random()*90,dur:6+Math.random()*6,delay:Math.random()*4,gold:Math.random()>.35,anim:'tip-drift-'+(1+Math.floor(Math.random()*2))}));
@@ -8678,14 +10235,45 @@ function App(){
     }
   },[st.onb]);
 
+  /* Le passage de niveau se détectait depuis l'onglet Parcours seulement.
+     Or l'XP se gagne dans Pratique : le moment passait à la trappe. Il est
+     surveillé ici, là où rien ne se démonte. */
+  const rangVu=useRef(null);
+  useEffect(()=>{
+    if(!st.onb)return;
+    const rang=getLv(st.xp,st.passedExams);
+    if(rangVu.current===null){rangVu.current=rang.id;return}
+    if(rang.id===rangVu.current)return;
+    const avant=LEVELS.findIndex(l=>l.id===rangVu.current);
+    const apres=LEVELS.indexOf(rang);
+    rangVu.current=rang.id;
+    if(apres>avant){
+      setMontee({level:rang,isTierChange:LEVELS[avant]?.tier!==rang.tier});
+      SFX.levelUp();
+      _track('level_up',{level:rang.id});
+    }
+  },[st.xp,st.passedExams,st.onb]);
+
+  /* Un badge ne doit jamais tomber par-dessus la fin d'une séance : on le
+     garde en coulisse et on le sort quand l'écran s'est libéré. */
+  const badgeEnAttente=useRef(null);
+  useEffect(()=>{
+    ECRAN.liberer=()=>{
+      const b=badgeEnAttente.current;
+      if(!b)return;badgeEnAttente.current=null;
+      setBadgePopup(b);SFX.levelUp();
+    };
+    return()=>{ECRAN.liberer=null};
+  },[]);
+
   /* Badge detection — check for new badges on every state change */
   useEffect(()=>{
     if(!st.onb)return;
     const earned=BADGES.filter(b=>b.c(st));
     const newBadge=earned.find(b=>!(st.seenBadges||[]).includes(b.id));
     if(newBadge){
-      setBadgePopup(newBadge);
-      SFX.levelUp();
+      if(ECRAN.fin){badgeEnAttente.current=newBadge}
+      else{setBadgePopup(newBadge);SFX.levelUp()}
       setSt(p=>({...p,seenBadges:[...(p.seenBadges||[]),newBadge.id]}));
     }
   },[st.xp,st.doneEx.length,st.doneCu.length,st.streak,st.perf,st.vid,st.warmups,st.avantScenes,st.connexions,st.challenges,st.totalBreaths]);
@@ -8731,7 +10319,6 @@ function App(){
       }
       return n;
     });
-    if(!st.seenTuto)setTutoStep(0);
   }}/>;
 
   /* ═══ DAILY TIP SPLASH SCREEN ═══ */
@@ -8761,7 +10348,7 @@ function App(){
         {/* Le texte, dans le haut de la page */}
         <div style={{position:'relative',zIndex:3,flex:'0 0 auto',padding:'clamp(56px,13vh,110px) 34px 0',textAlign:'center',maxWidth:430,margin:'0 auto',width:'100%'}}>
           <p className="eb eb-or" style={{animation:'fadeIn .7s ease both'}}>Le conseil du jour</p>
-          <p style={{fontSize:10,color:'rgba(242,240,234,.45)',marginTop:5,fontWeight:500,animation:'fadeIn .7s ease .1s both'}}>{dateFr}</p>
+          <p style={{fontSize:10,color:'rgba(242,240,234,.45)',marginTop:5,fontWeight:400,animation:'fadeIn .7s ease .1s both'}}>{dateFr}</p>
 
           <p className="vers" style={{fontSize:'clamp(23px,6.4vw,29px)',lineHeight:1.42,color:'var(--text)',
             margin:'26px 0 0',animation:'fadeUp .9s cubic-bezier(.22,1,.36,1) .25s both'}}>
@@ -8772,7 +10359,7 @@ function App(){
 
           <div style={{width:38,height:1,background:'var(--gold)',opacity:.55,margin:'24px auto 0',
             animation:'fadeIn .8s ease .7s both'}}/>
-          <p style={{fontSize:8.5,fontWeight:800,letterSpacing:'.24em',textTransform:'uppercase',
+          <p style={{fontSize:8.5,fontWeight:700,letterSpacing:'.24em',textTransform:'uppercase',
             color:'rgba(242,240,234,.45)',marginTop:13,animation:'fadeIn .8s ease .8s both'}}>Castigat Academy</p>
         </div>
 
@@ -8823,7 +10410,7 @@ function App(){
                 {I.lock({size:18,sw:1.8,style:{color:'var(--ink)'}})}
               </div>
               <p style={{fontFamily:'Archivo, sans-serif',fontWeight:700,fontSize:11,letterSpacing:'.16em',color:'var(--gold)',marginBottom:4}}>PULSE DU JOUR</p>
-              <p style={{fontSize:12,fontWeight:600,color:'var(--text)',lineHeight:1.5}}>Réponds chaque jour pour nourrir ton bilan personnalisé</p>
+              <p style={{fontSize:12,fontWeight:700,color:'var(--text)',lineHeight:1.5}}>Réponds chaque jour pour nourrir ton bilan personnalisé</p>
             </div>
 
             {/* Question preview floutée */}
@@ -8832,7 +10419,7 @@ function App(){
               <div style={{display:'flex',flexDirection:'column',gap:6,filter:'blur(3px)',opacity:0.4,userSelect:'none',pointerEvents:'none'}}>
                 {todayQuestion.opts.slice(0,3).map((opt,oi)=>(
                   <div key={opt.id} style={{padding:'10px 14px',borderRadius:10,border:'1px solid var(--line)',background:'var(--w02)',display:'flex',alignItems:'center',gap:10}}>
-                    <span style={{width:20,height:20,borderRadius:6,background:'rgba(200,164,78,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:8,fontWeight:800,color:'var(--gold)',flexShrink:0}}>{String.fromCharCode(65+oi)}</span>
+                    <span style={{width:20,height:20,borderRadius:6,background:'rgba(200,164,78,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:8,fontWeight:700,color:'var(--gold)',flexShrink:0}}>{String.fromCharCode(65+oi)}</span>
                     <span style={{fontSize:10,color:'var(--text)'}}>{opt.text}</span>
                   </div>
                 ))}
@@ -8856,7 +10443,7 @@ function App(){
           </div>
 
           {/* Skip */}
-          <button onClick={()=>setShowDailyQ(false)} style={{display:'block',margin:'16px auto 0',padding:'10px 20px',border:'none',background:'none',cursor:'pointer',fontSize:10,color:'var(--text-3)',fontWeight:600,letterSpacing:'.02em'}}>Plus tard</button>
+          <button onClick={()=>setShowDailyQ(false)} style={{display:'block',margin:'16px auto 0',padding:'10px 20px',border:'none',background:'none',cursor:'pointer',fontSize:10,color:'var(--text-3)',fontWeight:700,letterSpacing:'.02em'}}>Plus tard</button>
         </div>
       </div>
     );
@@ -8884,7 +10471,7 @@ function App(){
                   style={{padding:'12px 16px',borderRadius:10,border:'1px solid var(--line)',background:'var(--w02)',cursor:'pointer',textAlign:'left',transition:'all .2s',display:'flex',alignItems:'center',gap:10}}
                   onMouseOver={e=>{e.currentTarget.style.borderColor='rgba(200,164,78,.3)';e.currentTarget.style.background='rgba(200,164,78,.04)'}}
                   onMouseOut={e=>{e.currentTarget.style.borderColor='var(--line)';e.currentTarget.style.background='var(--w02)'}}>
-                  <span style={{width:22,height:22,borderRadius:6,background:'rgba(200,164,78,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:800,color:'var(--gold)',flexShrink:0}}>{String.fromCharCode(65+oi)}</span>
+                  <span style={{width:22,height:22,borderRadius:6,background:'rgba(200,164,78,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:700,color:'var(--gold)',flexShrink:0}}>{String.fromCharCode(65+oi)}</span>
                   <span style={{fontSize:11,color:'var(--text)',lineHeight:1.4}}>{opt.text}</span>
                 </button>
               ))}
@@ -8892,22 +10479,24 @@ function App(){
           </div>
 
           {/* Skip */}
-          <button onClick={()=>setShowDailyQ(false)} style={{display:'block',margin:'0 auto',padding:'8px 16px',border:'none',background:'none',cursor:'pointer',fontSize:9,color:'var(--text-3)',fontWeight:600}}>Passer pour aujourd'hui</button>
-          <p style={{fontSize:8,color:'var(--text-3)',textAlign:'center',marginTop:12,lineHeight:1.5,fontStyle:'italic'}}>Vos réponses alimentent votre bilan personnalisé</p>
+          <button onClick={()=>setShowDailyQ(false)} style={{display:'block',margin:'0 auto',padding:'8px 16px',border:'none',background:'none',cursor:'pointer',fontSize:9,color:'var(--text-3)',fontWeight:700}}>Passer pour aujourd'hui</button>
+          <p style={{fontSize:8,color:'var(--text-3)',textAlign:'center',marginTop:12,lineHeight:1.5}}>Vos réponses alimentent votre bilan personnalisé</p>
         </div>
       </div>
     );
   }
 
+  if(montee) return <LevelUpModal level={montee.level} isTierChange={montee.isTierChange} onClose={()=>setMontee(null)}/>;
   if(exam) return <ExamView levelId={exam} st={st} setSt={setSt} onPass={()=>{SFX.levelUp();setExam(null)}} onBack={()=>setExam(null)}/>;
-  if(seance) return <Seance items={seance} st={st} setSt={setSt}
+  if(seance) return <Seance items={seance.items} depart={seance.depart} st={st} setSt={setSt}
     onQuit={()=>{_track('seance_abandonnee',{});setSeance(null)}}
-    onFini={()=>{_track('seance_terminee',{n:seance.length});setSeance(null);setTab("home")}}/>;
+    onFini={()=>{_track('seance_terminee',{n:seance.items.length});setSeance(null);setTab("home")}}/>;
 
   return(
     <PaywallCtx.Provider value={openPaywall}>
     <div style={{minHeight:'100vh',background:'var(--bg)'}}>
-      {!st.seenTuto&&!st.preview&&tab==="home"&&<TutoOverlay step={tutoStep} onNext={()=>setTutoStep(tutoStep+1)} onDone={()=>setSt(p=>({...p,seenTuto:true}))}/>}
+      {/* L'intro du rituel, une seule fois, à la première arrivée sur le parcours. */}
+      {!st.seenTuto&&!st.preview&&tab==="home"&&<RituelIntro niveau={getLv(st.xp,st.passedExams)} onDone={()=>setSt(p=>({...p,seenTuto:true}))}/>}
       {badgePopup&&<BadgePopup badge={badgePopup} onClose={()=>setBadgePopup(null)}/>}
       {paywall&&<Paywall source={paywall} plan={st.plan} onClose={()=>setPaywall(null)}/>}
       <Top xp={st.xp} streak={serieVive(st)} passedExams={st.passedExams}/>
