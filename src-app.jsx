@@ -4374,10 +4374,10 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
   };
 
   if(sceneAn) return <SceneAnalysis analysis={sceneAn} st={st} setSt={setSt} onClose={()=>setSceneAn(null)}/>;
-  /* Le programme complet du niveau, ouvert depuis l'accueil : on doit
-     pouvoir voir tout ce qu'on va travailler sans lancer quoi que ce soit. */
+  /* Le programme complet du niveau, ouvert depuis l'accueil : on voit tout
+     ce qu'on va travailler, et on peut lancer la séance du jour depuis là. */
   if(voirProgramme) return <ApercuNiveau niveau={lv} mods={PR[lv.id]||[]} sec="pr" dk="doneEx"
-    st={st} onClose={()=>setVoirProgramme(false)} onOuvrir={m=>{setVoirProgramme(false);setMod({...m,sec:"pr"});go("practice")}}/>;
+    st={st} onClose={()=>setVoirProgramme(false)} onOuvrir={m=>{setVoirProgramme(false);go("practice",{...m,sec:"pr"})}}/>;
 
   return(
     <div className="safe-b fade-up" style={{padding:'68px 20px 100px'}}>
@@ -4421,8 +4421,8 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                 :{lab:`Ma séance · ${dureeSeance(nonFaits.length?nonFaits:laSeance)} min`,act:()=>{_track('seance_lancee',{n:laSeance.length});lancerSeance({items:laSeance,depart})}})
             :examAvailable?{lab:"Passer l'examen",act:()=>setExam(lv.id)}
             :capAtteint?{lab:"Débloquer plus de séances",act:()=>openPaywall('daily')}
-            :nP?{lab:"Continuer",act:()=>{setMod({...nP,sec:"pr"});go("practice")}}
-            :nC?{lab:"Continuer",act:()=>{setMod({...nC,sec:"cu"});go("culture")}}
+            :nP?{lab:"Continuer",act:()=>go("practice",{...nP,sec:"pr"})}
+            :nC?{lab:"Continuer",act:()=>go("culture",{...nC,sec:"cu"})}
             :(nSA&&!allSADone)?{lab:"Analyser une scène",act:()=>setSceneAn(nSA)}
             :{lab:"Voir les exercices",act:()=>go("practice")};
           return(
@@ -4514,13 +4514,13 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
           {!montrerSeance&&<>
           {nP?<Rang ic={<EI e={nP.icon} s={17}/>} teinte="var(--gold)" eb="Exercice" titre={nP.title}
                 note={`${nP.cat||"Pratique"} · ${nP.dur||"quelques minutes"}`} xp={`+${nP.xp} XP`}
-                onClick={()=>{setMod({...nP,sec:"pr"});go("practice")}}/>
+                onClick={()=>go("practice",{...nP,sec:"pr"})}/>
            :<Rang ic={I.check({size:17})} teinte="var(--emerald)" fait eb="Exercices"
                 titre="Tous les exercices du niveau sont faits." fleche={false}/>}
 
           {nC?<Rang ic={<EI e={nC.icon} s={17}/>} teinte="var(--violet)" eb="Culture" titre={nC.title}
                 note={nC.dur||"Une lecture courte"} xp={`+${nC.xp} XP`}
-                onClick={()=>{setMod({...nC,sec:"cu"});go("culture")}}/>
+                onClick={()=>go("culture",{...nC,sec:"cu"})}/>
            :<Rang ic={I.check({size:17})} teinte="var(--emerald)" fait eb="Culture"
                 titre="Toute la culture du niveau est faite." fleche={false}/>}
 
@@ -4581,7 +4581,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
               <div className="sep"><b>À revoir</b><i/></div>
               {tete.map(r=>(
                 <button key={r.mod.id} className="rang" style={{cursor:'pointer',borderColor:'rgba(184,160,224,.22)'}}
-                  onClick={()=>{_track('revision_opened',{module:r.mod.id,retard:r.retard});setSt(p=>({...p,weekRevision:true}));setMod({...r.mod,sec:"cu"});go("culture")}}>
+                  onClick={()=>{_track('revision_opened',{module:r.mod.id,retard:r.retard});setSt(p=>({...p,weekRevision:true}));go("culture",{...r.mod,sec:"cu"})}}>
                   <div className="rang-ic" style={{background:'rgba(184,160,224,.14)',color:'var(--violet)'}}>{I.refresh({size:16,sw:1.8})}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <span className="eb" style={{color:'var(--violet)',marginBottom:3}}>
@@ -5080,7 +5080,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                         <p style={{fontSize:8,color:'var(--gold)',fontWeight:700,lineHeight:1.4}}>Pourquoi : <span style={{color:'var(--text-2)',fontWeight:400}}>{rec.reason}</span></p>
                       </div>
                       {/* Exercise button */}
-                      <button onClick={()=>{setMod({...rec});go("practice")}}
+                      <button onClick={()=>go("practice",{...rec})}
                         style={{width:'100%',padding:'10px 12px',display:'flex',alignItems:'center',gap:10,textAlign:'left',background:'var(--w02)',cursor:'pointer',border:'none',borderBottom:'1px solid var(--line)'}}>
                         <span style={{flexShrink:0}}><EI e={rec.icon} s={16}/></span>
                         <div style={{flex:1,minWidth:0}}>
@@ -5117,7 +5117,7 @@ function Home({st,setSt,go,setMod,setExam,lancerSeance}){
                 const allEx=Object.values(PR).flat();
                 const doneExs=allEx.filter(e=>st.doneEx.includes(e.id)).slice(-5).reverse();
                 return doneExs.map(e=>(
-                  <button key={e.id} onClick={()=>{setMod({...e,sec:"pr"});go("practice")}}
+                  <button key={e.id} onClick={()=>go("practice",{...e,sec:"pr"})}
                     style={{flexShrink:0,width:110,padding:'12px 10px',borderRadius:12,background:'var(--bg-card)',border:'1px solid var(--line)',textAlign:'center',cursor:'pointer'}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:18}}><EI e={e.icon} s={18}/></div>
                     <p style={{fontSize:9,fontWeight:700,color:'var(--text)',marginTop:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.title}</p>
@@ -8013,6 +8013,14 @@ function ApercuNiveau({niveau,mods,sec,dk,st,onClose,onOuvrir}){
   const[ouverts,setOuverts]=useState(()=>new Set(mods.map(m=>m.id)));
   const toutOuvert=ouverts.size>=mods.length;
   const basculer=id=>setOuverts(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n});
+  const openPaywall=usePaywall();
+  /* La séance du jour (format 5-temps) se fait dans l'ordre — on ne peut
+     lancer que la prochaine, jamais en piocher une plus loin. Les vieux
+     formats (pas encore convertis) restent librement consultables. */
+  const laSeanceAuj=sec==="pr"?seanceDuJourFigee(st):[];
+  const dejaFaiteAuj=laSeanceAuj.length>0&&laSeanceAuj.every(m=>(st.doneEx||[]).includes(m.id)||(st.doneCu||[]).includes(m.id));
+  const capAtteint=dejaFaiteAuj&&!peutRefaireUneSeance(st);
+  const prochaineId=laSeanceAuj[0]&&laSeanceAuj[0].id;
   /* Le compte réel de ce qui sera travaillé, temps par temps et par domaine. */
   const parDom={};
   mods.forEach(m=>{
@@ -8109,10 +8117,41 @@ function ApercuNiveau({niveau,mods,sec,dk,st,onClose,onOuvrir}){
                   {S.trace&&<p style={{fontSize:9.5,color:'var(--text-3)',marginTop:9,fontStyle:'italic'}}>
                     Trace facultative · {S.trace.type==="audio"?"audio":S.trace.type==="video"?"vidéo":"écrite"}
                   </p>}
+                  {/* Lancer : seulement la séance du jour, dans l'ordre. */}
+                  {!d&&m.id===prochaineId&&!capAtteint&&(
+                    <button onClick={()=>onOuvrir(m)} className="btn-gold"
+                      style={{marginTop:13,padding:'11px 20px',fontSize:11.5}}>Commencer cette séance</button>
+                  )}
+                  {!d&&m.id===prochaineId&&capAtteint&&(
+                    <button onClick={()=>openPaywall('daily')} className="pill"
+                      style={{marginTop:13,padding:'11px 20px',fontSize:11.5}}>Débloquer plus de séances</button>
+                  )}
+                  {!d&&m.id!==prochaineId&&(
+                    <p style={{fontSize:10,color:'var(--text-3)',marginTop:11,fontStyle:'italic'}}>
+                      Se débloque après la séance précédente.
+                    </p>
+                  )}
+                  {d&&(
+                    <button onClick={()=>onOuvrir(m)}
+                      style={{marginTop:11,padding:'9px 16px',fontSize:10.5,fontWeight:700,
+                        color:'var(--text-2)',background:'var(--w03)',border:'1px solid var(--line)',
+                        borderRadius:99,cursor:'pointer'}}>Revoir cette séance</button>
+                  )}
                 </div>
               )}
               {ouvert&&S&&!S.temps&&S.notion&&(
                 <p className="vers" style={{fontSize:13,color:'var(--text-2)',lineHeight:1.55,padding:'0 0 15px 37px'}}>{S.notion.titre}</p>
+              )}
+              {/* Formats pas encore convertis (11 niveaux sur 12) : pas de
+                  contrainte d'ordre, on garde l'accès libre d'origine. */}
+              {ouvert&&!S&&(
+                <div style={{padding:'0 0 15px 37px'}}>
+                  <button onClick={()=>onOuvrir(m)} className={d?"":"btn-gold"}
+                    style={{padding:'10px 18px',fontSize:11,...(d?{color:'var(--text-2)',background:'var(--w03)',
+                      border:'1px solid var(--line)',borderRadius:99,cursor:'pointer',fontWeight:700}:{})}}>
+                    {d?"Revoir":"Commencer"}
+                  </button>
+                </div>
               )}
             </div>
           );
@@ -10153,7 +10192,14 @@ function App(){
     return[...drifters,...twinks,...embers];
   })[0];
   const burstStars=useState(()=>Array.from({length:80}).map((_,i)=>{const angle=-90+(-60+Math.random()*120);const rad=angle*Math.PI/180;const dist=120+Math.random()*280;return{x:Math.cos(rad)*dist*(0.5+Math.random()),y:Math.sin(rad)*dist*(0.5+Math.random()),speed:.5+Math.random()*1.2,size:2+Math.random()*8,delay:Math.random()*.5,gold:Math.random()>.35,shape:i%5===0?'star':i%7===0?'trail':'circle',rot:Math.random()*360}}))[0];
-  const go=t=>{_track('tab_navigated',{tab:t,from:tab,plan:st.plan});if(t!==tab)setMod(null);setTab(t);window.scrollTo({top:0,left:0,behavior:'instant'})};
+  /* go(tab) change juste d'onglet et efface l'exercice en cours (comportement
+     d'origine). go(tab, m) change d'onglet ET pose l'exercice à ouvrir, dans
+     le même appel — sans ça, un setMod() juste avant était systématiquement
+     écrasé par le reset de go(), et on retombait sur la liste générique
+     au lieu d'ouvrir l'exercice cliqué. */
+  const go=(t,m)=>{_track('tab_navigated',{tab:t,from:tab,plan:st.plan});
+    if(m!==undefined)setMod(m);else if(t!==tab)setMod(null);
+    setTab(t);window.scrollTo({top:0,left:0,behavior:'instant'})};
 
   /* Scroll to top when opening/closing an exercise or switching exam */
   useEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant'})},[mod,exam]);
