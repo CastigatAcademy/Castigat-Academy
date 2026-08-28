@@ -316,6 +316,39 @@ _supabase.auth.onAuthStateChange(function(event, session){
 });
 
 
+/* 3. La vérité du serveur, à chaque ouverture.
+   L'app ne relisait le plan enregistré en base qu'au moment de la connexion.
+   Une personne déjà connectée sur son téléphone pouvait donc rester verrouillée
+   indéfiniment après un déblocage fait côté serveur (support, rattrapage venu
+   d'un autre appareil, et bientôt le webhook Stripe). Cas réel : Estelle
+   Palermo, débloquée en base le 28/08, mais connectée depuis avril. */
+var _planServeurVerifie=false;
+_supabase.auth.onAuthStateChange(function(event,session){
+  if(!session||!session.user||_planServeurVerifie)return;
+  _planServeurVerifie=true;
+  _supabase.from('profiles').select('plan').eq('id',session.user.id).maybeSingle().then(function(res){
+    var serveur=res&&res.data&&res.data.plan;
+    if(!serveur)return;
+    if(planEnAttente())return; /* un paiement fait à l'instant prime sur la base */
+    try{
+      var raw=localStorage.getItem(SAVE_KEY);
+      if(!raw)return;
+      var d=JSON.parse(raw);
+      if(d&&d.onb&&d.plan!==serveur){
+        d.plan=serveur;
+        localStorage.setItem(SAVE_KEY,JSON.stringify(d));
+        /* L'écran est peut-être déjà affiché : on débloque en direct.
+           Une baisse de plan, elle, ne prend effet qu'à la prochaine
+           ouverture — on ne retire pas un écran sous les doigts de
+           quelqu'un en pleine séance. */
+        if(serveur==='standard'||serveur==='premium'){
+          try{window.dispatchEvent(new CustomEvent('castigat:plan',{detail:serveur}))}catch(e){}
+        }
+      }
+    }catch(e){}
+  });
+});
+
 /* ── Cloudinary Config ── */
 const CLOUDINARY_CLOUD='dsecqyf3w';
 const CLOUDINARY_PRESET='vidéos de castigat';
