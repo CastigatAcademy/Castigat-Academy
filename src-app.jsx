@@ -4700,6 +4700,19 @@ const STRIPE_PREMIUM="https://buy.stripe.com/8x2bJ1gzV7tE6ah7ckeZ202";
    l'accès ne se débloquait pas, elles ont cru que le paiement avait échoué,
    et elles ont été prélevées autant de fois qu'elles avaient réessayé. */
 const dejaAbonnee=plan=>plan==='standard'||plan==='premium'||plan==='coach';
+
+/* On attache l'identifiant du compte au lien de paiement. Stripe le renvoie
+   ensuite dans checkout.session.completed : c'est ce qui permettra de dire
+   « ce paiement appartient à ce compte » sans dépendre de l'adresse email
+   saisie. Estelle en avait tapé deux variantes, aucune ne permettait de
+   retrouver son compte. On n'envoie PAS l'email dans l'URL : l'identifiant
+   suffit à faire le lien, et une adresse n'a rien à faire dans une adresse
+   web (journaux serveur, historique, partage). */
+const lienStripeAvecCompte=url=>{
+  var uid=window.__castigatUid;
+  if(!uid)return url;
+  return url+(url.indexOf('?')===-1?'?':'&')+'client_reference_id='+encodeURIComponent(uid);
+};
 const allerVersStripe=(url,planActuel,planVise)=>{
   if(dejaAbonnee(planActuel)){
     _track('checkout_bloque_deja_abonne',{plan:planActuel,vise:planVise});
@@ -4713,7 +4726,7 @@ const allerVersStripe=(url,planActuel,planVise)=>{
       : "Vous avez déjà un abonnement en cours. Pour en changer, écrivez-nous depuis Profil › Support : on fait la bascule sans vous faire payer deux fois.");
     return;
   }
-  window.location.href=url;
+  window.location.href=lienStripeAvecCompte(url);
 };
 const PaywallCtx=React.createContext(()=>{});
 const usePaywall=()=>React.useContext(PaywallCtx);
